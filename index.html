@@ -236,18 +236,40 @@ function captureMedia(channel,mode){
   inp.onchange=()=>{
     const f=inp.files&&inp.files[0];if(!f)return;
     const url=URL.createObjectURL(f);
+    showMediaPreview(url,mode,channel);
+  };
+  inp.click();
+}
+
+function showMediaPreview(url,mode,channel){
+  $('panelSheet').classList.add('on','tall');
+  $('panelTitle').textContent=(mode==='video'?'🎬':'📷')+' POST TO '+channel.toUpperCase();
+  $('panelBody').innerHTML=
+    '<div style="border-radius:13px;overflow:hidden;background:#000;margin-bottom:10px">'+
+    (mode==='video'
+      ?'<video src="'+url+'" controls playsinline style="width:100%;max-height:260px;display:block"></video>'
+      :'<img src="'+url+'" style="width:100%;max-height:260px;object-fit:contain;display:block">')+
+    '</div>'+
+    '<div class="formField"><label>Caption (optional)</label>'+
+    '<textarea id="mediaCap" style="height:60px;resize:none" placeholder="Say something…"></textarea></div>'+
+    '<div style="display:flex;gap:8px;margin-top:10px">'+
+    '<button class="smallBtn" id="mediaCancel" style="flex:1">Discard</button>'+
+    '<button class="ribAction" id="mediaPost" style="flex:2;height:44px">POST TO '+channel.toUpperCase()+'</button>'+
+    '</div>';
+  $('mediaCancel').onclick=()=>{URL.revokeObjectURL(url);$('panelSheet').classList.remove('on','tall')};
+  $('mediaPost').onclick=()=>{
     const post={id:'POST-'+Date.now(),channel,
       author:state.ownerAuthed?'Owner':'Guest',
       lat:triState.pressLL?.lat||state.city?.lat||state.country?.lat,
       lng:triState.pressLL?.lng||state.city?.lng||state.country?.lng,
       place:state.city?.name||state.country?.name||'Earth',
-      time:Date.now(),mediaURL:url,mediaType:mode,text:''};
+      time:Date.now(),mediaURL:url,mediaType:mode,text:$('mediaCap')?.value||''};
     state.posts[channel]=state.posts[channel]||[];
     state.posts[channel].push(post);
-    toast(mode==='video'?'Video posted to '+channel:'Photo posted to '+channel);
+    $('panelSheet').classList.remove('on','tall');
+    toast((mode==='video'?'Video':'Photo')+' posted to '+channel);
     openChannel(channel);
   };
-  inp.click();
 }
 function captureVideo(channel){captureMedia(channel,'video')}
 
@@ -443,6 +465,223 @@ function startHandsFree(){
 function stopHandsFree(){handsFreeOn=false;if(recognition)try{recognition.stop()}catch(e){}$('voice').classList.remove('live')}
 function toggleHandsFree(){handsFreeOn?stopHandsFree():startHandsFree()}
 
+/* ── YOU triangle + Krypteia triangle ── */
+function openYouTriangle(){
+  if(!state.city||!state.cityMap)return;
+  const pt=state.cityMap.latLngToContainerPoint([state.city.lat,state.city.lng]);
+  triState.pressLL={lat:state.city.lat,lng:state.city.lng};
+  closeTriMenu();
+  setTimeout(()=>openTriMenu(pt.x,pt.y,youOpts()),40);
+}
+function youOpts(){return[
+  {icon:'👤',label:'PROFILE', action:openProfile},
+  {icon:'🛡', label:'KRYPTEIA',gold:true,action:()=>{
+    if(state.ownerAuthed)openKrypteiaTriangle();
+    else openOwnerGate(openKrypteiaTriangle);
+  }},
+  {icon:'📋',label:'ACTIVITY',action:openMyActivity},
+]}
+
+function openKrypteiaTriangle(){
+  closeTriMenu();
+  setTimeout(()=>openTriMenu(innerWidth/2,innerHeight*0.42,krypteiaOpts()),60);
+}
+function krypteiaOpts(){return[
+  {icon:'🎙',label:'DICTATE',gold:true,sub:[
+    {icon:'🎤',label:'VOICE', gold:true,action:()=>openDictate(true)},
+    {icon:'⌨', label:'TEXT',  gold:true,action:()=>openDictate(false)},
+    {icon:'⏹',label:'CLOSE', gold:true,action:closeTriMenu},
+  ]},
+  {icon:'🛡', label:'IP GUARD',gold:true,sub:[
+    {icon:'🌐',label:'WEB',   gold:true,action:()=>ipGuardOpen('web')},
+    {icon:'🛒',label:'STORES',gold:true,action:()=>ipGuardOpen('stores')},
+    {icon:'💻',label:'CODE',  gold:true,action:()=>ipGuardOpen('code')},
+  ]},
+  {icon:'📊',label:'TELEMETRY',gold:true,sub:[
+    {icon:'📡',label:'STATUS',gold:true,action:()=>openTelemetry('status')},
+    {icon:'📜',label:'LOGS',  gold:true,action:()=>openTelemetry('logs')},
+    {icon:'🔄',label:'CYCLE', gold:true,action:()=>openTelemetry('cycle')},
+  ]},
+]}
+
+function openProfile(){
+  $('panelSheet').classList.add('on');$('panelSheet').classList.remove('tall');
+  $('panelTitle').textContent='👤 PROFILE';
+  $('panelBody').innerHTML=
+    '<div class="card"><div class="meta">Signed in as</div>'+
+    '<div style="font-weight:1000;font-size:14px;margin-top:4px;color:'+(state.ownerAuthed?'#a77bff':'#fff')+'">'+(state.ownerAuthed?'Owner · Notis Astranov':'Guest')+'</div>'+
+    '<div class="meta" style="margin-top:8px">Location: '+esc(state.city?.name||state.country?.name||'—')+'</div>'+
+    '<div class="meta">Language: '+esc(navigator.language||'en-US')+'</div></div>'+
+    '<div class="card"><b>SETTINGS</b>'+
+    '<div class="formField"><label>Hands-free voice</label>'+
+    '<button class="smallBtn" id="profHF" style="width:100%">'+(handsFreeOn?'ON · Tap to stop':'OFF · Tap to enable')+'</button></div></div>'+
+    '<div class="card">'+
+    (state.ownerAuthed
+      ?'<button class="smallBtn" id="profOut" style="width:100%">Sign out of Krypteia</button>'
+      :'<button class="ribAction" id="profIn" style="width:100%;height:40px">SIGN IN AS OWNER</button>')+
+    '</div>';
+  if($('profHF'))$('profHF').onclick=()=>{toggleHandsFree();openProfile()};
+  if($('profIn'))$('profIn').onclick=()=>openOwnerGate();
+  if($('profOut'))$('profOut').onclick=()=>{state.ownerAuthed=false;document.body.classList.remove('krypteiaOn');$('panelSheet').classList.remove('on');toast('Signed out')};
+}
+
+function openMyActivity(){
+  $('panelSheet').classList.add('on');$('panelSheet').classList.remove('tall');
+  $('panelTitle').textContent='📋 MY ACTIVITY';
+  const orders=state.orders.slice().reverse();
+  const myAuthor=state.ownerAuthed?'Owner':'Guest';
+  const myPosts=[...state.posts.global,...state.posts.local,...state.posts.private].filter(p=>p.author===myAuthor).sort((a,b)=>b.time-a.time);
+  $('panelBody').innerHTML=
+    '<div class="card"><div class="txTop"><b>ORDERS</b><span class="meta">'+orders.length+'</span></div>'+
+    (orders.length
+      ?orders.slice(0,8).map(o=>'<div class="ledgerRow"><div class="txTop"><span>'+esc(o.id)+'</span><b>'+money(o.calc.total)+'</b></div><div class="meta">'+esc(o.status)+' · '+esc(o.vendor.name)+' · '+o.calc.drivers+' driver'+(o.calc.drivers>1?'s':'')+'</div></div>').join('')
+      :'<div class="meta">No orders yet.</div>')+'</div>'+
+    '<div class="card"><div class="txTop"><b>POSTS</b><span class="meta">'+myPosts.length+'</span></div>'+
+    (myPosts.length
+      ?myPosts.slice(0,8).map(p=>'<div class="ledgerRow"><div class="txTop"><span>'+esc(p.channel.toUpperCase())+'</span><span class="meta">'+new Date(p.time).toLocaleDateString()+'</span></div><div class="meta">📍 '+esc(p.place||'')+'</div></div>').join('')
+      :'<div class="meta">No posts yet.</div>')+'</div>'+
+    '<div class="card"><div class="txTop"><b>VENDORS REGISTERED</b><span class="meta">'+state.customVendors.length+'</span></div>'+
+    (state.customVendors.length
+      ?state.customVendors.map(v=>'<div class="ledgerRow"><div class="txTop"><span>'+esc(v.name)+'</span><span class="meta">'+esc(v.type)+'</span></div><div class="meta">'+v.items.length+' product'+(v.items.length===1?'':'s')+'</div></div>').join('')
+      :'<div class="meta">No vendors registered.</div>')+'</div>';
+}
+
+/* Krypteia DICTATE — voice or text → /api/ai/krypteia */
+function openDictate(useVoice){
+  if(!state.ownerAuthed){toast('Owner auth required');return}
+  $('panelSheet').classList.add('on','tall');
+  $('panelTitle').textContent='🎙 KRYPTEIA · DICTATE';
+  $('panelBody').innerHTML=
+    '<div class="card"><div class="meta">Architect dictation. Spoken or typed evolution requests are routed to <b>/api/ai/krypteia</b>. Backend cycles authorized AI coders (Claude / OpenAI / Gemini / Grok / DeepSeek), runs contamination scans, returns proposed patch. No keys in front-end.</div>'+
+    '<textarea id="dicText" style="width:100%;height:130px;margin-top:10px;background:rgba(167,123,255,.06);border:1px solid rgba(167,123,255,.32);border-radius:11px;color:#fff;padding:11px;font-family:ui-monospace,Menlo,monospace;font-size:12px;resize:vertical" placeholder="Describe the change to apply. E.g. \'Add a brightness shortcut to the top bar.\'"></textarea>'+
+    '<div style="display:flex;gap:6px;margin-top:8px">'+
+    '<button class="smallBtn" id="dicMic">🎙 Dictate</button>'+
+    '<button class="smallBtn" id="dicClear">Clear</button>'+
+    '<button class="ribAction" id="dicSend" style="flex:1;height:40px">SEND TO KRYPTEIA</button>'+
+    '</div></div>'+
+    '<div id="dicResult" class="card" style="display:none"></div>';
+  let dicRec=null;
+  $('dicMic').onclick=()=>{
+    const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+    if(!SR){toast('Voice not available');return}
+    if(dicRec){try{dicRec.stop()}catch(e){}dicRec=null;$('dicMic').textContent='🎙 Dictate';return}
+    dicRec=new SR();dicRec.lang=navigator.language||'en-US';
+    dicRec.continuous=true;dicRec.interimResults=true;
+    $('dicMic').textContent='⏹ Stop';
+    let final=$('dicText').value;
+    dicRec.onresult=e=>{
+      let interim='';
+      for(let i=e.resultIndex;i<e.results.length;i++){
+        const t=e.results[i][0].transcript;
+        if(e.results[i].isFinal)final+=(final&&!final.endsWith(' ')?' ':'')+t.trim();
+        else interim+=t;
+      }
+      $('dicText').value=final+(interim?' '+interim:'');
+    };
+    dicRec.onend=()=>{dicRec=null;if($('dicMic'))$('dicMic').textContent='🎙 Dictate'};
+    dicRec.onerror=()=>{dicRec=null;if($('dicMic'))$('dicMic').textContent='🎙 Dictate'};
+    try{dicRec.start()}catch(e){}
+  };
+  $('dicClear').onclick=()=>{$('dicText').value=''};
+  $('dicSend').onclick=async()=>{
+    const text=$('dicText').value.trim();
+    if(!text){toast('Type or dictate first');return}
+    $('dicResult').style.display='block';
+    $('dicResult').innerHTML='<em style="color:var(--muted)">Krypteia routing through authorized AI coders…</em>';
+    krypLog('DICTATE: '+text);
+    const reply=await aiAsk('[KRYPTEIA DICTATE] '+text);
+    if(reply.error){
+      $('dicResult').innerHTML='<b class="bad">'+esc(reply.error)+'</b><div class="meta" style="margin-top:6px">Once /api/ai/krypteia is deployed with provider keys, Krypteia returns: diagnosis, proposed diff, contamination scan, deploy/rollback button.</div>';
+    }else{
+      $('dicResult').innerHTML='<b style="color:#a77bff">Krypteia reply:</b><div style="margin-top:6px;white-space:pre-wrap;font-size:12px">'+esc(reply.text||'(no text)')+'</div>'+(reply.action?'<div class="meta" style="margin-top:6px">Action: '+esc(JSON.stringify(reply.action))+'</div>':'');
+      if(reply.action)execAIAction(reply.action);
+      if(reply.text)speak(reply.text);
+    }
+  };
+  if(useVoice)setTimeout(()=>$('dicMic').click(),250);
+}
+
+/* Krypteia IP GUARD — search for illegal copies and code theft */
+const IPG_QUERIES={
+  web:['"AstranoV"','"AstranoV" clone','"Notis Astranov" copy','"AstranoV" imitation','"Internet Operating System" "AstranoV"'],
+  stores:['site:apps.apple.com "AstranoV"','site:play.google.com "AstranoV"','site:microsoft.com/store "AstranoV"','"AstranoV" mobile app'],
+  code:['site:github.com "AstranoV"','site:gitlab.com "AstranoV"','site:bitbucket.org "AstranoV"','"AstranoV" "krypteia" code','"AstranoV" inurl:repo','"Notis Astranov" -github.com/notisastranov']
+};
+function ipGuardOpen(scope){
+  if(!state.ownerAuthed){toast('Owner auth required');return}
+  $('panelSheet').classList.add('on','tall');
+  $('panelTitle').textContent='🛡 IP GUARD · '+scope.toUpperCase();
+  const queries=IPG_QUERIES[scope]||[];
+  const linkRow=q=>'<div style="border-top:1px solid rgba(167,123,255,.15);padding:8px 0">'+
+    '<div style="font-size:12px;font-weight:700;color:#fff;margin-bottom:4px;word-break:break-word">'+esc(q)+'</div>'+
+    '<div style="display:flex;gap:10px;flex-wrap:wrap;font-size:11px">'+
+      '<a href="https://www.google.com/search?q='+encodeURIComponent(q)+'" target="_blank" rel="noopener" style="color:var(--b);text-decoration:underline">Google</a>'+
+      '<a href="https://duckduckgo.com/?q='+encodeURIComponent(q)+'" target="_blank" rel="noopener" style="color:var(--b);text-decoration:underline">DuckDuckGo</a>'+
+      '<a href="https://www.bing.com/search?q='+encodeURIComponent(q)+'" target="_blank" rel="noopener" style="color:var(--b);text-decoration:underline">Bing</a>'+
+      '<a href="https://www.startpage.com/sp/search?query='+encodeURIComponent(q)+'" target="_blank" rel="noopener" style="color:var(--b);text-decoration:underline">Startpage</a>'+
+    '</div></div>';
+  $('panelBody').innerHTML=
+    '<div class="card"><div class="txTop"><b style="color:#a77bff">KRYPTEIA IP GUARD</b><span class="meta">'+esc(scope)+'</span></div>'+
+    '<div class="meta" style="margin-top:6px">Hunt unauthorised copies, monkey imitations, and code theft of <b>AstranoV</b> by Architect <b>Notis Astranov</b>.</div></div>'+
+    '<div class="card"><div style="font-size:11px;color:var(--muted);margin-bottom:6px">MANUAL CROSS-ENGINE SEARCHES</div>'+queries.map(linkRow).join('')+'</div>'+
+    '<div class="card"><div style="font-size:11px;color:var(--muted);margin-bottom:6px">AUTOMATED BACKEND SCAN</div>'+
+    '<button class="ribAction" id="ipgRun" style="width:100%;height:40px">RUN /api/krypteia/ip-guard</button>'+
+    '<div id="ipgRes" style="margin-top:10px;display:none"></div></div>';
+  $('ipgRun').onclick=async()=>{
+    $('ipgRes').style.display='block';
+    $('ipgRes').innerHTML='<em style="color:var(--muted)">Running deep scan…</em>';
+    try{
+      const ac=new AbortController();const tm=setTimeout(()=>ac.abort(),20000);
+      const r=await fetch('/api/krypteia/ip-guard',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({scope,brand:'AstranoV',architect:'Notis Astranov',queries}),signal:ac.signal});
+      clearTimeout(tm);
+      if(!r.ok)throw new Error('status '+r.status);
+      const j=await r.json();const hits=j.hits||[];
+      $('ipgRes').innerHTML=hits.length
+        ?'<b style="color:#ff5577">Suspect hits: '+hits.length+'</b>'+hits.map(h=>'<div class="ledgerRow"><div class="txTop"><a href="'+esc(h.url||'#')+'" target="_blank" style="color:var(--b);text-decoration:underline">'+esc(h.title||h.url||'(no title)')+'</a><span class="meta">'+esc(String(h.score||''))+'</span></div><div class="meta">'+esc(h.snippet||'')+'</div></div>').join('')
+        :'<b class="ok">No suspect copies detected.</b>';
+      krypLog('IP GUARD '+scope+' scan complete: '+hits.length+' hits');
+    }catch(e){
+      $('ipgRes').innerHTML='<b class="bad">Backend scan unavailable.</b><div class="meta" style="margin-top:4px">Use the manual search links above. Once /api/krypteia/ip-guard is deployed, Krypteia runs automated cross-engine sweeps and returns suspect URLs with similarity scores.</div>';
+    }
+  };
+}
+
+/* Krypteia TELEMETRY */
+function openTelemetry(view){
+  if(!state.ownerAuthed){toast('Owner auth required');return}
+  $('panelSheet').classList.add('on','tall');
+  $('panelTitle').textContent='📊 KRYPTEIA · '+view.toUpperCase();
+  if(view==='status'){
+    const checks=[
+      ['Globe engine',!!state.globe],
+      ['National map',!!state.nationalMap],
+      ['City map',!!state.cityMap],
+      ['Reverse geocode',typeof reverseGeocode==='function'],
+      ['OSRM routing',typeof routeStreet==='function'],
+      ['AI cycling',typeof aiAsk==='function'],
+      ['Hands-free voice',handsFreeOn],
+      ['Owner authed',state.ownerAuthed],
+      ['Custom vendors',state.customVendors.length],
+      ['Active orders',state.orders.filter(o=>o.status!=='closed').length],
+      ['Posts G/L/P',state.posts.global.length+'/'+state.posts.local.length+'/'+state.posts.private.length],
+    ];
+    $('panelBody').innerHTML='<div class="card">'+checks.map(c=>'<div class="checkLine"><b class="'+(c[1]?'ok':'bad')+'">'+(c[1]?'✓':'·')+'</b> '+esc(c[0])+': <span class="meta">'+esc(typeof c[1]==='boolean'?(c[1]?'OK':'NO'):String(c[1]))+'</span></div>').join('')+'</div>';
+  }else if(view==='logs'){
+    const snap={level:state.level,country:state.country?.name,city:state.city?.name,vendorMode:state.vendorMode,ownerAuthed:state.ownerAuthed,orders:state.orders.map(o=>({id:o.id,status:o.status,layers:o.layers?.length||0})),ledger:state.ledger.length,customVendors:state.customVendors.length,posts:Object.fromEntries(Object.entries(state.posts).map(([k,v])=>[k,v.length])),routeCache:state.routeCache?.size||0};
+    $('panelBody').innerHTML='<div class="card"><div class="meta">Live runtime snapshot</div><pre style="font-size:11px;color:#a0c4ff;background:rgba(0,0,0,.4);border-radius:8px;padding:10px;overflow:auto;margin-top:8px;white-space:pre-wrap;user-select:text">'+esc(JSON.stringify(snap,null,2))+'</pre></div>';
+  }else if(view==='cycle'){
+    $('panelBody').innerHTML='<div class="card"><b style="color:#a77bff">SELF-EVOLUTION CYCLE</b><div class="meta" style="margin-top:6px">Observe → Diagnose → Spartanize → Rebuild → Test → Verify → Log → Authorize → Deploy → Monitor</div><textarea id="cycText" style="width:100%;height:80px;margin-top:8px;background:rgba(167,123,255,.06);border:1px solid rgba(167,123,255,.32);border-radius:10px;color:#fff;padding:10px" placeholder="Optional focus area for this cycle"></textarea><button class="ribAction" id="runCyc" style="width:100%;height:40px;margin-top:8px">RUN CYCLE</button><div id="cycRes" style="margin-top:10px"></div></div>';
+    $('runCyc').onclick=async()=>{
+      const focus=$('cycText').value.trim();
+      $('cycRes').innerHTML='<em style="color:var(--muted)">Cycling…</em>';
+      krypLog('CYCLE start: '+(focus||'full sweep'));
+      const reply=await aiAsk('[KRYPTEIA CYCLE]'+(focus?' Focus: '+focus:' Full self-evolution sweep')+'. Return observations, diagnosis, proposed patches, test recommendations.');
+      if(reply.error)$('cycRes').innerHTML='<b class="bad">'+esc(reply.error)+'</b>';
+      else{$('cycRes').innerHTML='<b style="color:#a77bff">Cycle complete:</b><pre style="margin-top:6px;font-size:11px;color:#a0c4ff;background:rgba(0,0,0,.3);border-radius:8px;padding:8px;white-space:pre-wrap;user-select:text">'+esc(reply.text||'(no text)')+'</pre>';if(reply.action)execAIAction(reply.action)}
+    };
+  }
+}
+
 /* ── Triangle cascade menu ── */
 const triState={timer:null,pressLL:null,suppress:false};
 const TRI_R=108;
@@ -606,6 +845,17 @@ function openNational(c){
       if(cc!==state.country.id&&cc!=='xx'){openNational(countryFromGeo(geo,lat,lng))}
       else{openCity(cityFromGeo(geo,lat,lng))}
     });
+    let _natPinch=0,_natPinchLocked=false;
+    const natEl=$('nationalMap');
+    natEl.addEventListener('touchstart',e=>{if(e.touches.length===2){const a=e.touches[0],b=e.touches[1];_natPinch=Math.hypot(a.clientX-b.clientX,a.clientY-b.clientY);_natPinchLocked=false}},{passive:true});
+    natEl.addEventListener('touchmove',e=>{
+      if(e.touches.length!==2||!_natPinch||_natPinchLocked)return;
+      const a=e.touches[0],b=e.touches[1],d=Math.hypot(a.clientX-b.clientX,a.clientY-b.clientY);
+      const diff=d-_natPinch;
+      if(Math.abs(diff)>22){_natPinchLocked=true;_natPinch=0;if(diff>0)state.nationalMap.zoomIn();else state.nationalMap.zoomOut()}
+    },{passive:true});
+    natEl.addEventListener('touchend',()=>{_natPinch=0;_natPinchLocked=false},{passive:true});
+    state.nationalMap.on('zoomend',()=>{if(state.level==='national'&&state.nationalMap.getZoom()<=2)setLevel('global')});
   }
   if(!c.cities||!c.cities.length)c.cities=[{id:'center',name:c.name,lat:c.lat||c.cities?.[0]?.lat,lng:c.lng||c.cities?.[0]?.lng,z:13}];
   state.nationalMap.eachLayer(l=>{if(l._pin)l.remove()});
@@ -638,6 +888,17 @@ function openCity(city){
     state.cityMap.on('contextmenu',e=>{e.originalEvent.preventDefault();onLongPress(e.containerPoint.x,e.containerPoint.y,{lat:e.latlng.lat,lng:e.latlng.lng})});
     state.cityMap.on('click',async e=>{if(state.picking){finishPick(e.latlng);return}if($('vendorSheet').classList.contains('on')){$('vendorSheet').classList.add('min');return}const{lat,lng}=e.latlng;toast('Locating…',3000);const geo=await reverseGeocode(lat,lng);showPlaceInfo(lat,lng,geo)});
     state.cityMap.on('dblclick',()=>openNational(state.country));
+    let _cityPinch=0,_cityPinchLocked=false;
+    const cityEl=$('cityMap');
+    cityEl.addEventListener('touchstart',e=>{if(e.touches.length===2){const a=e.touches[0],b=e.touches[1];_cityPinch=Math.hypot(a.clientX-b.clientX,a.clientY-b.clientY);_cityPinchLocked=false}},{passive:true});
+    cityEl.addEventListener('touchmove',e=>{
+      if(e.touches.length!==2||!_cityPinch||_cityPinchLocked)return;
+      const a=e.touches[0],b=e.touches[1],d=Math.hypot(a.clientX-b.clientX,a.clientY-b.clientY);
+      const diff=d-_cityPinch;
+      if(Math.abs(diff)>22){_cityPinchLocked=true;_cityPinch=0;if(diff>0)state.cityMap.zoomIn();else state.cityMap.zoomOut()}
+    },{passive:true});
+    cityEl.addEventListener('touchend',()=>{_cityPinch=0;_cityPinchLocked=false},{passive:true});
+    state.cityMap.on('zoomend',()=>{if(state.level==='personal'&&state.cityMap.getZoom()<=9)openNational(state.country)});
   }
   state.cityMap.setView([city.lat,city.lng],city.z);
   applyBrightness();drawCity();
@@ -670,7 +931,7 @@ function icon(html,size=42){return L.divIcon({className:'',iconSize:[size,size],
 function drawCity(){
   state.markers.forEach(m=>m.remove());state.markers=[];
   state.vendors=vendorsFor(state.city);state.drivers=driversFor(state.city);
-  state.markers.push(L.marker([state.city.lat,state.city.lng],{icon:icon('<div class="mapPin user">YOU</div>',44)}).addTo(state.cityMap));
+  state.markers.push(L.marker([state.city.lat,state.city.lng],{icon:icon('<div class="mapPin user">YOU</div>',44)}).addTo(state.cityMap).on('click',openYouTriangle));
   const acctLat=state.city.lat+.0015,acctLng=state.city.lng-.0015;
   state.markers.push(L.marker([acctLat,acctLng],{icon:icon('<div class="mapPin acct">⬡</div>',38)}).addTo(state.cityMap).bindTooltip('Accounting Office',{className:'cleanTip'}).on('click',accounting));
   state.vendors.forEach(v=>{state.markers.push(L.marker([v.lat,v.lng],{icon:icon('<div class="mapPin shop">'+v.emoji+'</div>')}).addTo(state.cityMap).bindTooltip(v.name,{className:'cleanTip'}).on('click',()=>openVendor(v)))});
