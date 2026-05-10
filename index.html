@@ -76,6 +76,52 @@
 .feedPost video,.feedPost img{width:100%;max-height:240px;object-fit:cover;border-radius:11px;margin-top:8px;background:#000}
 .feedEmpty{padding:24px 12px;text-align:center;color:var(--muted);font-size:12px}
 .aiBubble{padding:10px 12px;border-radius:14px;background:rgba(0,215,255,.07);border:1px solid rgba(0,215,255,.18);font-size:13px;line-height:1.4;margin:8px 0}
+/* ── Balance badge ── */
+#balBadge{position:fixed;right:14px;top:calc(var(--st) + 14px);z-index:91;display:flex;align-items:center;gap:5px;padding:7px 13px 7px 11px;border-radius:999px;border:1px solid rgba(215,182,80,.38);background:rgba(3,12,29,.88);color:var(--g);font-weight:1000;font-size:13px;box-shadow:0 0 20px rgba(215,182,80,.14);backdrop-filter:blur(12px);cursor:pointer;opacity:0;pointer-events:none;transition:opacity .5s}
+#balBadge.show{opacity:1;pointer-events:auto}
+#balBadge.pop{animation:balPop .45s cubic-bezier(.17,.67,.38,1.28)}
+@keyframes balPop{0%,100%{transform:scale(1)}45%{transform:scale(1.22)}}
+.balPlus{width:22px;height:22px;border-radius:50%;border:1px solid rgba(215,182,80,.5);background:rgba(215,182,80,.13);color:var(--g);font-size:15px;line-height:1;display:flex;align-items:center;justify-content:center;margin-left:2px;pointer-events:auto}
+/* ── User button (top-left, 13s reveal) ── */
+#userBtn{position:fixed;left:14px;top:calc(var(--st) + 14px);z-index:91;width:44px;height:44px;border-radius:50%;border:1px solid rgba(0,215,255,.32);background:rgba(3,12,29,.88);color:var(--b);font-size:20px;box-shadow:0 0 20px rgba(0,215,255,.12);backdrop-filter:blur(12px);cursor:pointer;opacity:0;pointer-events:none;transition:opacity .5s;display:flex;align-items:center;justify-content:center}
+#userBtn.show{opacity:1;pointer-events:auto}
+#userBtn.authed{border-color:rgba(0,240,138,.5);color:var(--ok);box-shadow:0 0 20px rgba(0,240,138,.15)}
+body:not(.global) #userBtn{opacity:0!important;pointer-events:none!important}
+/* ── Idle fade ── */
+.ui-faded{opacity:.18!important;transition:opacity 1.2s!important}
+/* ── Login overlay ── */
+#loginOverlay{position:fixed;inset:0;z-index:295;display:none;align-items:flex-end;justify-content:center;background:rgba(0,0,0,.52);backdrop-filter:blur(14px);padding-bottom:calc(var(--sb) + 10px)}
+#loginOverlay.on{display:flex}
+.loginBox{background:rgba(3,10,24,.97);border:1px solid rgba(0,215,255,.26);border-radius:22px 22px 18px 18px;padding:22px 18px 16px;width:min(90vw,420px);box-shadow:0 24px 60px rgba(0,0,0,.72);max-height:88vh;overflow:auto}
+.lTabs{display:flex;border-radius:999px;background:rgba(0,215,255,.06);border:1px solid rgba(0,215,255,.14);padding:3px;margin-bottom:16px;gap:3px}
+.lTabs button{flex:1;height:34px;border-radius:999px;border:0;background:transparent;color:var(--muted);font-weight:900;font-size:12px;letter-spacing:.06em;transition:.2s}
+.lTabs button.active{background:rgba(0,215,255,.18);color:var(--b)}
+.lField{margin-top:9px}
+.lField label{display:block;font-size:9px;font-weight:1000;letter-spacing:.12em;color:rgba(255,232,166,.65);text-transform:uppercase;margin-bottom:4px}
+.lField input{width:100%;background:rgba(0,215,255,.07);border:1px solid rgba(0,215,255,.2);border-radius:12px;color:#fff;padding:10px 13px;outline:0;font-size:13px}
+.lErr{font-size:11px;color:var(--r);text-align:center;margin-top:8px;min-height:16px}
+/* ── Recharge options ── */
+.rchOptions{display:flex;gap:8px;margin:12px 0;flex-wrap:wrap}
+.rchOpt{flex:1;min-width:72px;border:1px solid rgba(0,215,255,.18);border-radius:13px;background:rgba(0,215,255,.05);padding:9px 5px;text-align:center;cursor:pointer;transition:.15s}
+.rchOpt.sel{border-color:var(--g);background:rgba(215,182,80,.12);color:var(--g)}
+.rchAmt{font-size:16px;font-weight:1000;color:inherit}
+.rchLbl{font-size:9px;color:var(--muted);margin-top:2px}
+/* ── Chat circles ── */
+.circleMsgs{max-height:40vh;overflow:auto;-webkit-overflow-scrolling:touch;display:flex;flex-direction:column;gap:4px;padding:6px 0;margin-bottom:8px}
+.cMsg{padding:8px 12px;border-radius:13px;font-size:12px;line-height:1.4;max-width:82%}
+.cMsg.me{background:rgba(0,215,255,.13);border:1px solid rgba(0,215,255,.22);align-self:flex-end;text-align:right}
+.cMsg.sys{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);align-self:center;font-style:italic;color:var(--muted);font-size:11px;text-align:center}
+.cMsg.other{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.09);align-self:flex-start}
+.cWho{font-size:9px;font-weight:1000;color:var(--muted);margin-bottom:2px}
+.cBody{color:#e9f7ff}
+.cIn{display:flex;gap:7px;padding-top:9px;border-top:1px solid rgba(0,215,255,.1)}
+.cIn input{flex:1;background:rgba(0,215,255,.06);border:1px solid rgba(0,215,255,.18);border-radius:999px;color:#fff;padding:9px 14px;outline:0;font-size:13px}
+.cIn button{min-width:42px;height:42px;border-radius:50%;border:1px solid rgba(0,215,255,.26);background:rgba(0,215,255,.09);color:var(--b);font-size:18px}
+.circleCard{border:1px solid rgba(0,215,255,.12);background:rgba(0,215,255,.04);border-radius:13px;padding:10px;margin:5px 0;cursor:pointer;display:flex;justify-content:space-between;align-items:center;transition:.15s}
+.circleCard:active{background:rgba(0,215,255,.1)}
+.circleCard.prv{border-color:rgba(215,182,80,.22);background:rgba(215,182,80,.04)}
+.cName{font-weight:1000;font-size:13px}
+.cMeta{font-size:10px;color:var(--muted);margin-top:2px}
 </style></head><body class="global">
 <div id="stars"></div>
 <div id="title">AstranoV</div>
@@ -87,6 +133,14 @@
 <div id="brightness"><span>☀</span><input id="bright" type="range" min="0" max="100" value="35"><span>☾</span></div>
 <div id="toast"></div>
 <div id="routeBadge"></div>
+<div id="balBadge">
+  <span id="balAmt">0.00</span><span style="font-size:10px;opacity:.65;margin-left:1px">AVC</span>
+  <span class="balPlus" id="balPlusBtn">+</span>
+</div>
+<button id="userBtn">👤</button>
+<div id="loginOverlay">
+  <div class="loginBox" id="loginBox"></div>
+</div>
 <div id="triOverlay"></div>
 <div id="cmd" class="panel">
   <input id="cmdInput" placeholder="Say or type: Greece, Rhodes, Athens, pizza, accounting, back">
@@ -99,7 +153,7 @@
     <button class="gold" data-cmd="accounting">Accounting</button>
     <button data-cmd="global channel">Global feed</button>
     <button data-cmd="local channel">Local feed</button>
-    <button data-cmd="private channel">Private feed</button>
+    <button data-cmd="circles">Circles</button>
     <button data-cmd="back">Back</button>
   </div>
 </div>
@@ -163,7 +217,7 @@ const products=[
   {id:'p4',name:'Feta 200g',desc:'Traditional feta cheese',price:5.5,kg:.2,photo:'https://images.unsplash.com/photo-1559561853-08451507cbe7?auto=format&fit=crop&w=160&q=70'}
 ];
 
-const state={level:'global',country:countries[0],city:null,globe:null,nationalMap:null,nationalTile:null,cityMap:null,dark:null,light:null,vendors:[],drivers:[],markers:[],vendor:null,cart:{},destination:null,picking:false,selectedDriver:null,vendorMode:false,orders:[],ledger:[],messages:{},routeCache:new Map(),brightness:+(localStorage.astranovBrightness||35),ownerAuthed:false};
+const state={level:'global',country:countries[0],city:null,globe:null,nationalMap:null,nationalTile:null,cityMap:null,dark:null,light:null,vendors:[],drivers:[],markers:[],vendor:null,cart:{},destination:null,picking:false,selectedDriver:null,vendorMode:false,orders:[],ledger:[],messages:{},routeCache:new Map(),brightness:+(localStorage.astranovBrightness||35),ownerAuthed:false,user:null,balance:+(localStorage.astranovBalance||0),circles:{},customCircles:[],ownerAuthCallback:null};
 
 function esc(s){return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
 function money(n){return ((+n||0).toFixed(2))+' AVC'}
@@ -172,7 +226,18 @@ function km(a,b,c,d){const R=6371,la1=a*Math.PI/180,la2=c*Math.PI/180,dl=(c-a)*M
 
 function findCountry(lat,lng){let best=null,bestDist=Infinity;for(const c of countries){const d=km(lat,lng,c.lat,c.lng);if(d<bestDist){bestDist=d;best=c}}return best}
 
-function setLevel(l){state.level=l;document.body.className=l+(state.vendorMode?' vendorMode':'')+(state.ownerAuthed?' krypteiaOn':'');['globe','national','personal'].forEach(id=>$(id).classList.remove('on'));if(l==='global'||l==='space')$('globe').classList.add('on');else $(l).classList.add('on');if(state.globe){const c=state.globe.controls();c.autoRotate=l==='global';c.autoRotateSpeed=.085;c.rotateSpeed=.78;c.enableDamping=true;c.dampingFactor=.08;state.globe.pointOfView({lat:state.country.lat,lng:state.country.lng,altitude:l==='space'?2.75:2.05},700)}}
+function setLevel(l){
+  state.level=l;
+  document.body.className=l+(state.vendorMode?' vendorMode':'')+(state.ownerAuthed?' krypteiaOn':'');
+  ['globe','national','personal'].forEach(id=>$(id).classList.remove('on'));
+  if(l==='global'||l==='space')$('globe').classList.add('on');else $(l).classList.add('on');
+  if(state.globe){const c=state.globe.controls();c.autoRotate=l==='global';c.autoRotateSpeed=.085;c.rotateSpeed=.78;c.enableDamping=true;c.dampingFactor=.08;state.globe.pointOfView({lat:state.country.lat,lng:state.country.lng,altitude:l==='space'?2.75:2.05},700)}
+  /* show balance badge at city level */
+  if(l==='personal'){$('balBadge').classList.add('show');$('balAmt').textContent=state.balance.toFixed(2)}
+  else $('balBadge').classList.remove('show');
+  /* minimize all sheets when going global */
+  if(l==='global')minimizeAll();
+}
 function goBack(){if(state.level==='personal'){openNational(state.country);return}if(state.level==='national'||state.level==='space'){setLevel('global');return}setLevel('global')}
 
 async function reverseGeocode(lat,lng){try{const ac=new AbortController();setTimeout(()=>ac.abort(),8000);const r=await fetch('https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat='+lat+'&lon='+lng+'&zoom=10&accept-language=en',{headers:{'Accept':'application/json'},signal:ac.signal});if(!r.ok)return null;return await r.json()}catch(e){return null}}
@@ -207,11 +272,304 @@ async function showPlaceInfo(lat,lng,geo){
   }catch(e){const wc=$('wikiCard');if(wc)wc.innerHTML='<em style="color:var(--muted)">Wikipedia unavailable.</em>'}
 }
 
-/* ── Channels (real demo feed) ── */
+/* ── Channels / posts ── */
 state.posts={global:[],local:[],private:[]};
 state.customVendors=[];
 
+/* ── Minimize all open UI ── */
+function minimizeAll(){
+  $('panelSheet').classList.remove('on','tall');
+  $('vendorSheet').classList.remove('on','min');
+  $('cmd').classList.remove('on');
+  $('loginOverlay').classList.remove('on');
+  closeTriMenu();
+}
+
+/* ── AVC Balance ── */
+function updateBalance(delta,animate=true){
+  state.balance=Math.max(0,state.balance+(+delta||0));
+  localStorage.astranovBalance=state.balance;
+  $('balAmt').textContent=state.balance.toFixed(2);
+  if(animate&&delta!==0){
+    const el=$('balBadge');el.classList.remove('pop');void el.offsetWidth;el.classList.add('pop');
+    setTimeout(()=>el.classList.remove('pop'),500);
+  }
+}
+
+function openRechargePanel(){
+  $('panelSheet').classList.add('on');$('panelSheet').classList.remove('tall');
+  $('panelTitle').textContent='⚡ RECHARGE AVC';
+  const opts=[10,25,50,100,250];
+  let selAmt=25;
+  const render=()=>{
+    $('panelBody').innerHTML=
+      '<div class="card"><div class="txTop"><b>Current Balance</b><b style="color:var(--g)">'+state.balance.toFixed(2)+' AVC</b></div></div>'+
+      '<div class="card"><div class="meta" style="margin-bottom:8px">SELECT AMOUNT</div>'+
+      '<div class="rchOptions">'+opts.map(a=>'<div class="rchOpt'+(a===selAmt?' sel':'')+'" data-amt="'+a+'"><div class="rchAmt">'+a+'</div><div class="rchLbl">AVC</div></div>').join('')+'</div>'+
+      '<div class="lField"><label>Or enter custom amount (AVC)</label>'+
+      '<input id="rchCustom" type="number" min="1" max="9999" placeholder="Custom amount" value="'+selAmt+'"></div>'+
+      '<div class="meta" style="margin-top:10px;margin-bottom:6px">PAYMENT METHOD</div>'+
+      '<div class="rchOptions">'+
+        '<div class="rchOpt sel" id="pm1"><div style="font-size:18px">💳</div><div class="rchLbl">Card</div></div>'+
+        '<div class="rchOpt" id="pm2"><div style="font-size:18px">🏦</div><div class="rchLbl">Bank</div></div>'+
+        '<div class="rchOpt" id="pm3"><div style="font-size:18px">📱</div><div class="rchLbl">Mobile</div></div>'+
+      '</div>'+
+      '<button class="ribAction" id="rchSubmit" style="width:100%;height:44px;margin-top:12px">RECHARGE '+selAmt+' AVC</button>'+
+      '<div id="rchMsg" class="lErr"></div></div>';
+    $('panelBody').querySelectorAll('.rchOpt[data-amt]').forEach(el=>{
+      el.onclick=()=>{selAmt=+el.dataset.amt;$('rchCustom').value=selAmt;render()}});
+    $('rchCustom').oninput=e=>{selAmt=Math.max(1,+e.target.value||1)};
+    $('rchSubmit').onclick=async()=>{
+      const amt=+(($('rchCustom')?.value)||selAmt);
+      if(!amt||amt<1){$('rchMsg').textContent='Enter a valid amount';return}
+      $('rchMsg').textContent='Processing…';
+      try{
+        const r=await fetch('/api/balance/recharge',{method:'POST',headers:{'Content-Type':'application/json'},
+          body:JSON.stringify({amount:amt,token:state.user?.token||null}),signal:AbortSignal.timeout(8000)});
+        if(r.ok){const j=await r.json();updateBalance(j.credited||amt);$('panelSheet').classList.remove('on');toast('+'+(j.credited||amt)+' AVC credited!',3000);return}
+        $('rchMsg').textContent='Payment gateway error. Try again.';
+      }catch(e){
+        /* Backend not yet deployed — demo mode: credit instantly */
+        updateBalance(amt);$('panelSheet').classList.remove('on');toast('[DEMO] +'+amt+' AVC credited',3000);
+      }
+    };
+  };
+  render();
+}
+
+/* ── User Login / Register ── */
+async function doLogin(email,password,phone){
+  const err=$('lErr');if(err)err.textContent='Signing in…';
+  try{
+    const r=await fetch('/api/auth/login',{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({email:email||undefined,password:password||undefined,phone:phone||undefined}),
+      signal:AbortSignal.timeout(8000)});
+    if(r.ok){
+      const j=await r.json();
+      state.user={id:j.id,name:j.name||email||phone,email:j.email||email,phone:j.phone||phone,token:j.token||''};
+      state.balance=j.balance||state.balance;
+      $('balAmt').textContent=state.balance.toFixed(2);
+      localStorage.astranovUser=JSON.stringify(state.user);
+      localStorage.astranovBalance=state.balance;
+      $('loginOverlay').classList.remove('on');
+      $('userBtn').classList.add('authed');
+      $('userBtn').textContent='✓';
+      toast('Welcome, '+(j.name||'User')+'!',3000);
+      return;
+    }
+    const j=await r.json().catch(()=>({}));
+    if(err)err.textContent=j.error||'Login failed. Check credentials.';
+  }catch(e){
+    /* Backend not available — demo login */
+    const name=email?email.split('@')[0]:phone||'Guest';
+    state.user={id:'demo-'+Date.now(),name,email:email||'',phone:phone||'',token:'demo'};
+    localStorage.astranovUser=JSON.stringify(state.user);
+    $('loginOverlay').classList.remove('on');
+    $('userBtn').classList.add('authed');$('userBtn').textContent='✓';
+    toast('[DEMO] Signed in as '+name,3000);
+  }
+}
+async function doRegister(name,email,phone,password){
+  const err=$('lErr');if(err)err.textContent='Creating account…';
+  if(!name||(!email&&!phone)||!password){if(err)err.textContent='Name, email or phone, and password are required';return}
+  try{
+    const r=await fetch('/api/auth/register',{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({name,email,phone,password}),signal:AbortSignal.timeout(10000)});
+    if(r.ok){await doLogin(email,password,phone);return}
+    const j=await r.json().catch(()=>({}));
+    if(err)err.textContent=j.error||'Registration failed.';
+  }catch(e){await doLogin(email,password,phone)}
+}
+function doLogout(){
+  state.user=null;localStorage.removeItem('astranovUser');
+  $('userBtn').classList.remove('authed');$('userBtn').textContent='👤';
+  $('loginOverlay').classList.remove('on');
+  fetch('/api/auth/logout',{method:'POST'}).catch(()=>{});
+  toast('Signed out');
+}
+
+function openLoginPanel(){
+  renderLoginBox('login');
+  $('loginOverlay').classList.add('on');
+}
+
+function renderLoginBox(tab){
+  const box=$('loginBox');
+  if(state.user){
+    box.innerHTML=
+      '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">'+
+      '<div style="font-size:14px;font-weight:1000;color:var(--b);letter-spacing:.1em">👤 '+esc(state.user.name)+'</div>'+
+      '<button onclick="$(\'loginOverlay\').classList.remove(\'on\')" style="width:34px;height:34px;border-radius:50%;border:1px solid rgba(255,255,255,.1);background:transparent;color:var(--muted);font-size:18px">×</button></div>'+
+      '<div class="card"><div class="meta">Email: '+esc(state.user.email||'—')+'</div>'+
+      '<div class="meta">Phone: '+esc(state.user.phone||'—')+'</div>'+
+      '<div class="txTop" style="margin-top:6px"><span>Balance</span><b style="color:var(--g)">'+state.balance.toFixed(2)+' AVC</b></div></div>'+
+      '<button class="ribAction" onclick="openRechargePanel();$(\'loginOverlay\').classList.remove(\'on\')" style="width:100%;height:42px;margin-top:8px">⚡ RECHARGE AVC</button>'+
+      '<button class="smallBtn" onclick="doLogout()" style="width:100%;margin-top:8px">Sign out</button>';
+    return;
+  }
+  const isReg=tab==='register';
+  box.innerHTML=
+    '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">'+
+    '<div style="font-size:14px;font-weight:1000;color:var(--b);letter-spacing:.1em">AstranoV Account</div>'+
+    '<button onclick="$(\'loginOverlay\').classList.remove(\'on\')" style="width:34px;height:34px;border-radius:50%;border:1px solid rgba(255,255,255,.1);background:transparent;color:var(--muted);font-size:18px">×</button></div>'+
+    '<div class="lTabs">'+
+    '<button class="'+(isReg?'':'active')+'" id="lTabLogin">SIGN IN</button>'+
+    '<button class="'+(isReg?'active':'')+'" id="lTabReg">REGISTER</button>'+
+    '</div>'+
+    (isReg?
+      '<div class="lField"><label>Full name</label><input id="rgName" placeholder="Your full name" autocomplete="name"></div>'+
+      '<div class="lField"><label>Email</label><input id="rgEmail" type="email" placeholder="you@email.com" autocomplete="email"></div>'+
+      '<div class="lField"><label>Phone</label><input id="rgPhone" type="tel" placeholder="+30 6900 000 000" autocomplete="tel"></div>'+
+      '<div class="lField"><label>Password</label><input id="rgPass" type="password" placeholder="Choose password" autocomplete="new-password"></div>'+
+      '<button class="ribAction" id="rgSubmit" style="width:100%;height:44px;margin-top:14px">CREATE ACCOUNT</button>'+
+      '<div class="lErr" id="lErr"></div>'
+    :
+      '<div class="lField"><label>Email</label><input id="liEmail" type="email" placeholder="you@email.com" autocomplete="email"></div>'+
+      '<div class="lField"><label>Password</label><input id="liPass" type="password" placeholder="Password" autocomplete="current-password"></div>'+
+      '<div class="lField"><label>Or phone number</label><input id="liPhone" type="tel" placeholder="+30 6900 000 000" autocomplete="tel"></div>'+
+      '<button class="ribAction" id="liSubmit" style="width:100%;height:44px;margin-top:14px">SIGN IN</button>'+
+      '<div class="lErr" id="lErr"></div>'
+    );
+  $('lTabLogin').onclick=()=>renderLoginBox('login');
+  $('lTabReg').onclick=()=>renderLoginBox('register');
+  if(isReg)$('rgSubmit').onclick=()=>doRegister($('rgName')?.value,$('rgEmail')?.value,$('rgPhone')?.value,$('rgPass')?.value);
+  else $('liSubmit').onclick=()=>doLogin($('liEmail')?.value,$('liPass')?.value,$('liPhone')?.value);
+}
+
+/* ── Chat Circles ── */
+function initCircle(id,name,scope,type='public'){
+  if(!state.circles[id])state.circles[id]={id,name,scope,type,messages:[],since:0};
+  return state.circles[id];
+}
+function getDefaultCircles(){
+  const g=initCircle('global','🌍 Global Circle','global');
+  const cid=state.country?.id||'xx';
+  const n=initCircle('nat-'+cid,'🏴 '+(state.country?.name||'National')+' Circle','national');
+  const lid=state.city?.id||'geo';
+  const l=initCircle('loc-'+lid,'🏙 '+(state.city?.name||'Local')+' Circle','local');
+  return[g,n,l];
+}
+async function openCircle(id){
+  const c=state.circles[id]||initCircle(id,id,'custom');
+  $('panelSheet').classList.add('on','tall');
+  $('panelTitle').textContent=esc(c.name);
+  renderCircle(id);
+  /* poll for new messages */
+  try{
+    const r=await fetch('/api/chat/messages?circle='+encodeURIComponent(id)+'&since='+(c.since||0),{signal:AbortSignal.timeout(5000)});
+    if(r.ok){const j=await r.json();(j.messages||[]).forEach(m=>{if(!c.messages.find(x=>x.id===m.id))c.messages.push(m)});c.since=j.since||c.since;renderCircle(id)}
+  }catch(e){}
+}
+function renderCircle(id){
+  const c=state.circles[id];if(!c)return;
+  const me=state.user?.name||'Guest';
+  const msgs=c.messages.slice(-60);
+  $('panelBody').innerHTML=
+    '<div class="circleMsgs" id="circleMsgs">'+
+    (msgs.length?msgs.map(m=>{
+      const isMe=m.author===me;const isSys=m.author==='System';
+      return '<div class="cMsg '+(isSys?'sys':isMe?'me':'other')+'">'+
+        (isSys?'':(isMe?'':'<div class="cWho">'+esc(m.author)+'</div>'))+
+        '<div class="cBody">'+esc(m.text)+'</div></div>'}).join('')
+      :'<div style="padding:24px 0;text-align:center;color:var(--muted);font-size:12px">No messages yet. Be first to say hello.</div>')+
+    '</div>'+
+    '<div class="cIn"><input id="cMsgIn" placeholder="'+(state.user?'Message '+esc(c.name)+'…':'Sign in to chat…')+'" '+(state.user?'':'readonly')+'><button id="cSendBtn">➤</button></div>'+
+    (c.scope==='custom'?'':'<button class="smallBtn" id="createCircleBtn" style="width:100%;margin-top:8px;font-size:11px">+ Create new circle</button>');
+  const box=$('circleMsgs');if(box)box.scrollTop=box.scrollHeight;
+  $('cSendBtn').onclick=()=>sendCircleMsg(id);
+  $('cMsgIn').onkeydown=e=>{if(e.key==='Enter')sendCircleMsg(id)};
+  if(!state.user)$('cMsgIn').onclick=openLoginPanel;
+  const cb=$('createCircleBtn');if(cb)cb.onclick=openCreateCircle;
+}
+async function sendCircleMsg(id){
+  if(!state.user){openLoginPanel();return}
+  const inp=$('cMsgIn');const text=inp?.value?.trim();if(!text)return;
+  inp.value='';
+  const msg={id:'m-'+Date.now(),circleId:id,author:state.user.name,text,time:Date.now()};
+  state.circles[id].messages.push(msg);
+  renderCircle(id);
+  try{
+    await fetch('/api/chat/send',{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({circleId:id,text,token:state.user.token}),signal:AbortSignal.timeout(5000)});
+  }catch(e){}
+}
+function openCreateCircle(){
+  $('panelSheet').classList.add('on','tall');
+  $('panelTitle').textContent='💬 NEW CIRCLE';
+  let circleType='public';
+  $('panelBody').innerHTML=
+    '<div class="card">'+
+    '<div class="lField"><label>Circle name</label><input id="ccName" placeholder="e.g. Rhodes Foodies"></div>'+
+    '<div class="lField"><label>Scope / region</label><input id="ccScope" placeholder="e.g. Rhodes, Global, Greece…" value="'+(state.city?.name||state.country?.name||'')+'"></div>'+
+    '<div class="meta" style="margin-top:12px;margin-bottom:6px">TYPE</div>'+
+    '<div style="display:flex;gap:8px">'+
+    '<div class="rchOpt sel" id="ccPub" style="flex:1"><div style="font-size:18px">🌐</div><div class="rchLbl">Public</div></div>'+
+    '<div class="rchOpt" id="ccPrv" style="flex:1"><div style="font-size:18px">🔒</div><div class="rchLbl">Private</div></div>'+
+    '</div></div>'+
+    '<button class="ribAction" id="ccCreate" style="width:100%;height:44px;margin-top:10px">CREATE CIRCLE</button>'+
+    '<div class="lErr" id="ccErr"></div>';
+  $('ccPub').onclick=()=>{circleType='public';$('ccPub').classList.add('sel');$('ccPrv').classList.remove('sel')};
+  $('ccPrv').onclick=()=>{circleType='private';$('ccPrv').classList.add('sel');$('ccPub').classList.remove('sel')};
+  $('ccCreate').onclick=async()=>{
+    const name=$('ccName').value.trim();const scope=$('ccScope').value.trim();
+    if(!name){$('ccErr').textContent='Circle name required';return}
+    if(!state.user){openLoginPanel();return}
+    const id='cus-'+Date.now();
+    try{
+      const r=await fetch('/api/chat/circles',{method:'POST',headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({name,scope,type:circleType,token:state.user.token}),signal:AbortSignal.timeout(6000)});
+      if(r.ok){const j=await r.json();initCircle(j.id||id,name,scope,circleType);state.customCircles.push({id:j.id||id,name,scope,type:circleType});openCircle(j.id||id);return}
+    }catch(e){}
+    /* demo fallback */
+    initCircle(id,name,scope,circleType);
+    state.customCircles.push({id,name,scope,type:circleType});
+    state.circles[id].messages.push({id:'sys-1',author:'System',text:'Circle "'+name+'" created. Invite members by sharing this space.',time:Date.now()});
+    openCircle(id);
+  };
+}
+function openCircleList(){
+  $('panelSheet').classList.add('on');$('panelSheet').classList.remove('tall');
+  $('panelTitle').textContent='💬 CIRCLES';
+  const defs=getDefaultCircles();
+  const custom=state.customCircles.map(c=>state.circles[c.id]).filter(Boolean);
+  $('panelBody').innerHTML=
+    '<div class="card"><div class="meta" style="margin-bottom:6px">DEFAULT CIRCLES</div>'+
+    defs.map(c=>'<div class="circleCard" data-cid="'+esc(c.id)+'"><div><div class="cName">'+esc(c.name)+'</div><div class="cMeta">'+esc(c.scope)+' · '+c.type+' · '+c.messages.length+' msgs</div></div><span style="color:var(--b)">›</span></div>').join('')+'</div>'+
+    '<div class="card"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px"><div class="meta">MY CIRCLES</div><button class="smallBtn gold" id="createCircleBtn2" style="font-size:11px">+ New</button></div>'+
+    (custom.length?custom.map(c=>'<div class="circleCard '+(c.type==='private'?'prv':'')+'" data-cid="'+esc(c.id)+'"><div><div class="cName">'+esc(c.name)+'</div><div class="cMeta">'+esc(c.scope)+' · '+c.type+' · '+c.messages.length+' msgs</div></div><span style="color:var(--b)">›</span></div>').join('')
+    :'<div class="meta">No circles yet.</div>')+'</div>';
+  $('panelBody').querySelectorAll('.circleCard').forEach(el=>el.onclick=()=>openCircle(el.dataset.cid));
+  const cb=$('createCircleBtn2');if(cb)cb.onclick=openCreateCircle;
+}
+
 function openChannel(name){
+  $('panelSheet').classList.add('on');$('panelSheet').classList.remove('tall');
+  $('panelTitle').textContent=name.toUpperCase()+' CHANNEL';
+  const list=state.posts[name]||[];
+  $('panelBody').innerHTML=(list.length
+    ? list.slice().reverse().map(p=>
+        '<div class="card feedPost"><div class="txTop"><b>'+esc(p.author)+'</b><span class="meta">'+new Date(p.time).toLocaleString()+'</span></div>'+
+        '<div class="meta">📍 '+esc(p.place||'')+'</div>'+
+        (p.mediaURL?(p.mediaType==='video'
+          ? '<video src="'+esc(p.mediaURL)+'" controls playsinline></video>'
+          : '<img src="'+esc(p.mediaURL)+'">'):'')+
+        (p.text?'<div style="margin-top:8px;font-size:13px">'+esc(p.text)+'</div>':'')+
+        '</div>'
+      ).join('')
+    : '<div class="feedEmpty">No posts in '+esc(name)+' yet.<br>Long-press any location → VIDEO → '+esc(name.toUpperCase())+' to record.</div>')+
+    '<button class="smallBtn" style="width:100%;margin-top:8px;font-size:11px" onclick="openCircle(\''+name+'\')">💬 Open '+esc(name)+' chat circle</button>';
+}
+
+/* ── Session restore ── */
+(function restoreSession(){
+  try{
+    const u=localStorage.astranovUser;
+    if(u){state.user=JSON.parse(u);$('userBtn').classList.add('authed');$('userBtn').textContent='✓'}
+  }catch(e){}
+  state.balance=+(localStorage.astranovBalance||0);
+})();
+
+
   $('panelSheet').classList.add('on');$('panelSheet').classList.remove('tall');
   $('panelTitle').textContent=name.toUpperCase()+' CHANNEL';
   const list=state.posts[name]||[];
@@ -426,6 +784,9 @@ function runHandled(cmd){
   if(/private channel|open private/.test(cmd)){openChannel('private');return true}
   if(cmd.includes('account')){accounting();return true}
   if(cmd==='back'||cmd.startsWith('go back')){goBack();return true}
+  if(cmd.includes('circle')||cmd.includes('chat')){openCircleList();return true}
+  if(cmd.includes('login')||cmd.includes('sign in')||cmd.includes('account')){openLoginPanel();return true}
+  if(cmd.includes('recharge')||cmd.includes('balance')||cmd.includes('top up')){openRechargePanel();return true}
   for(const c of countries){
     if(cmd.includes(c.name.toLowerCase())){state.country=c;openNational(c);return true}
     const ct=c.cities.find(x=>cmd.includes(x.name.toLowerCase()));
@@ -764,16 +1125,13 @@ function triOpts(){
       {icon:'🍽', label:'FOOD',   gold:true,action:()=>openVendorForm('food')},
       {icon:'🔧',label:'SERVICE',gold:true,action:()=>openVendorForm('service')},
     ]},
-    {icon:'📍',label:'LOCATION',sub:[
-      {icon:'✓', label:'CONFIRM',action:setUserHere},
-      {icon:'📡',label:'SHARE',  action:()=>{
-        const ll=triState.pressLL;if(!ll){toast('Nothing to share');return}
-        const url='https://www.google.com/maps/search/?api=1&query='+ll.lat+','+ll.lng;
-        if(navigator.share)navigator.share({title:'AstranoV location',text:'Pinned location',url}).catch(()=>{});
-        else if(navigator.clipboard){navigator.clipboard.writeText(url).then(()=>toast('Link copied'))}
-        else toast(url);
+    {icon:'💬',label:'CIRCLES',sub:[
+      {icon:'🌍',label:'GLOBAL',  action:()=>openCircle('global')},
+      {icon:'🏴', label:'NATIONAL',action:()=>openCircle('nat-'+(state.country?.id||'xx'))},
+      {icon:'🏙',label:'LOCAL',   action:()=>{
+        if(!state.city){toast('Enter a city first');return}
+        openCircle('loc-'+(state.city?.id||'geo'))
       }},
-      {icon:'✕', label:'CANCEL', action:closeTriMenu},
     ]},
   ]
 }
@@ -1083,7 +1441,8 @@ function accounting(){
 function editItem(id){if(!state.vendorMode)return;const it=state.vendor.items.find(x=>x.id===id);const n=prompt('Name',it.name);if(n===null)return;it.name=n||it.name;it.desc=prompt('Description',it.desc)||it.desc;it.price=+(prompt('Price (AVC)',it.price)||it.price);it.kg=+(prompt('kg/L',it.kg)||it.kg);it.photo=prompt('Photo URL',it.photo)||it.photo;renderVendor()}
 
 /* ── Krypteia: Owner-only AI admin panel ── */
-async function openOwnerGate(){
+async function openOwnerGate(callback){
+  state.ownerAuthCallback=callback||null;
   $('ownerGate').classList.add('on');
   $('ownerEmail').value='';$('ownerPhone').value='';$('ownerMsg').textContent='';
 }
@@ -1109,6 +1468,7 @@ function activateKrypteia(){
   krypLog('Krypteia activated. Session: '+new Date().toISOString());
   krypLog('WARNING: Backend auth unavailable. Credentials not server-verified. Deploy /api/auth/owner-check for production security.');
   toast('Krypteia active',2000);
+  if(state.ownerAuthCallback){const cb=state.ownerAuthCallback;state.ownerAuthCallback=null;setTimeout(cb,80)}
 }
 function krypLog(msg){const el=$('krypLog');el.textContent+=msg+'\n';el.scrollTop=el.scrollHeight}
 
@@ -1174,10 +1534,43 @@ $('closeVendor').onclick=closeVendor;
 $('vendorHead').onclick=e=>{if(e.target.id!=='closeVendor')$('vendorSheet').classList.remove('min')};
 $('closePanel').onclick=()=>$('panelSheet').classList.remove('on');
 $('bright').oninput=applyBrightness;
-document.addEventListener('keydown',e=>{if(e.key==='Escape'){$('cmd').classList.remove('on');$('panelSheet').classList.remove('on');$('ownerGate').classList.remove('on');closeVendor();closeTriMenu()}});
+document.addEventListener('keydown',e=>{if(e.key==='Escape'){$('cmd').classList.remove('on');$('panelSheet').classList.remove('on');$('ownerGate').classList.remove('on');$('loginOverlay').classList.remove('on');closeVendor();closeTriMenu()}});
 document.querySelectorAll('.sheet,.panel').forEach(x=>{x.addEventListener('touchmove',e=>e.stopPropagation(),{passive:true});x.addEventListener('wheel',e=>e.stopPropagation(),{passive:true})});
+$('loginOverlay').addEventListener('touchmove',e=>e.stopPropagation(),{passive:true});
+$('loginBox').addEventListener('touchmove',e=>e.stopPropagation(),{passive:true});
+$('loginOverlay').onclick=e=>{if(e.target===$('loginOverlay'))$('loginOverlay').classList.remove('on')};
+
+/* ── 13-second user button reveal ── */
+setTimeout(()=>$('userBtn').classList.add('show'),13000);
+
+/* ── Idle fade for balance + user button ── */
+let _fadeTimer;
+function _resetFade(){
+  $('userBtn').classList.remove('ui-faded');
+  $('balBadge').classList.remove('ui-faded');
+  clearTimeout(_fadeTimer);
+  _fadeTimer=setTimeout(()=>{
+    $('userBtn').classList.add('ui-faded');
+    $('balBadge').classList.add('ui-faded');
+  },6000);
+}
+document.addEventListener('touchstart',_resetFade,{passive:true});
+document.addEventListener('pointerdown',_resetFade,{passive:true});
+
+/* ── Wire up user + balance buttons ── */
+$('userBtn').onclick=()=>{
+  if(!state.user)renderLoginBox('login');
+  else renderLoginBox('login');
+  $('loginOverlay').classList.toggle('on');
+};
+$('balPlusBtn').onclick=(e)=>{e.stopPropagation();openRechargePanel()};
+$('balBadge').onclick=()=>{if(!state.user)openLoginPanel();else openRechargePanel()};
+
+/* ── Globe click → minimize all ── */
+/* (handled inside setLevel global) */
 
 initGlobe();
 applyBrightness();
+_resetFade();
 })();
 </script></body></html>
