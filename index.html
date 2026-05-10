@@ -66,6 +66,16 @@
 .triOpt.gold{border-color:var(--g);color:var(--g);box-shadow:0 0 24px rgba(215,182,80,.5),inset 0 0 12px rgba(215,182,80,.07)}
 .triOpt.gold:active{box-shadow:0 0 36px rgba(215,182,80,.9)}
 .triSvg{position:absolute;inset:0;pointer-events:none;overflow:visible}
+.sheet.tall{max-height:90vh}
+.formRow{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
+.formRow .rib{flex:1 1 78px;min-width:74px}
+.formField{display:block;margin-top:8px}
+.formField label{display:block;font-size:9px;font-weight:1000;letter-spacing:.12em;color:rgba(255,232,166,.7);text-transform:uppercase;margin-bottom:3px}
+.formField input,.formField select,.formField textarea{width:100%;background:rgba(0,215,255,.07);border:1px solid rgba(0,215,255,.22);border-radius:10px;color:#fff;padding:8px 11px;outline:0;font-size:13px}
+.photoBox{padding:30px 14px;text-align:center;background:rgba(255,255,255,.04);border:1px dashed rgba(0,215,255,.3);border-radius:11px;color:var(--muted);font-size:11px;cursor:pointer}
+.feedPost video,.feedPost img{width:100%;max-height:240px;object-fit:cover;border-radius:11px;margin-top:8px;background:#000}
+.feedEmpty{padding:24px 12px;text-align:center;color:var(--muted);font-size:12px}
+.aiBubble{padding:10px 12px;border-radius:14px;background:rgba(0,215,255,.07);border:1px solid rgba(0,215,255,.18);font-size:13px;line-height:1.4;margin:8px 0}
 </style></head><body class="global">
 <div id="stars"></div>
 <div id="title">AstranoV</div>
@@ -87,6 +97,9 @@
     <button data-cmd="Rhodes">Rhodes</button>
     <button data-cmd="pizza">Pizza</button>
     <button class="gold" data-cmd="accounting">Accounting</button>
+    <button data-cmd="global channel">Global feed</button>
+    <button data-cmd="local channel">Local feed</button>
+    <button data-cmd="private channel">Private feed</button>
     <button data-cmd="back">Back</button>
   </div>
 </div>
@@ -194,6 +207,242 @@ async function showPlaceInfo(lat,lng,geo){
   }catch(e){const wc=$('wikiCard');if(wc)wc.innerHTML='<em style="color:var(--muted)">Wikipedia unavailable.</em>'}
 }
 
+/* ── Channels (real demo feed) ── */
+state.posts={global:[],local:[],private:[]};
+state.customVendors=[];
+
+function openChannel(name){
+  $('panelSheet').classList.add('on');$('panelSheet').classList.remove('tall');
+  $('panelTitle').textContent=name.toUpperCase()+' CHANNEL';
+  const list=state.posts[name]||[];
+  $('panelBody').innerHTML=list.length
+    ? list.slice().reverse().map(p=>
+        '<div class="card feedPost"><div class="txTop"><b>'+esc(p.author)+'</b><span class="meta">'+new Date(p.time).toLocaleString()+'</span></div>'+
+        '<div class="meta">📍 '+esc(p.place||'')+'</div>'+
+        (p.mediaURL?(p.mediaType==='video'
+          ? '<video src="'+esc(p.mediaURL)+'" controls playsinline></video>'
+          : '<img src="'+esc(p.mediaURL)+'">'):'')+
+        (p.text?'<div style="margin-top:8px;font-size:13px">'+esc(p.text)+'</div>':'')+
+        '</div>'
+      ).join('')
+    : '<div class="feedEmpty">No posts in '+esc(name)+' yet.<br>Long-press any location → VIDEO → '+esc(name.toUpperCase())+' to record.</div>';
+}
+
+function captureMedia(channel,mode){
+  const inp=document.createElement('input');
+  inp.type='file';
+  inp.accept=mode==='video'?'video/*':'image/*';
+  inp.setAttribute('capture','environment');
+  inp.onchange=()=>{
+    const f=inp.files&&inp.files[0];if(!f)return;
+    const url=URL.createObjectURL(f);
+    const post={id:'POST-'+Date.now(),channel,
+      author:state.ownerAuthed?'Owner':'Guest',
+      lat:triState.pressLL?.lat||state.city?.lat||state.country?.lat,
+      lng:triState.pressLL?.lng||state.city?.lng||state.country?.lng,
+      place:state.city?.name||state.country?.name||'Earth',
+      time:Date.now(),mediaURL:url,mediaType:mode,text:''};
+    state.posts[channel]=state.posts[channel]||[];
+    state.posts[channel].push(post);
+    toast(mode==='video'?'Video posted to '+channel:'Photo posted to '+channel);
+    openChannel(channel);
+  };
+  inp.click();
+}
+function captureVideo(channel){captureMedia(channel,'video')}
+
+/* ── Vendor registration form (real) ── */
+function openVendorForm(type){
+  const ll=triState.pressLL||(state.city?{lat:state.city.lat,lng:state.city.lng}:null);
+  if(!ll){toast('Open a city first, then long-press to add a vendor');return}
+  state.tempVendor={id:'V-'+Date.now(),type,name:'',lat:ll.lat,lng:ll.lng,items:[],
+    emoji:type==='market'?'🥬':type==='food'?'🍽':'🔧'};
+  $('panelSheet').classList.add('on','tall');
+  $('panelTitle').textContent='NEW '+type.toUpperCase()+' VENDOR';
+  renderVendorForm();
+}
+
+function renderVendorForm(){
+  const v=state.tempVendor;if(!v)return;
+  $('panelTitle').textContent='NEW '+v.type.toUpperCase()+' VENDOR';
+  $('panelBody').innerHTML=
+    '<div class="card">'+
+      '<div class="formField"><label>Vendor name</label><input id="vfName" value="'+esc(v.name)+'" placeholder="e.g. Maria’s Bakery"></div>'+
+      '<div class="meta" style="margin-top:8px">📍 '+v.lat.toFixed(5)+', '+v.lng.toFixed(5)+'</div>'+
+    '</div>'+
+    '<div class="card"><div class="txTop"><b>PRODUCTS · '+v.items.length+'</b><button class="smallBtn gold" id="vfAddItem">+ Add product</button></div>'+
+      (v.items.length?'<div style="margin-top:10px">'+v.items.map((it,i)=>
+        '<div class="ledgerRow"><div class="txTop"><b>'+esc(it.name)+'</b><span style="color:var(--g)">'+money(it.price)+'</span></div>'+
+        '<div class="meta">'+(+it.kg).toFixed(2)+' kg · '+(+it.ml).toFixed(2)+' L · '+esc(it.temp)+' · '+it.prepMin+' min · size '+esc(it.size)+'</div>'+
+        (it.photo?'<img src="'+esc(it.photo)+'" style="width:64px;height:64px;border-radius:8px;object-fit:cover;margin-top:6px">':'')+
+        '<div class="txBtns" style="margin-top:6px"><button class="smallBtn" data-edit="'+i+'">Edit</button><button class="smallBtn" data-del="'+i+'">Delete</button></div></div>'
+      ).join('')+'</div>':'<div class="meta" style="margin-top:8px">No products yet. Tap + Add product.</div>')+
+    '</div>'+
+    '<div style="display:flex;gap:6px"><button class="smallBtn" id="vfCancel" style="flex:1">Cancel</button><button class="ribAction" id="vfSave" style="flex:2;height:42px">SAVE VENDOR</button></div>';
+  $('vfName').oninput=e=>state.tempVendor.name=e.target.value;
+  $('vfAddItem').onclick=()=>openProductForm(null);
+  $('vfSave').onclick=saveTempVendor;
+  $('vfCancel').onclick=()=>{state.tempVendor=null;$('panelSheet').classList.remove('on','tall')};
+  $('panelBody').querySelectorAll('[data-edit]').forEach(b=>b.onclick=()=>openProductForm(+b.dataset.edit));
+  $('panelBody').querySelectorAll('[data-del]').forEach(b=>b.onclick=()=>{state.tempVendor.items.splice(+b.dataset.del,1);renderVendorForm()});
+}
+
+function openProductForm(idx){
+  const v=state.tempVendor;if(!v)return;
+  const isNew=idx===null;
+  const it=isNew?{name:'',desc:'',photo:'',price:0,kg:0,ml:0,temp:'room',prepMin:0,size:'M'}:{...v.items[idx]};
+  $('panelTitle').textContent=(isNew?'ADD':'EDIT')+' PRODUCT';
+  const tempOpt=t=>['cold','room','hot','frozen'].map(x=>'<option value="'+x+'"'+(t===x?' selected':'')+'>'+x.charAt(0).toUpperCase()+x.slice(1)+'</option>').join('');
+  const sizeOpt=s=>['XS','S','M','L','XL','XXL'].map(x=>'<option'+(s===x?' selected':'')+'>'+x+'</option>').join('');
+  $('panelBody').innerHTML=
+    '<div class="card">'+
+      '<div id="pfPhotoWrap">'+(it.photo?'<img src="'+esc(it.photo)+'" style="width:100%;max-height:160px;object-fit:cover;border-radius:11px">':'<div class="photoBox">📷 Tap to capture or choose photo</div>')+'</div>'+
+      '<button class="smallBtn" id="pfPhoto" style="width:100%;margin-top:6px">📷 Capture / choose photo</button>'+
+    '</div>'+
+    '<div class="card">'+
+      '<div class="formField"><label>Name</label><input id="pfName" value="'+esc(it.name)+'" placeholder="Product name"></div>'+
+      '<div class="formField"><label>Description</label><input id="pfDesc" value="'+esc(it.desc)+'" placeholder="Short description"></div>'+
+      '<div class="formRow">'+
+        '<div class="rib"><label>Price (AVC)</label><input id="pfPrice" type="number" step="0.01" min="0" value="'+it.price+'"></div>'+
+        '<div class="rib"><label>Weight (kg)</label><input id="pfKg" type="number" step="0.01" min="0" value="'+it.kg+'"></div>'+
+        '<div class="rib"><label>Volume (L)</label><input id="pfMl" type="number" step="0.01" min="0" value="'+it.ml+'"></div>'+
+      '</div>'+
+      '<div class="formRow">'+
+        '<div class="rib"><label>Temp</label><select id="pfTemp">'+tempOpt(it.temp)+'</select></div>'+
+        '<div class="rib"><label>Prep (min)</label><input id="pfPrep" type="number" min="0" value="'+it.prepMin+'"></div>'+
+        '<div class="rib"><label>Size</label><select id="pfSize">'+sizeOpt(it.size)+'</select></div>'+
+      '</div>'+
+    '</div>'+
+    '<div style="display:flex;gap:6px"><button class="smallBtn" id="pfCancel" style="flex:1">Cancel</button><button class="ribAction" id="pfSave" style="flex:2;height:42px">'+(isNew?'ADD':'SAVE')+'</button></div>';
+  $('pfPhoto').onclick=()=>{
+    const inp=document.createElement('input');inp.type='file';inp.accept='image/*';inp.setAttribute('capture','environment');
+    inp.onchange=()=>{const f=inp.files&&inp.files[0];if(!f)return;
+      const url=URL.createObjectURL(f);it.photo=url;
+      $('pfPhotoWrap').innerHTML='<img src="'+url+'" style="width:100%;max-height:160px;object-fit:cover;border-radius:11px">'};
+    inp.click();
+  };
+  $('pfCancel').onclick=renderVendorForm;
+  $('pfSave').onclick=()=>{
+    it.name=$('pfName').value.trim()||'Product';
+    it.desc=$('pfDesc').value.trim();
+    it.price=+$('pfPrice').value||0;
+    it.kg=+$('pfKg').value||0;
+    it.ml=+$('pfMl').value||0;
+    it.temp=$('pfTemp').value;
+    it.prepMin=+$('pfPrep').value||0;
+    it.size=$('pfSize').value;
+    it.id=it.id||'P-'+Date.now();
+    if(isNew)v.items.push(it);else v.items[idx]=it;
+    renderVendorForm();
+  };
+}
+
+function saveTempVendor(){
+  const v=state.tempVendor;if(!v)return;
+  if(!v.name.trim()){toast('Vendor name required');return}
+  if(!v.items.length){toast('Add at least one product');return}
+  state.customVendors.push(v);
+  state.tempVendor=null;
+  $('panelSheet').classList.remove('on','tall');
+  toast('Vendor saved: '+v.name);
+  if(state.cityMap&&state.city)drawCity();
+}
+
+function setUserHere(){
+  const ll=triState.pressLL;
+  if(!ll){toast('Long-press a map first');return}
+  if(state.city){
+    state.city={...state.city,lat:ll.lat,lng:ll.lng};
+    drawCity();toast('Your location set');
+  }else{
+    openCity(cityFromGeo(null,ll.lat,ll.lng));
+    toast('Opened your location');
+  }
+}
+
+/* ── AI cycling backend + hands-free voice ── */
+async function aiAsk(text){
+  const ctx={text,level:state.level,country:state.country?.name||null,city:state.city?.name||null,vendor:state.vendor?.name||null,ts:Date.now()};
+  const eps=['/api/ai/user','/api/ai/krypteia'];
+  for(const ep of eps){
+    try{
+      const ac=new AbortController();const tm=setTimeout(()=>ac.abort(),12000);
+      const r=await fetch(ep,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(ctx),signal:ac.signal});
+      clearTimeout(tm);
+      if(r.ok){const j=await r.json();if(j&&typeof j==='object')return j}
+    }catch(e){}
+  }
+  return{error:'AI backend unavailable. Manual mode active.',text:''};
+}
+
+function speak(text){
+  if(!text||!('speechSynthesis' in window))return;
+  try{speechSynthesis.cancel();const u=new SpeechSynthesisUtterance(text);u.lang=navigator.language||'en-US';u.rate=1.05;speechSynthesis.speak(u)}catch(e){}
+}
+
+function execAIAction(act){
+  if(!act||!act.type)return;
+  switch(act.type){
+    case 'navigate':{
+      if(act.country){const c=countries.find(x=>x.name.toLowerCase()===String(act.country).toLowerCase());if(c){state.country=c;openNational(c);return}}
+      if(act.city)run(act.city);
+      break;
+    }
+    case 'open_channel':if(act.channel)openChannel(act.channel);break;
+    case 'open_vendor':if(state.vendors){const vN=String(act.name||'').toLowerCase();const v=state.vendors.find(x=>x.name.toLowerCase().includes(vN));if(v)openVendor(v)}break;
+    case 'accounting':accounting();break;
+    case 'back':goBack();break;
+    case 'capture_video':if(act.channel)captureVideo(act.channel);break;
+    case 'add_vendor':if(act.kind)openVendorForm(act.kind);break;
+  }
+}
+
+function runHandled(cmd){
+  cmd=String(cmd||'').toLowerCase().trim();if(!cmd)return false;
+  if(/global channel|open global/.test(cmd)){openChannel('global');return true}
+  if(/local channel|open local/.test(cmd)){openChannel('local');return true}
+  if(/private channel|open private/.test(cmd)){openChannel('private');return true}
+  if(cmd.includes('account')){accounting();return true}
+  if(cmd==='back'||cmd.startsWith('go back')){goBack();return true}
+  for(const c of countries){
+    if(cmd.includes(c.name.toLowerCase())){state.country=c;openNational(c);return true}
+    const ct=c.cities.find(x=>cmd.includes(x.name.toLowerCase()));
+    if(ct){state.country=c;openCity(ct);return true}
+  }
+  return false;
+}
+
+let recognition=null,handsFreeOn=false;
+function startHandsFree(){
+  const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+  if(!SR){toast('Voice not available — text command opened');$('cmd').classList.add('on');return}
+  if(recognition)try{recognition.stop()}catch(e){}
+  recognition=new SR();
+  recognition.lang=navigator.language||'en-US';
+  recognition.continuous=true;recognition.interimResults=false;
+  recognition.onstart=()=>{handsFreeOn=true;$('voice').classList.add('live');toast('Hands-free on. Speak.')};
+  recognition.onend=()=>{if(handsFreeOn){try{recognition.start()}catch(e){}}};
+  recognition.onerror=e=>{
+    if(e.error==='not-allowed'||e.error==='service-not-allowed'){
+      handsFreeOn=false;$('voice').classList.remove('live');
+      toast('Microphone blocked');$('cmd').classList.add('on');
+    }
+  };
+  recognition.onresult=async e=>{
+    const last=e.results[e.results.length-1];if(!last.isFinal)return;
+    const text=(last[0].transcript||'').trim();if(!text)return;
+    toast('Heard: '+text,2200);
+    if(runHandled(text))return;
+    const reply=await aiAsk(text);
+    if(reply.error){toast(reply.error,4500);speak(reply.error);return}
+    if(reply.action)execAIAction(reply.action);
+    if(reply.text){speak(reply.text);toast(reply.text,5000)}
+  };
+  try{recognition.start()}catch(e){toast('Voice could not start')}
+}
+function stopHandsFree(){handsFreeOn=false;if(recognition)try{recognition.stop()}catch(e){}$('voice').classList.remove('live')}
+function toggleHandsFree(){handsFreeOn?stopHandsFree():startHandsFree()}
+
 /* ── Triangle cascade menu ── */
 const triState={timer:null,pressLL:null,suppress:false};
 const TRI_R=108;
@@ -267,23 +516,24 @@ function closeTriMenu(){
 function triOpts(){
   return[
     {icon:'🎬',label:'VIDEO',sub:[
-      {icon:'🌍',label:'GLOBAL', action:()=>toast('Global channel — video post coming soon',3000)},
-      {icon:'🏙', label:'LOCAL',  action:()=>toast('Local channel — video post coming soon',3000)},
-      {icon:'🔒',label:'PRIVATE',action:()=>toast('Private channel — video post coming soon',3000)},
+      {icon:'🌍',label:'GLOBAL', action:()=>captureVideo('global')},
+      {icon:'🏙', label:'LOCAL',  action:()=>captureVideo('local')},
+      {icon:'🔒',label:'PRIVATE',action:()=>captureVideo('private')},
     ]},
     {icon:'🏪',label:'VENDOR',gold:true,sub:[
-      {icon:'🥬',label:'MARKET', gold:true,action:()=>toast('Market vendor registration — coming soon',3000)},
-      {icon:'🍽', label:'FOOD',   gold:true,action:()=>toast('Food vendor registration — coming soon',3000)},
-      {icon:'🔧',label:'SERVICE',gold:true,action:()=>toast('Service vendor registration — coming soon',3000)},
+      {icon:'🥬',label:'MARKET', gold:true,action:()=>openVendorForm('market')},
+      {icon:'🍽', label:'FOOD',   gold:true,action:()=>openVendorForm('food')},
+      {icon:'🔧',label:'SERVICE',gold:true,action:()=>openVendorForm('service')},
     ]},
     {icon:'📍',label:'LOCATION',sub:[
-      {icon:'✓', label:'CONFIRM',action:()=>{
-        if(triState.pressLL&&state.city){
-          state.city={...state.city,lat:triState.pressLL.lat,lng:triState.pressLL.lng};
-          drawCity();toast('User location updated');
-        }else toast('Open a city to set location');
+      {icon:'✓', label:'CONFIRM',action:setUserHere},
+      {icon:'📡',label:'SHARE',  action:()=>{
+        const ll=triState.pressLL;if(!ll){toast('Nothing to share');return}
+        const url='https://www.google.com/maps/search/?api=1&query='+ll.lat+','+ll.lng;
+        if(navigator.share)navigator.share({title:'AstranoV location',text:'Pinned location',url}).catch(()=>{});
+        else if(navigator.clipboard){navigator.clipboard.writeText(url).then(()=>toast('Link copied'))}
+        else toast(url);
       }},
-      {icon:'📡',label:'SHARE',  action:()=>toast('Location share — coming soon',3000)},
       {icon:'✕', label:'CANCEL', action:closeTriMenu},
     ]},
   ]
@@ -424,6 +674,12 @@ function drawCity(){
   const acctLat=state.city.lat+.0015,acctLng=state.city.lng-.0015;
   state.markers.push(L.marker([acctLat,acctLng],{icon:icon('<div class="mapPin acct">⬡</div>',38)}).addTo(state.cityMap).bindTooltip('Accounting Office',{className:'cleanTip'}).on('click',accounting));
   state.vendors.forEach(v=>{state.markers.push(L.marker([v.lat,v.lng],{icon:icon('<div class="mapPin shop">'+v.emoji+'</div>')}).addTo(state.cityMap).bindTooltip(v.name,{className:'cleanTip'}).on('click',()=>openVendor(v)))});
+  state.customVendors.filter(cv=>Math.abs(cv.lat-state.city.lat)<.25&&Math.abs(cv.lng-state.city.lng)<.3).forEach(cv=>{
+    const items=cv.items.map(it=>({id:it.id,name:it.name,desc:it.desc||'',photo:it.photo||'',price:+it.price||0,kg:Math.max(+it.kg||0,+it.ml||0)||0.1}));
+    const merged={id:cv.id,name:cv.name,emoji:cv.emoji,lat:cv.lat,lng:cv.lng,items};
+    state.vendors.push(merged);
+    state.markers.push(L.marker([cv.lat,cv.lng],{icon:icon('<div class="mapPin shop">'+cv.emoji+'</div>')}).addTo(state.cityMap).bindTooltip(cv.name+' (yours)',{className:'cleanTip'}).on('click',()=>openVendor(merged)));
+  });
   state.drivers.forEach(d=>{state.markers.push(L.marker([d.lat,d.lng],{icon:icon('<div class="mapPin driver">'+d.emoji+'</div>',38)}).addTo(state.cityMap).bindTooltip(d.name,{className:'cleanTip'}).on('click',()=>selectDriver(d)))});
 }
 
@@ -432,7 +688,7 @@ function closeVendor(){$('vendorSheet').classList.remove('on','min')}
 
 function renderVendor(){
   renderRibbon();
-  $('products').innerHTML=state.vendor.items.map(it=>'<div class="product"><img src="'+it.photo+'" loading="lazy"><div class="prodInfo"><div class="prodName">'+esc(it.name)+'</div><div class="prodDesc">'+esc(it.desc)+'</div><div class="prodMeta">'+money(it.price)+' · '+it.kg+' kg/L</div></div><div class="qty"><button class="edit" data-edit="'+it.id+'">✎</button><button data-minus="'+it.id+'">−</button><input data-qty="'+it.id+'" value="'+(state.cart[it.id]||0)+'" type="number" min="0"><button data-plus="'+it.id+'">+</button></div></div>').join('');
+  $('products').innerHTML=state.vendor.items.map(it=>'<div class="product">'+(it.photo?'<img src="'+esc(it.photo)+'" loading="lazy">':'<div style="width:46px;height:46px;border-radius:11px;background:#10223b;flex:0 0 46px;display:flex;align-items:center;justify-content:center;font-size:22px">'+(state.vendor.emoji||'📦')+'</div>')+'<div class="prodInfo"><div class="prodName">'+esc(it.name)+'</div><div class="prodDesc">'+esc(it.desc)+'</div><div class="prodMeta">'+money(it.price)+' · '+it.kg+' kg/L</div></div><div class="qty"><button class="edit" data-edit="'+it.id+'">✎</button><button data-minus="'+it.id+'">−</button><input data-qty="'+it.id+'" value="'+(state.cart[it.id]||0)+'" type="number" min="0"><button data-plus="'+it.id+'">+</button></div></div>').join('');
   $('products').querySelectorAll('[data-plus]').forEach(b=>b.onclick=()=>setQty(b.dataset.plus,(state.cart[b.dataset.plus]||0)+1));
   $('products').querySelectorAll('[data-minus]').forEach(b=>b.onclick=()=>setQty(b.dataset.minus,Math.max(0,(state.cart[b.dataset.minus]||0)-1)));
   $('products').querySelectorAll('[data-qty]').forEach(i=>i.oninput=()=>setQty(i.dataset.qty,Math.max(0,parseInt(i.value||0)||0),false));
@@ -634,28 +890,18 @@ function run(cmd){
   $('cmd').classList.remove('on');
   if(!cmd)return;
   if(cmd.includes('krypteia')||cmd.includes('owner')||cmd.includes('admin'))return openOwnerGate();
-  if(cmd.includes('account'))return accounting();
   if(cmd.includes('vendor login')){state.vendorMode=true;document.body.classList.add('vendorMode');toast('Vendor mode on');if(state.vendor)renderVendor();return}
-  if(cmd.includes('back'))return goBack();
-  for(const c of countries){
-    if(cmd.includes(c.name.toLowerCase()))return openNational(c);
-    const ct=c.cities.find(x=>cmd.includes(x.name.toLowerCase()));
-    if(ct){state.country=c;return openCity(ct)}
-  }
-  if(cmd.includes('pizza')&&state.level==='personal')return openVendor(state.vendors.find(x=>x.id==='pizza')||state.vendors[0]);
-  toast('Command not recognized');
+  if(cmd.includes('pizza')&&state.level==='personal'&&state.vendors)return openVendor(state.vendors.find(x=>x.id==='pizza')||state.vendors[0]);
+  if(runHandled(cmd))return;
+  toast('Asking AI…',2500);
+  aiAsk(cmd).then(reply=>{
+    if(reply.error){toast(reply.error,4500);return}
+    if(reply.action)execAIAction(reply.action);
+    if(reply.text){speak(reply.text);toast(reply.text,5000)}
+  });
 }
 
-function voice(){
-  const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
-  if(!SR){$('cmd').classList.add('on');toast('Voice unavailable — text command opened');return}
-  const r=new SR();r.lang=navigator.language||'en-US';
-  r.onstart=()=>$('voice').classList.add('live');
-  r.onend=()=>$('voice').classList.remove('live');
-  r.onerror=()=>{$('cmd').classList.add('on');toast('Voice blocked — text command opened')};
-  r.onresult=e=>run(e.results[0][0].transcript);
-  r.start();
-}
+function voice(){toggleHandsFree()}
 
 /* ── Event bindings ── */
 $('title').onclick=()=>$('cmd').classList.toggle('on');
