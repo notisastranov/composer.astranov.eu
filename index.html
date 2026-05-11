@@ -127,7 +127,7 @@
 #radarBadge{position:absolute;top:4px;right:4px;min-width:18px;height:18px;border-radius:999px;background:var(--r);color:#fff;font-size:10px;font-weight:1000;display:none;align-items:center;justify-content:center;padding:0 5px;z-index:3;box-shadow:0 0 10px var(--r);pointer-events:auto}
 #radarBadge.on{display:flex}
 /* ── Idle fade ── */
-.ui-faded{opacity:.18!important;transition:opacity 1.2s!important}
+.ui-faded{opacity:.52!important;transition:opacity 1.2s!important}
 /* ── Login overlay ── */
 #loginOverlay{position:fixed;inset:0;z-index:295;display:none;align-items:flex-end;justify-content:center;background:rgba(0,0,0,.52);backdrop-filter:blur(14px);padding-bottom:calc(var(--sb) + 10px)}
 #loginOverlay.on{display:flex}
@@ -432,15 +432,23 @@ function locateMe(){
   navigator.geolocation.getCurrentPosition(pos=>{
     const lat=pos.coords.latitude,lng=pos.coords.longitude;
     state.geo={lat,lng,ts:Date.now()};
-    /* Find or build a city object at the GPS coords */
-    let c=null,nearest=null,bestD=Infinity;
-    countries.forEach(co=>co.cities.forEach(ci=>{const d=Math.hypot(ci.lat-lat,ci.lng-lng);if(d<bestD){bestD=d;nearest=ci;c=co}}));
-    if(nearest&&bestD<0.5){state.country=c;openCity(nearest)}
-    else{
-      const here={id:'gps-'+Date.now(),name:'My location',lat,lng,z:15};
-      const co=countries.find(x=>Math.hypot(x.lat-lat,x.lng-lng)<6)||countries[0];
-      state.country=co;openCity(here);
+    let nearest=null,bestD=Infinity,bestCountry=null;
+    countries.forEach(co=>co.cities.forEach(ci=>{const d=Math.hypot(ci.lat-lat,ci.lng-lng);if(d<bestD){bestD=d;nearest=ci;bestCountry=co}}));
+    const co=bestCountry||countries.find(x=>Math.hypot(x.lat-lat,x.lng-lng)<6)||countries[0];
+    const targetZ=15;
+    state.country=co;
+    /* If city map already open: fly smoothly to GPS coords */
+    if(state.cityMap&&state.level==='personal'){
+      state.city={id:'gps',name:'My location',lat,lng,z:targetZ};
+      state.cityMap.flyTo([lat,lng],targetZ,{animate:true,duration:2.2});
+      drawCity();toast('You are here',1800);return;
     }
+    /* Otherwise: open city at country zoom, then fly in */
+    const entry={id:'gps-'+Date.now(),name:'My location',lat,lng,z:6};
+    openCity(entry);
+    setTimeout(()=>{
+      if(state.cityMap)state.cityMap.flyTo([lat,lng],targetZ,{animate:true,duration:2.5});
+    },320);
   },err=>{
     toast('GPS denied: '+(err.message||'permission denied'),3000);
   },{enableHighAccuracy:true,timeout:10000,maximumAge:30000});
