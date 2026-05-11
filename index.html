@@ -1599,7 +1599,7 @@ function closeVendor(){$('vendorSheet').classList.remove('on','min')}
 
 function renderVendor(){
   renderRibbon();
-  $('products').innerHTML=state.vendor.items.map(it=>'<div class="product">'+(it.photo?'<img src="'+esc(it.photo)+'" loading="lazy">':'<div style="width:46px;height:46px;border-radius:11px;background:#10223b;flex:0 0 46px;display:flex;align-items:center;justify-content:center;font-size:22px">'+(state.vendor.emoji||'📦')+'</div>')+'<div class="prodInfo"><div class="prodName">'+esc(it.name)+'</div><div class="prodDesc">'+esc(it.desc)+'</div><div class="prodMeta">'+money(it.price)+' · '+it.kg+' kg/L</div></div><div class="qty"><button class="edit" data-edit="'+it.id+'">✎</button><button data-minus="'+it.id+'">−</button><input data-qty="'+it.id+'" value="'+(state.cart[it.id]||0)+'" type="number" min="0"><button data-plus="'+it.id+'">+</button></div></div>').join('');
+  $('products').innerHTML=state.vendor.items.map(it=>'<div class="product">'+(it.photo?'<img src="'+esc(it.photo)+'" loading="lazy">':'<div style="width:46px;height:46px;border-radius:11px;background:#10223b;flex:0 0 46px;display:flex;align-items:center;justify-content:center;font-size:22px">'+(state.vendor.emoji||'📦')+'</div>')+'<div class="prodInfo"><div class="prodName">'+esc(it.name)+'</div><div class="prodDesc">'+esc(it.desc)+'</div><div class="prodMeta">'+money(it.price)+(state.vendorMode?' · '+it.kg+' kg/L':'')+'</div></div><div class="qty"><button class="edit" data-edit="'+it.id+'">✎</button><button data-minus="'+it.id+'">−</button><input data-qty="'+it.id+'" value="'+(state.cart[it.id]||0)+'" type="number" min="0"><button data-plus="'+it.id+'">+</button></div></div>').join('');
   $('products').querySelectorAll('[data-plus]').forEach(b=>b.onclick=()=>setQty(b.dataset.plus,(state.cart[b.dataset.plus]||0)+1));
   $('products').querySelectorAll('[data-minus]').forEach(b=>b.onclick=()=>setQty(b.dataset.minus,Math.max(0,(state.cart[b.dataset.minus]||0)-1)));
   $('products').querySelectorAll('[data-qty]').forEach(i=>i.oninput=()=>setQty(i.dataset.qty,Math.max(0,parseInt(i.value||0)||0),false));
@@ -1620,22 +1620,45 @@ function calc(){
 function renderRibbon(){
   const c=state.vendor?calc():{items:[],basket:0,kg:0,mode:'auto',dest:null,dist:0,drivers:0,delivery:0,total:0,fee:0};
   const has=c.items.length;
-  const label=has?(c.mode==='pickup'?'PLACE CASH ORDER':'PLACE CASH ORDER · '+c.drivers+' DRIVER'+(c.drivers>1?'S':'')):'↓ ADD ITEMS';
-  $('ribbon').innerHTML='<div class="rib action"><button id="place" class="ribAction '+(!has?'need':'')+'" '+(!has?'disabled':'')+'>'+label+'</button></div>'
-    +'<div class="rib wide"><label>From</label><div class="val">'+state.vendor.emoji+' '+esc(state.vendor.name)+'</div></div>'
-    +'<div class="rib wide"><label>To</label><select id="dest"><option value="user">My location</option><option value="other">Set on map</option></select></div>'
-    +'<div class="rib"><label>Km</label><div class="val">'+c.dist.toFixed(1)+'</div></div>'
-    +'<div class="rib"><label>Delivery</label><div class="val">'+money(c.delivery)+'</div></div>'
-    +'<div class="rib"><label>Basket</label><div class="val">'+money(c.basket)+'</div></div>'
-    +'<div class="rib"><label>Kg/L</label><input id="kg" type="number" min="0" step="0.1" value="'+c.kg.toFixed(1)+'"></div>'
-    +'<div class="rib"><label>Total COD</label><div class="val">'+money(c.total)+'</div></div>'
-    +'<div class="rib wide"><label>Assign</label><select id="assign"><option value="auto">Automatic</option><option value="choose">Choose driver</option><option value="pickup">Self-pickup</option></select></div>'
-    +'<div class="rib wide"><label>Driver</label><select id="driver">'+state.drivers.map(d=>'<option value="'+d.id+'">'+d.emoji+' '+d.name+'</option>').join('')+'</select></div>';
+  if(state.vendorMode){
+    /* Admin/vendor view: full breakdown + driver controls */
+    $('ribbon').innerHTML='<div class="rib action"><button id="place" class="ribAction '+(has?'':'need')+'" '+(has?'':'disabled')+'>'+
+      (has?'PLACE ORDER · '+c.drivers+' DRIVER'+(c.drivers>1?'S':''):'↓ ADD ITEMS')+'</button></div>'+
+      '<div class="rib wide"><label>From</label><div class="val">'+state.vendor.emoji+' '+esc(state.vendor.name)+'</div></div>'+
+      '<div class="rib wide"><label>To</label><select id="dest"><option value="user">My location</option><option value="other">Set on map</option></select></div>'+
+      '<div class="rib"><label>Km</label><div class="val">'+c.dist.toFixed(1)+'</div></div>'+
+      '<div class="rib"><label>Delivery</label><div class="val">'+money(c.delivery)+'</div></div>'+
+      '<div class="rib"><label>Basket</label><div class="val">'+money(c.basket)+'</div></div>'+
+      '<div class="rib"><label>Kg/L</label><input id="kg" type="number" min="0" step="0.1" value="'+c.kg.toFixed(1)+'"></div>'+
+      '<div class="rib"><label>Total</label><div class="val">'+money(c.total)+'</div></div>'+
+      '<div class="rib wide"><label>Assign</label><select id="assign"><option value="auto">Automatic</option><option value="choose">Choose driver</option><option value="pickup">Self-pickup</option></select></div>'+
+      '<div class="rib wide"><label>Driver</label><select id="driver">'+state.drivers.map(d=>'<option value="'+d.id+'">'+d.emoji+' '+d.name+'</option>').join('')+'</select></div>';
+    if($('dest')){$('dest').onchange=e=>{if(e.target.value==='other')startPick();else{state.destination=null;renderRibbon()}}}
+    if($('assign')){$('assign').value=c.mode;$('assign').onchange=renderRibbon}
+    if($('kg'))$('kg').onchange=renderRibbon;
+    if($('driver'))$('driver').onchange=e=>state.selectedDriver=state.drivers.find(d=>d.id===e.target.value);
+  }else{
+    /* Client view: clean total only, no breakdown, no driver selection */
+    const delivLine=c.delivery>0?'<div style="display:flex;justify-content:space-between;padding:4px 0;font-size:11px;color:var(--muted)"><span>Delivery</span><span>'+money(c.delivery)+'</span></div>':'';
+    const pickupToggle='<div style="display:flex;align-items:center;gap:8px;padding:4px 0;font-size:11px"><label style="color:var(--muted)">Self-pickup</label><input type="checkbox" id="pickupChk"'+(c.mode==='pickup'?' checked':'')+' style="accent-color:var(--b)"></div>';
+    $('ribbon').innerHTML='<div style="padding:6px 10px;width:100%">'+
+      (has?'<div style="display:flex;justify-content:space-between;padding:4px 0;font-size:11px;color:var(--muted)"><span>'+c.items.length+' item'+(c.items.length>1?'s':'')+' · '+money(c.basket)+'</span></div>':'')+
+      delivLine+
+      pickupToggle+
+      '<button id="place" class="ribAction" style="width:100%;height:44px;margin-top:4px;'+(has?'':'opacity:.5')+'" '+(has?'':'disabled')+'>'+
+      (has?'ORDER  —  '+money(c.total):'↓ ADD ITEMS')+
+      '</button></div>';
+    if($('pickupChk'))$('pickupChk').onchange=e=>{state._pickup=e.target.checked;renderRibbon()};
+  }
   $('place').onclick=placeOrder;
-  $('dest').onchange=e=>{if(e.target.value==='other')startPick();else{state.destination=null;renderRibbon()}};
-  $('assign').value=c.mode;$('assign').onchange=renderRibbon;
-  $('kg').onchange=renderRibbon;
-  $('driver').onchange=e=>state.selectedDriver=state.drivers.find(d=>d.id===e.target.value);
+}
+
+/* Patch calc() pickup mode from client checkbox */
+const _calcOrig=calc;
+function calc(){
+  const c=_calcOrig();
+  if(!state.vendorMode&&state._pickup)c.mode='pickup',c.delivery=0,c.drivers=0,c.total=+c.basket.toFixed(2);
+  return c;
 }
 
 function startPick(){state.picking=true;$('vendorSheet').classList.add('min');toast('Tap the map for delivery address')}
