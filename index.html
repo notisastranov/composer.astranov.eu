@@ -1612,48 +1612,40 @@ function currentDest(){return state.destination||state.city}
 function calc(){
   const items=state.vendor.items.map(it=>({it,q:state.cart[it.id]||0})).filter(x=>x.q>0);
   const basket=items.reduce((s,x)=>s+x.it.price*x.q,0);
-  const autoKg=items.reduce((s,x)=>s+x.it.kg*x.q,0);
-  const manual=+(document.getElementById('kg')?.value)||0,kg=manual>0?manual:autoKg;
-  /* mode: admin uses #assign select; client uses state._pickup flag */
-  const adminSel=state.vendorMode?(document.getElementById('assign')?.value||'auto'):null;
-  const mode=(!state.vendorMode&&state._pickup)?'pickup':(adminSel||'auto');
+  /* Client pays: basket + 3% app fee */
+  const clientFee=+(basket*0.03).toFixed(2);
+  const total=+(basket+clientFee).toFixed(2);
+  /* Vendor-side (internal): 30% delivery reserve + 3% app fee, net = remainder */
+  const deliveryReserve=+(basket*0.30).toFixed(2);
+  const vendorAppFee=+(basket*0.03).toFixed(2);
+  const vendorNet=+(basket-deliveryReserve-vendorAppFee).toFixed(2);
+  const mode=state.vendorMode?(document.getElementById('assign')?.value||'auto'):(state._pickup?'pickup':'delivery');
   const dest=currentDest();
-  const dist=mode==='pickup'?0:km(state.vendor.lat,state.vendor.lng,dest.lat,dest.lng);
-  const base=mode==='pickup'?0:(dist<=3?3:3+(dist-3));
-  const drivers=mode==='pickup'?0:Math.max(1,Math.ceil(Math.max(.01,kg)/13));
-  const load=mode==='pickup'?0:Math.max(0,drivers-1);
-  const delivery=+(base+load).toFixed(2),total=+(basket+delivery).toFixed(2),fee=+(total*.03).toFixed(2);
-  return{items,basket,kg,mode,dest,dist,drivers,delivery,total,fee};
+  return{items,basket,clientFee,total,deliveryReserve,vendorAppFee,vendorNet,mode,dest};
 }
 
 function renderRibbon(){
-  const c=state.vendor?calc():{items:[],basket:0,kg:0,mode:'auto',dest:null,dist:0,drivers:0,delivery:0,total:0,fee:0};
+  const c=state.vendor?calc():{items:[],basket:0,clientFee:0,total:0,deliveryReserve:0,vendorAppFee:0,vendorNet:0,mode:'delivery',dest:null};
   const has=c.items.length;
   if(state.vendorMode){
-    /* Admin/vendor view: full breakdown + driver controls */
+    /* Vendor view: basket / reserves / fees / net — no km jargon */
     $('ribbon').innerHTML='<div class="rib action"><button id="place" class="ribAction '+(has?'':'need')+'" '+(has?'':'disabled')+'>'+
-      (has?'PLACE ORDER · '+c.drivers+' DRIVER'+(c.drivers>1?'S':''):'↓ ADD ITEMS')+'</button></div>'+
-      '<div class="rib wide"><label>From</label><div class="val">'+state.vendor.emoji+' '+esc(state.vendor.name)+'</div></div>'+
-      '<div class="rib wide"><label>To</label><select id="dest"><option value="user">My location</option><option value="other">Set on map</option></select></div>'+
-      '<div class="rib"><label>Km</label><div class="val">'+c.dist.toFixed(1)+'</div></div>'+
-      '<div class="rib"><label>Delivery</label><div class="val">'+money(c.delivery)+'</div></div>'+
+      (has?'CONFIRM ORDER':'↓ ADD ITEMS')+'</button></div>'+
       '<div class="rib"><label>Basket</label><div class="val">'+money(c.basket)+'</div></div>'+
-      '<div class="rib"><label>Kg/L</label><input id="kg" type="number" min="0" step="0.1" value="'+c.kg.toFixed(1)+'"></div>'+
-      '<div class="rib"><label>Total</label><div class="val">'+money(c.total)+'</div></div>'+
+      '<div class="rib"><label>Delivery Reserve</label><div class="val" style="color:var(--r)">−'+money(c.deliveryReserve)+'<span style="font-size:9px;opacity:.7"> 30%</span></div></div>'+
+      '<div class="rib"><label>App Fee</label><div class="val" style="color:var(--r)">−'+money(c.vendorAppFee)+'<span style="font-size:9px;opacity:.7"> 3%</span></div></div>'+
+      '<div class="rib"><label>Net to You</label><div class="val" style="color:var(--ok)">'+money(c.vendorNet)+'</div></div>'+
+      '<div class="rib"><label>Client Pays</label><div class="val" style="color:var(--b)">'+money(c.total)+'</div></div>'+
       '<div class="rib wide"><label>Assign</label><select id="assign"><option value="auto">Automatic</option><option value="choose">Choose driver</option><option value="pickup">Self-pickup</option></select></div>'+
       '<div class="rib wide"><label>Driver</label><select id="driver">'+state.drivers.map(d=>'<option value="'+d.id+'">'+d.emoji+' '+d.name+'</option>').join('')+'</select></div>';
-    if($('dest')){$('dest').onchange=e=>{if(e.target.value==='other')startPick();else{state.destination=null;renderRibbon()}}}
     if($('assign')){$('assign').value=c.mode;$('assign').onchange=renderRibbon}
-    if($('kg'))$('kg').onchange=renderRibbon;
     if($('driver'))$('driver').onchange=e=>state.selectedDriver=state.drivers.find(d=>d.id===e.target.value);
   }else{
-    /* Client view: clean total only, no breakdown, no driver selection */
-    const delivLine=c.delivery>0?'<div style="display:flex;justify-content:space-between;padding:4px 0;font-size:11px;color:var(--muted)"><span>Delivery</span><span>'+money(c.delivery)+'</span></div>':'';
-    const pickupToggle='<div style="display:flex;align-items:center;gap:8px;padding:4px 0;font-size:11px"><label style="color:var(--muted)">Self-pickup</label><input type="checkbox" id="pickupChk"'+(c.mode==='pickup'?' checked':'')+' style="accent-color:var(--b)"></div>';
+    /* Client view: final price only — no delivery breakdown, no reserve */
     $('ribbon').innerHTML='<div style="padding:6px 10px;width:100%">'+
       (has?'<div style="display:flex;justify-content:space-between;padding:4px 0;font-size:11px;color:var(--muted)"><span>'+c.items.length+' item'+(c.items.length>1?'s':'')+' · '+money(c.basket)+'</span></div>':'')+
-      delivLine+
-      pickupToggle+
+      '<div style="display:flex;justify-content:space-between;padding:4px 0;font-size:11px;color:var(--muted)"><span>App fee</span><span>'+money(c.clientFee)+'</span></div>'+
+      '<div style="display:flex;align-items:center;gap:8px;padding:4px 0;font-size:11px"><label style="color:var(--muted)">Self-pickup</label><input type="checkbox" id="pickupChk"'+(c.mode==='pickup'?' checked':'')+' style="accent-color:var(--b)"></div>'+
       '<button id="place" class="ribAction" style="width:100%;height:44px;margin-top:4px;'+(has?'':'opacity:.5')+'" '+(has?'':'disabled')+'>'+
       (has?'ORDER  —  '+money(c.total):'↓ ADD ITEMS')+
       '</button></div>';
@@ -1720,10 +1712,13 @@ async function drawOrder(o){
 }
 
 function ledgerFor(o){
+  const c=o.calc;
   state.ledger.push(
-    {type:'GOODS',from:'Client',to:o.vendor.name,amount:o.calc.basket,id:o.id},
-    {type:'DELIVERY',from:'Client',to:o.drivers.map(d=>d.name).join(' + ')||'Self-pickup',amount:o.calc.delivery,id:o.id},
-    {type:'PLATFORM FEE 3%',from:'Transaction',to:'AstranoV',amount:o.calc.fee,id:o.id}
+    {type:'BASKET',from:'Client',to:o.vendor.name,amount:c.basket,id:o.id},
+    {type:'CLIENT APP FEE 3%',from:'Client',to:'AstranoV',amount:c.clientFee,id:o.id},
+    {type:'DELIVERY RESERVE 30%',from:o.vendor.name,to:'Delivery Pool',amount:c.deliveryReserve,id:o.id},
+    {type:'VENDOR APP FEE 3%',from:o.vendor.name,to:'AstranoV',amount:c.vendorAppFee,id:o.id},
+    {type:'VENDOR NET',from:'Ledger',to:o.vendor.name,amount:c.vendorNet,id:o.id}
   );
 }
 
@@ -1744,8 +1739,8 @@ async function issueInvoice(order){
     mark,
     items:order.calc.items.map(x=>({name:x.it.name,qty:x.q,unit_price:x.it.price,subtotal:+(x.it.price*x.q).toFixed(2)})),
     subtotal:order.calc.basket,
-    delivery_fee:order.calc.delivery,
-    platform_fee:order.calc.fee,
+    delivery_fee:order.calc.deliveryReserve,
+    platform_fee:+(order.calc.clientFee+order.calc.vendorAppFee).toFixed(2),
     vat_food:0.13,vat_service:0.24,
     total:order.calc.total,
     currency:'AVC',

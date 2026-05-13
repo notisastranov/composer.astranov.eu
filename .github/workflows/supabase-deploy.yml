@@ -40,10 +40,14 @@ jobs:
       - name: Set Edge Function secrets
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
           GH_PUSH_TOKEN: ${{ secrets.GH_PUSH_TOKEN }}
         run: |
           supabase secrets set \
             ANTHROPIC_API_KEY="$ANTHROPIC_API_KEY" \
+            OPENAI_API_KEY="$OPENAI_API_KEY" \
+            GROQ_API_KEY="$GROQ_API_KEY" \
             GITHUB_TOKEN="$GH_PUSH_TOKEN" \
             GITHUB_REPO=notisastranov/Astranov \
             GITHUB_BRANCH=claude/build-astranov-app-DHkQw
