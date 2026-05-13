@@ -1031,7 +1031,7 @@ function runHandled(cmd){
   if(cmd.includes('account')){accounting();return true}
   if(cmd==='back'||cmd.startsWith('go back')){goBack();return true}
   if(cmd.includes('circle')||cmd.includes('chat')){openCircleList();return true}
-  if(cmd.includes('login')||cmd.includes('sign in')||cmd.includes('account')){openLoginPanel();return true}
+  if(cmd.includes('login')||cmd.includes('sign in')){openLoginPanel();return true}
   if(cmd.includes('recharge')||cmd.includes('balance')||cmd.includes('top up')){openRechargePanel();return true}
   for(const c of countries){
     if(cmd.includes(c.name.toLowerCase())){state.country=c;openNational(c);return true}
@@ -1094,7 +1094,7 @@ function openUserInfoTri(){
     {icon:'📅',label:'SCHEDULE',action:openMySchedule},
     {icon:'📝',label:'ACTIVITY',action:openMyActivity},
   ];
-  opts.push({icon:'⬡',label:'KRYPTEIA',gold:true,action:()=>tryKrypteia(openKrypteiaTriangle)});
+  opts.push({icon:'⬡',label:'KRYPTEIA',gold:true,action:()=>tryKrypteia(openKrypteiaPanel)});
   setTimeout(()=>openTriMenu(innerWidth/2,innerHeight*0.42,opts),60);
 }
 function openMyShops(){ps();$('panelTitle').textContent='🛒 MY SHOPS';renderMyVendors('shop')}
@@ -1105,41 +1105,20 @@ function renderMyVendors(type){
     $('panelBody').innerHTML=(rows.length?rows.map(v=>'<div class="card"><div class="txTop"><b>'+esc(v.name||'(unnamed)')+'</b><span class="meta">'+esc(v.type)+'</span></div><div class="meta">'+esc(JSON.stringify(v.data||{}).slice(0,120))+'</div></div>').join(''):'<div style="padding:24px 0;text-align:center;color:var(--muted);font-size:12px">No '+type+'s yet. Use the VENDOR triangle on the map to create one.</div>');
   }).catch(()=>{$('panelBody').innerHTML='<div class="lErr">Could not load.</div>'});
 }
-function openMySchedule(){ps();$('panelTitle').textContent='📅 SCHEDULE';$('panelBody').innerHTML='<div class="card"><div class="meta">Manage your weekly availability across all your shops and services. Coming soon — schedule editor wired to vendors.data.hours.</div></div>'}
+function openMySchedule(){openMyStats()}
 function openMyStats(){
   ps();$('panelTitle').textContent='📊 STATS';
   $('panelBody').innerHTML='<div style="padding:24px 0;text-align:center;color:var(--muted);font-size:12px">Loading…</div>';
   Promise.all([
     sbFetch('/rest/v1/vendors?owner_id=eq.'+state.user.id+'&select=id,type'),
-    sbFetch('/rest/v1/balance_ledger?user_id=eq.'+state.user.id+'&select=amount')
+    sbFetch('/rest/v1/balance_ledger?user_id=eq.'+state.user.id+'&select=balance')
   ]).then(rs=>Promise.all(rs.map(r=>r.json()))).then(([vs,led])=>{
     const shops=vs.filter(x=>x.type==='shop').length,svcs=vs.filter(x=>x.type==='service').length,dlv=vs.filter(x=>x.type==='deliverer').length;
-    const total=led.reduce((a,b)=>a+(+b.amount||0),0);
+    const total=+(led[0]?.balance||0);
     $('panelBody').innerHTML='<div class="card"><div class="txTop"><span>Shops</span><b>'+shops+'</b></div><div class="txTop"><span>Services</span><b>'+svcs+'</b></div><div class="txTop"><span>Deliverer profile</span><b>'+(dlv?'Yes':'No')+'</b></div><div class="txTop"><span>Lifetime ledger</span><b style="color:var(--g)">'+total.toFixed(2)+' AVC</b></div></div>';
   }).catch(()=>{$('panelBody').innerHTML='<div class="lErr">Could not load stats.</div>'});
 }
 
-function openKrypteiaTriangle(){
-  closeTriMenu();
-  setTimeout(()=>{openTriMenu(innerWidth/2,innerHeight*0.42,krypteiaOpts());openKrypteiaPanel()},60);
-}
-function krypteiaOpts(){return[
-  {icon:'🎙',label:'DICTATE',gold:true,sub:[
-    {icon:'🎤',label:'VOICE', gold:true,action:()=>openDictate(true)},
-    {icon:'⌨', label:'TEXT',  gold:true,action:()=>openDictate(false)},
-    {icon:'⏹',label:'CLOSE', gold:true,action:closeTriMenu},
-  ]},
-  {icon:'🛡', label:'IP GUARD',gold:true,sub:[
-    {icon:'🌐',label:'WEB',   gold:true,action:()=>ipGuardOpen('web')},
-    {icon:'🛒',label:'STORES',gold:true,action:()=>ipGuardOpen('stores')},
-    {icon:'💻',label:'CODE',  gold:true,action:()=>ipGuardOpen('code')},
-  ]},
-  {icon:'📊',label:'TELEMETRY',gold:true,sub:[
-    {icon:'📡',label:'STATUS',gold:true,action:()=>openTelemetry('status')},
-    {icon:'📜',label:'LOGS',  gold:true,action:()=>openTelemetry('logs')},
-    {icon:'🔄',label:'CYCLE', gold:true,action:()=>openTelemetry('cycle')},
-  ]},
-]}
 
 function openProfile(){
   ps();
@@ -1183,140 +1162,14 @@ function openMyActivity(){
       :'<div class="meta">No vendors registered.</div>')+'</div>';
 }
 
-/* Krypteia DICTATE — voice or text → /api/ai/krypteia */
-function openDictate(useVoice){
+/* Krypteia IP Guard — search links panel */
+function krypIPGuard(){
   if(!state.ownerAuthed){toast('Owner auth required');return}
-  ps();
-  $('panelTitle').textContent='🎙 KRYPTEIA · DICTATE';
-  $('panelBody').innerHTML=
-    '<div class="card"><div class="meta">Architect dictation. Spoken or typed evolution requests are routed to <b>/api/ai/krypteia</b>. Backend cycles authorized AI coders (Claude / OpenAI / Gemini / Grok / DeepSeek), runs contamination scans, returns proposed patch. No keys in front-end.</div>'+
-    '<textarea id="dicText" style="width:100%;height:130px;margin-top:10px;background:rgba(167,123,255,.06);border:1px solid rgba(167,123,255,.32);border-radius:11px;color:#fff;padding:11px;font-family:ui-monospace,Menlo,monospace;font-size:12px;resize:vertical" placeholder="Describe the change to apply. E.g. \'Add a brightness shortcut to the top bar.\'"></textarea>'+
-    '<div style="display:flex;gap:6px;margin-top:8px">'+
-    '<button class="smallBtn" id="dicMic">🎙 Dictate</button>'+
-    '<button class="smallBtn" id="dicClear">Clear</button>'+
-    '<button class="ribAction" id="dicSend" style="flex:1;height:40px">SEND TO KRYPTEIA</button>'+
-    '</div></div>'+
-    '<div id="dicResult" class="card" style="display:none"></div>';
-  let dicRec=null;
-  $('dicMic').onclick=()=>{
-    const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
-    if(!SR){toast('Voice not available');return}
-    if(dicRec){try{dicRec.stop()}catch(e){}dicRec=null;$('dicMic').textContent='🎙 Dictate';return}
-    dicRec=new SR();dicRec.lang=navigator.language||'en-US';
-    dicRec.continuous=true;dicRec.interimResults=true;
-    $('dicMic').textContent='⏹ Stop';
-    let final=$('dicText').value;
-    dicRec.onresult=e=>{
-      let interim='';
-      for(let i=e.resultIndex;i<e.results.length;i++){
-        const t=e.results[i][0].transcript;
-        if(e.results[i].isFinal)final+=(final&&!final.endsWith(' ')?' ':'')+t.trim();
-        else interim+=t;
-      }
-      $('dicText').value=final+(interim?' '+interim:'');
-    };
-    dicRec.onend=()=>{dicRec=null;if($('dicMic'))$('dicMic').textContent='🎙 Dictate'};
-    dicRec.onerror=()=>{dicRec=null;if($('dicMic'))$('dicMic').textContent='🎙 Dictate'};
-    try{dicRec.start()}catch(e){}
-  };
-  $('dicClear').onclick=()=>{$('dicText').value=''};
-  $('dicSend').onclick=async()=>{
-    const text=$('dicText').value.trim();
-    if(!text){toast('Type or dictate first');return}
-    $('dicResult').style.display='block';
-    $('dicResult').innerHTML='<em style="color:var(--muted)">Krypteia routing through authorized AI coders…</em>';
-    krypLog('DICTATE: '+text);
-    const reply=await aiAsk('[KRYPTEIA DICTATE] '+text);
-    if(reply.error){
-      $('dicResult').innerHTML='<b class="bad">'+esc(reply.error)+'</b><div class="meta" style="margin-top:6px">Once /api/ai/krypteia is deployed with provider keys, Krypteia returns: diagnosis, proposed diff, contamination scan, deploy/rollback button.</div>';
-    }else{
-      $('dicResult').innerHTML='<b style="color:#a77bff">Krypteia reply:</b><div style="margin-top:6px;white-space:pre-wrap;font-size:12px">'+esc(reply.text||'(no text)')+'</div>'+(reply.action?'<div class="meta" style="margin-top:6px">Action: '+esc(JSON.stringify(reply.action))+'</div>':'');
-      if(reply.action)execAIAction(reply.action);
-      if(reply.text)speak(reply.text);
-    }
-  };
-  if(useVoice)setTimeout(()=>$('dicMic').click(),250);
-}
-
-/* Krypteia IP GUARD — search for illegal copies and code theft */
-const IPG_QUERIES={
-  web:['"AstranoV"','"AstranoV" clone','"Notis Astranov" copy','"AstranoV" imitation','"Internet Operating System" "AstranoV"'],
-  stores:['site:apps.apple.com "AstranoV"','site:play.google.com "AstranoV"','site:microsoft.com/store "AstranoV"','"AstranoV" mobile app'],
-  code:['site:github.com "AstranoV"','site:gitlab.com "AstranoV"','site:bitbucket.org "AstranoV"','"AstranoV" "krypteia" code','"AstranoV" inurl:repo','"Notis Astranov" -github.com/notisastranov']
-};
-function ipGuardOpen(scope){
-  if(!state.ownerAuthed){toast('Owner auth required');return}
-  ps();
-  $('panelTitle').textContent='🛡 IP GUARD · '+scope.toUpperCase();
-  const queries=IPG_QUERIES[scope]||[];
-  const linkRow=q=>'<div style="border-top:1px solid rgba(167,123,255,.15);padding:8px 0">'+
-    '<div style="font-size:12px;font-weight:700;color:#fff;margin-bottom:4px;word-break:break-word">'+esc(q)+'</div>'+
-    '<div style="display:flex;gap:10px;flex-wrap:wrap;font-size:11px">'+
-      '<a href="https://www.google.com/search?q='+encodeURIComponent(q)+'" target="_blank" rel="noopener" style="color:var(--b);text-decoration:underline">Google</a>'+
-      '<a href="https://duckduckgo.com/?q='+encodeURIComponent(q)+'" target="_blank" rel="noopener" style="color:var(--b);text-decoration:underline">DuckDuckGo</a>'+
-      '<a href="https://www.bing.com/search?q='+encodeURIComponent(q)+'" target="_blank" rel="noopener" style="color:var(--b);text-decoration:underline">Bing</a>'+
-      '<a href="https://www.startpage.com/sp/search?query='+encodeURIComponent(q)+'" target="_blank" rel="noopener" style="color:var(--b);text-decoration:underline">Startpage</a>'+
-    '</div></div>';
-  $('panelBody').innerHTML=
-    '<div class="card"><div class="txTop"><b style="color:#a77bff">KRYPTEIA IP GUARD</b><span class="meta">'+esc(scope)+'</span></div>'+
-    '<div class="meta" style="margin-top:6px">Hunt unauthorised copies, monkey imitations, and code theft of <b>AstranoV</b> by Architect <b>Notis Astranov</b>.</div></div>'+
-    '<div class="card"><div style="font-size:11px;color:var(--muted);margin-bottom:6px">MANUAL CROSS-ENGINE SEARCHES</div>'+queries.map(linkRow).join('')+'</div>'+
-    '<div class="card"><div style="font-size:11px;color:var(--muted);margin-bottom:6px">AUTOMATED BACKEND SCAN</div>'+
-    '<button class="ribAction" id="ipgRun" style="width:100%;height:40px">RUN /api/krypteia/ip-guard</button>'+
-    '<div id="ipgRes" style="margin-top:10px;display:none"></div></div>';
-  $('ipgRun').onclick=async()=>{
-    $('ipgRes').style.display='block';
-    $('ipgRes').innerHTML='<em style="color:var(--muted)">Running deep scan…</em>';
-    try{
-      const ac=new AbortController();const tm=setTimeout(()=>ac.abort(),20000);
-      const r=await sbFn('astranov-api',{path:'/krypteia/ip-guard',scope,brand:'AstranoV',architect:'Notis Astranov',queries},ac.signal);
-      clearTimeout(tm);
-      if(!r.ok)throw new Error('status '+r.status);
-      const j=await r.json();const hits=j.hits||[];
-      $('ipgRes').innerHTML=hits.length
-        ?'<b style="color:#ff5577">Suspect hits: '+hits.length+'</b>'+hits.map(h=>'<div class="ledgerRow"><div class="txTop"><a href="'+esc(h.url||'#')+'" target="_blank" style="color:var(--b);text-decoration:underline">'+esc(h.title||h.url||'(no title)')+'</a><span class="meta">'+esc(String(h.score||''))+'</span></div><div class="meta">'+esc(h.snippet||'')+'</div></div>').join('')
-        :'<b class="ok">No suspect copies detected.</b>';
-      krypLog('IP GUARD '+scope+' scan complete: '+hits.length+' hits');
-    }catch(e){
-      $('ipgRes').innerHTML='<b class="bad">Backend scan unavailable.</b><div class="meta" style="margin-top:4px">Use the manual search links above. Once /api/krypteia/ip-guard is deployed, Krypteia runs automated cross-engine sweeps and returns suspect URLs with similarity scores.</div>';
-    }
-  };
-}
-
-/* Krypteia TELEMETRY */
-function openTelemetry(view){
-  if(!state.ownerAuthed){toast('Owner auth required');return}
-  ps();
-  $('panelTitle').textContent='📊 KRYPTEIA · '+view.toUpperCase();
-  if(view==='status'){
-    const checks=[
-      ['Globe engine',!!state.globe],
-      ['National map',!!state.nationalMap],
-      ['City map',!!state.cityMap],
-      ['Reverse geocode',typeof reverseGeocode==='function'],
-      ['OSRM routing',typeof routeStreet==='function'],
-      ['AI cycling',typeof aiAsk==='function'],
-      ['Hands-free voice',handsFreeOn],
-      ['Owner authed',state.ownerAuthed],
-      ['Custom vendors',state.customVendors.length],
-      ['Active orders',state.orders.filter(o=>o.status!=='closed').length],
-      ['Posts G/L/P',state.posts.global.length+'/'+state.posts.local.length+'/'+state.posts.private.length],
-    ];
-    $('panelBody').innerHTML='<div class="card">'+checks.map(c=>'<div class="checkLine"><b class="'+(c[1]?'ok':'bad')+'">'+(c[1]?'✓':'·')+'</b> '+esc(c[0])+': <span class="meta">'+esc(typeof c[1]==='boolean'?(c[1]?'OK':'NO'):String(c[1]))+'</span></div>').join('')+'</div>';
-  }else if(view==='logs'){
-    const snap={level:state.level,country:state.country?.name,city:state.city?.name,vendorMode:state.vendorMode,ownerAuthed:state.ownerAuthed,orders:state.orders.map(o=>({id:o.id,status:o.status,layers:o.layers?.length||0})),ledger:state.ledger.length,customVendors:state.customVendors.length,posts:Object.fromEntries(Object.entries(state.posts).map(([k,v])=>[k,v.length])),routeCache:state.routeCache?.size||0};
-    $('panelBody').innerHTML='<div class="card"><div class="meta">Live runtime snapshot</div><pre style="font-size:11px;color:#a0c4ff;background:rgba(0,0,0,.4);border-radius:8px;padding:10px;overflow:auto;margin-top:8px;white-space:pre-wrap;user-select:text">'+esc(JSON.stringify(snap,null,2))+'</pre></div>';
-  }else if(view==='cycle'){
-    $('panelBody').innerHTML='<div class="card"><b style="color:#a77bff">SELF-EVOLUTION CYCLE</b><div class="meta" style="margin-top:6px">Observe → Diagnose → Spartanize → Rebuild → Test → Verify → Log → Authorize → Deploy → Monitor</div><textarea id="cycText" style="width:100%;height:80px;margin-top:8px;background:rgba(167,123,255,.06);border:1px solid rgba(167,123,255,.32);border-radius:10px;color:#fff;padding:10px" placeholder="Optional focus area for this cycle"></textarea><button class="ribAction" id="runCyc" style="width:100%;height:40px;margin-top:8px">RUN CYCLE</button><div id="cycRes" style="margin-top:10px"></div></div>';
-    $('runCyc').onclick=async()=>{
-      const focus=$('cycText').value.trim();
-      $('cycRes').innerHTML='<em style="color:var(--muted)">Cycling…</em>';
-      krypLog('CYCLE start: '+(focus||'full sweep'));
-      const reply=await aiAsk('[KRYPTEIA CYCLE]'+(focus?' Focus: '+focus:' Full self-evolution sweep')+'. Return observations, diagnosis, proposed patches, test recommendations.');
-      if(reply.error)$('cycRes').innerHTML='<b class="bad">'+esc(reply.error)+'</b>';
-      else{$('cycRes').innerHTML='<b style="color:#a77bff">Cycle complete:</b><pre style="margin-top:6px;font-size:11px;color:#a0c4ff;background:rgba(0,0,0,.3);border-radius:8px;padding:8px;white-space:pre-wrap;user-select:text">'+esc(reply.text||'(no text)')+'</pre>';if(reply.action)execAIAction(reply.action)}
-    };
-  }
+  const scopes={web:['"AstranoV"','"AstranoV" clone','"Notis Astranov" copy'],stores:['site:apps.apple.com "AstranoV"','site:play.google.com "AstranoV"'],code:['site:github.com "AstranoV"','site:gitlab.com "AstranoV"','"AstranoV" "krypteia"']};
+  const mkLinks=q=>'<a href="https://www.google.com/search?q='+encodeURIComponent(q)+'" target="_blank" rel="noopener" style="color:var(--b);font-size:11px;text-decoration:underline;margin-right:8px">G</a>'+
+    '<a href="https://duckduckgo.com/?q='+encodeURIComponent(q)+'" target="_blank" rel="noopener" style="color:var(--b);font-size:11px;text-decoration:underline">DDG</a>';
+  ps();$('panelTitle').textContent='🛡 IP GUARD';
+  $('panelBody').innerHTML=Object.entries(scopes).map(([scope,qs])=>'<div class="card"><div class="meta" style="margin-bottom:6px">'+scope.toUpperCase()+'</div>'+qs.map(q=>'<div style="padding:6px 0;border-top:1px solid rgba(255,255,255,.07)"><span style="font-size:11px;color:#e9f7ff">'+esc(q)+'</span> '+mkLinks(q)+'</div>').join('')+'</div>').join('');
 }
 
 /* ── Triangle cascade menu ── */
@@ -1573,6 +1426,19 @@ function icon(html,size=42){return L.divIcon({className:'',iconSize:[size,size],
 function drawCity(){
   state.markers.forEach(m=>m.remove());state.markers=[];
   state.vendors=vendorsFor(state.city);state.drivers=driversFor(state.city);
+  /* Load real vendors from Supabase */
+  if(state.city){
+    const c=state.city;
+    sbFetch('/rest/v1/vendors?lat=gte.'+(c.lat-.25)+'&lat=lte.'+(c.lat+.25)+'&lng=gte.'+(c.lng-.3)+'&lng=lte.'+(c.lng+.3)+'&select=*&limit=40').then(r=>r.json()).then(rows=>{
+      if(!Array.isArray(rows)||!rows.length)return;
+      rows.forEach(row=>{
+        if(state.vendors.find(v=>v.id===row.id))return;
+        const v={id:row.id,name:row.name||'(unnamed)',emoji:row.emoji||'🏪',lat:+row.lat,lng:+row.lng,items:(row.items||[]),reserveBalance:+(row.reserve_balance||0),owner_id:row.owner_id};
+        state.vendors.push(v);
+        if(state.cityMap)state.markers.push(L.marker([v.lat,v.lng],{icon:icon('<div class="mapPin shop">'+v.emoji+'</div>')}).addTo(state.cityMap).bindTooltip(v.name,{className:'cleanTip'}).on('click',()=>openVendor(v)));
+      });
+    }).catch(()=>{});
+  }
   /* YOU pin: shows whenever GPS is available */
   if(state.geo){
     state.markers.push(L.marker([state.geo.lat,state.geo.lng],{icon:icon('<div class="mapPin user">YOU</div>',44)}).addTo(state.cityMap).on('click',openYouTriangle));
@@ -1725,7 +1591,7 @@ function topUpReserve(){
   const amt=parseFloat(raw);
   if(isNaN(amt)||amt<10){toast('Minimum top-up is 10 AVC');return}
   state.vendor.reserveBalance=+(((state.vendor.reserveBalance||0)+amt).toFixed(2));
-  state.ledger.push({ts:Date.now(),type:'RESERVE TOP-UP',vendor:state.vendor.name,amount:amt,balance:state.vendor.reserveBalance});
+  state.ledger.push({ts:Date.now(),type:'RESERVE TOP-UP',vendor:state.vendor.name,amount:amt,balance:state.vendor.reserveBalance,from:state.user?.name||'Vendor',to:'Reserve Pool',id:'TOP-UP-'+Date.now()});
   sbFetch('/rest/v1/vendors?id=eq.'+state.vendor.id,{method:'PATCH',body:JSON.stringify({reserve_balance:state.vendor.reserveBalance}),headers:{'Prefer':'return=minimal'}}).catch(e=>console.error('Reserve persist failed:',e));
   toast('Reserve topped up: '+money(state.vendor.reserveBalance),2500);
   renderRibbon();
@@ -1846,7 +1712,7 @@ function maybeClose(o){
       debited=Math.min(cur,dc);
       o.vendor.reserveBalance=+((cur-debited).toFixed(2));
       sbFetch('/rest/v1/vendors?id=eq.'+o.vendor.id,{method:'PATCH',body:JSON.stringify({reserve_balance:o.vendor.reserveBalance}),headers:{'Prefer':'return=minimal'}}).catch(e=>console.error('Reserve debit persist failed:',e));
-      state.ledger.push({ts:Date.now(),type:'DRIVER PAYOUT',vendor:o.vendor.name,order:o.id,amount:-debited,balance:o.vendor.reserveBalance});
+      state.ledger.push({ts:Date.now(),type:'DRIVER PAYOUT',vendor:o.vendor.name,order:o.id,amount:-debited,balance:o.vendor.reserveBalance,from:'Reserve Pool',to:'Driver',id:o.id});
       if(debited<dc)state.messages[o.id].push({who:'System',text:'Warning: reserve insufficient by '+money(dc-debited)+'. Vendor must top up.'});
     }
     toast('Order '+o.id+' closed');
@@ -1869,7 +1735,7 @@ function accounting(){
   $('panelBody').innerHTML=
     '<div class="quick" style="margin-bottom:8px"><button class="smallBtn" onclick="openInvoices()">🧾 Invoices ('+invs.length+')</button></div>'+
     '<div class="card"><div class="txTop"><b>LEDGER</b><span class="meta">'+led.length+' entries</span></div>'+
-    (led.length?led.map(x=>'<div class="ledgerRow"><div class="ledgerTop"><span>'+esc(x.type)+'</span><b>'+money(x.amount)+'</b></div><div class="meta">'+esc(x.id)+' · '+esc(x.from)+' → '+esc(x.to)+'</div></div>').join(''):'<div class="meta">No transactions yet.</div>')+
+    (led.length?led.map(x=>'<div class="ledgerRow"><div class="ledgerTop"><span>'+esc(x.type)+'</span><b style="color:'+(x.amount<0?'var(--r)':'var(--ok)')+'">'+money(x.amount)+'</b></div><div class="meta">'+(x.id||x.order||'—')+(x.from?' · '+esc(x.from)+' → '+esc(x.to):x.vendor?' · '+esc(x.vendor):'')+'</div></div>').join(''):'<div class="meta">No transactions yet.</div>')+
     '</div>';
 }
 
@@ -1907,11 +1773,12 @@ function openKrypteiaPanel(){
     '<div style="padding:8px 0">'+
     '<div style="font-size:11px;font-weight:1000;color:#a77bff;letter-spacing:.18em;margin-bottom:10px;text-align:center;text-shadow:0 0 12px rgba(167,123,255,.7)">OWNER CONTROL CENTER</div>'+
     '<div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px">'+
-    '<button class="smallBtn gold" onclick="krypInspect()">Inspect state</button>'+
-    '<button class="smallBtn" onclick="krypChecks()">Run checks</button>'+
+    '<button class="smallBtn gold" onclick="krypInspect()">Inspect</button>'+
+    '<button class="smallBtn" onclick="krypChecks()">Checks</button>'+
     '<button class="smallBtn" onclick="krypBrief()">Brief</button>'+
-    '<button class="smallBtn" onclick="krypExport()">Export HTML</button>'+
+    '<button class="smallBtn" onclick="krypExport()">Export</button>'+
     '<button class="smallBtn" style="border-color:rgba(167,123,255,.5);color:#c9aaff" onclick="krypDevelop()">Develop</button>'+
+    '<button class="smallBtn" onclick="krypIPGuard()">IP Guard</button>'+
     '<button class="smallBtn" style="border-color:var(--r);color:var(--r)" onclick="krypDeactivate()">Close</button>'+
     '</div>'+
     '<div id="krypMfOut" style="background:rgba(167,123,255,.06);border:1px solid rgba(167,123,255,.22);border-radius:10px;padding:8px;min-height:60px;font-size:11px;white-space:pre-wrap;margin-bottom:8px;user-select:text;color:#e9f7ff">'+esc(snap())+'</div>'+
@@ -2138,9 +2005,11 @@ $('radarCenter').onclick=(e)=>{e.stopPropagation();locateMe();toast('Recalibrati
 /* Badge click → show nearby events list in mfDrawer */
 $('radarBadge').onclick=(e)=>{
   e.stopPropagation();
+  _radarEvents=0;$('radarBadge').textContent='0';$('radarBadge').classList.remove('on');
   mfTall();
-  $('mfTitle').textContent='📡 NEARBY EVENTS · '+_radarEvents;
-  /* mfBody is populated by the realtime/poll handlers */
+  $('mfTitle').textContent='📡 RECENT MESSAGES';
+  const allMsgs=Object.values(state.circles).flatMap(c=>c.messages.map(m=>({...m,circle:c.name}))).sort((a,b)=>b.time-a.time).slice(0,10);
+  $('mfBody').innerHTML=allMsgs.length?'<div style="padding:8px 0;display:flex;flex-direction:column;gap:6px">'+allMsgs.map(m=>'<div class="aiBubble" style="font-size:11px"><b>'+esc(m.author)+'</b> in <em>'+esc(m.circle)+'</em><br>'+esc(m.text)+'<br><button class="smallBtn" style="margin-top:4px;font-size:10px" onclick="openCircle(\''+esc(m.circleId||\'global\')+'\')">Open →</button></div>').join('')+'</div>':'<div style="padding:24px;text-align:center;color:var(--muted);font-size:12px">No recent messages.</div>';
 };
 let _radarEvents=0;
 function radarPulse(n){
