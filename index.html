@@ -2009,7 +2009,9 @@ $('radarBadge').onclick=(e)=>{
   mfTall();
   $('mfTitle').textContent='📡 RECENT MESSAGES';
   const allMsgs=Object.values(state.circles).flatMap(c=>c.messages.map(m=>({...m,circle:c.name}))).sort((a,b)=>b.time-a.time).slice(0,10);
-  $('mfBody').innerHTML=allMsgs.length?'<div style="padding:8px 0;display:flex;flex-direction:column;gap:6px">'+allMsgs.map(m=>'<div class="aiBubble" style="font-size:11px"><b>'+esc(m.author)+'</b> in <em>'+esc(m.circle)+'</em><br>'+esc(m.text)+'<br><button class="smallBtn" style="margin-top:4px;font-size:10px" onclick="openCircle(\''+esc(m.circleId||\'global\')+'\')">Open →</button></div>').join('')+'</div>':'<div style="padding:24px;text-align:center;color:var(--muted);font-size:12px">No recent messages.</div>';
+  $('mfBody').innerHTML=allMsgs.length
+    ?'<div style="padding:8px 0;display:flex;flex-direction:column;gap:6px">'+allMsgs.map(m=>{const cid=m.circleId||'global';return'<div class="aiBubble" style="font-size:11px"><b>'+esc(m.author)+'</b> in <em>'+esc(m.circle)+'</em><br>'+esc(m.text)+'<br><button class="smallBtn" style="margin-top:4px;font-size:10px" onclick="openCircle('+JSON.stringify(cid)+')">Open →</button></div>'}).join('')+'</div>'
+    :'<div style="padding:24px;text-align:center;color:var(--muted);font-size:12px">No recent messages.</div>';
 };
 let _radarEvents=0;
 function radarPulse(n){
