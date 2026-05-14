@@ -884,7 +884,8 @@ function openYou() {
     '<div class="row" onclick="openMyVendors()"><span class="ri">&#127978;</span><div class="rm"><div class="rt">My Vendors</div></div><span class="chev">&#8250;</span></div>' +
     '<div class="row" onclick="openCircleList()"><span class="ri">&#128172;</span><div class="rm"><div class="rt">Circles</div></div><span class="chev">&#8250;</span></div>' +
     (S.krypActive
-      ? '<div class="row" onclick="openKrypteia()" style="background:rgba(255,200,0,.04)"><span class="ri">&#9889;</span><div class="rm"><div class="rt" style="color:#ffc800">Krypteia</div></div><span class="chev">&#8250;</span></div>'
+      ? '<div class="row" onclick="openKrypteia()" style="background:rgba(255,200,0,.04)"><span class="ri">&#9889;</span><div class="rm"><div class="rt" style="color:#ffc800">Krypteia</div></div><span class="chev">&#8250;</span></div>' +
+        '<div class="row" onclick="openProposals()" style="background:rgba(255,200,0,.04)"><span class="ri">&#129516;</span><div class="rm"><div class="rt" style="color:#ffc800">AI Proposals</div></div><span class="chev">&#8250;</span></div>'
       : '') +
     '<div class="row" onclick="doLogout()"><span class="ri">&#128682;</span><div class="rm"><div class="rt" style="color:#ff3b30">Sign Out</div></div></div>'
   )
@@ -1162,23 +1163,46 @@ function openRadar() {
   )
 }
 
-// ── AI CHAT ────────────────────────────────────────
+// ── ASTRANOV AI ────────────────────────────────────
 function openAIChat() {
+  if (!S.aiHistory.length) loadAIMemory()
   var msgsHtml = S.aiHistory.length
     ? S.aiHistory.map(function(m) {
         return '<div class="cmsg ' + (m.role === 'user' ? 'cme' : 'cai') + '">' + esc(m.content) + '</div>'
       }).join('')
-    : '<p class="muted center" style="padding:24px">How can I help you?</p>'
+    : '<p class="muted center" style="padding:24px">I am Astranov AI. How can I help?</p>'
   openPanel('ai',
-    '<div class="ptitle">&#10022; AI Assistant</div>' +
+    '<div class="ptitle">&#10022; Astranov AI</div>' +
     '<div class="cwrap" id="ai-msgs">' + msgsHtml + '</div>' +
-    '<div style="display:flex;gap:8px;padding:10px 16px 16px;align-items:center">' +
-    '<input class="inp" id="ai-inp" placeholder="Ask anything…" style="flex:1" onkeydown="if(event.key===\'Enter\')sendAI()">' +
+    '<div style="display:flex;gap:8px;padding:10px 16px 8px;align-items:center">' +
+    '<input class="inp" id="ai-inp" placeholder="Ask Astranov AI…" style="flex:1" onkeydown="if(event.key===\'Enter\')sendAI()">' +
     '<button class="btn bp bsm" onclick="sendAI()">Send</button>' +
-    '<button class="btn bs bsm" id="hf-btn" onclick="toggleHF()">' + (S.handsFree ? '&#127908; On' : '&#127908;') + '</button></div>'
+    '<button class="btn bs bsm" id="hf-btn" onclick="toggleHF()">' + (S.handsFree ? '&#127908; On' : '&#127908;') + '</button></div>' +
+    '<div style="display:flex;gap:8px;padding:0 16px 16px">' +
+    '<button class="btn bs bsm" onclick="openFeedback()">&#128172; Suggest improvement</button>' +
+    (S.krypActive ? '<button class="btn bs bsm" onclick="openKrypteia()">&#9889; Krypteia</button>' +
+                    '<button class="btn bs bsm" onclick="openProposals()">&#129516; Proposals</button>' : '') +
+    '</div>'
   )
   var el = document.getElementById('ai-msgs')
   if (el) el.scrollTop = el.scrollHeight
+}
+
+function loadAIMemory() {
+  if (!S.session) return
+  sbFetch('/rest/v1/ai_memory?user_id=eq.' + S.session.user.id + '&order=created_at.desc&limit=20&select=role,content')
+    .then(function(r) { return r.json() })
+    .then(function(rows) {
+      if (!Array.isArray(rows)) return
+      S.aiHistory = rows.slice().reverse().map(function(r) { return {role:r.role, content:r.content} })
+      var el = document.getElementById('ai-msgs')
+      if (el && S.aiHistory.length) {
+        el.innerHTML = S.aiHistory.map(function(m) {
+          return '<div class="cmsg ' + (m.role==='user'?'cme':'cai') + '">' + esc(m.content) + '</div>'
+        }).join('')
+        el.scrollTop = el.scrollHeight
+      }
+    }).catch(function() {})
 }
 
 function sendAI(text) {
@@ -1242,7 +1266,137 @@ function execAction(action) {
   }
   if (action.type === 'open_channel') openChannel(action.channel || 'global')
   if (action.type === 'accounting') openAccounting()
+  if (action.type === 'back') goBack()
   if (action.type === 'krypteia' && S.krypActive) openKrypteia()
+  if (action.type === 'krypteia_brief' && S.krypActive) krypBrief()
+  if (action.type === 'krypteia_inspect' && S.krypActive) krypInspect()
+  if (action.type === 'propose_change' && S.krypActive && action.prompt) {
+    proposeChange(String(action.prompt))
+  }
+}
+
+// ── FEEDBACK ───────────────────────────────────────
+function openFeedback() {
+  openPanel('feedback',
+    '<div class="ptitle">&#128172; Suggest an improvement</div>' +
+    '<div class="psect"><p class="muted" style="margin-bottom:10px">Tell Astranov AI what to fix, build, or improve. The architect reviews and approves.</p>' +
+    '<div class="ilabel">Kind</div>' +
+    '<div class="igrp"><select class="inp" id="fb-kind">' +
+    '<option value="suggestion">Suggestion</option>' +
+    '<option value="bug">Bug</option>' +
+    '<option value="request">Feature request</option>' +
+    '<option value="praise">Praise</option>' +
+    '</select></div>' +
+    '<div class="ilabel">Your message</div>' +
+    '<div class="igrp"><textarea class="inp" id="fb-text" rows="4" placeholder="What would make AstranoV better?"></textarea></div></div>' +
+    '<div class="brow">' +
+    '<button class="btn bs" onclick="closePanel(\'feedback\')">Cancel</button>' +
+    '<button class="btn bp" onclick="submitFeedback()">Send</button></div>'
+  )
+}
+
+function submitFeedback() {
+  var kind = (document.getElementById('fb-kind') || {}).value || 'suggestion'
+  var text = ((document.getElementById('fb-text') || {}).value || '').trim()
+  if (!text) { toast('Write something first'); return }
+  var payload = {
+    user_id: S.session && S.session.user ? S.session.user.id : null,
+    kind: kind, text: text,
+    context: {level:S.level, country:S.country?S.country.name:null, city:S.city?S.city.name:null}
+  }
+  sbFetch('/rest/v1/ai_feedback', {
+    method:'POST', body:JSON.stringify(payload), headers:{'Prefer':'return=minimal'}
+  }).then(function() { toast('Thank you. Astranov AI received your feedback.') })
+    .catch(function() { toast('Feedback saved locally') })
+  closePanel('feedback')
+  trackEvent('feedback', {kind:kind})
+}
+
+// ── SELF-EVOLUTION PROPOSALS (owner only) ──────────
+function proposeChange(prompt) {
+  if (!S.krypActive) { toast('Owner only'); return }
+  var payload = {prompt:prompt, status:'pending'}
+  sbFetch('/rest/v1/ai_proposals', {
+    method:'POST', body:JSON.stringify(payload),
+    headers:{'Prefer':'return=representation'}
+  }).then(function(r) { return r.json() })
+    .then(function(rows) {
+      toast('Proposal queued — review in Proposals')
+    }).catch(function() { toast('Could not queue proposal') })
+}
+
+function openProposals() {
+  if (!S.krypActive) return
+  openPanel('proposals',
+    '<div class="ptitle">&#129516; Pending Proposals</div>' +
+    '<div id="prop-list" style="padding:0 16px"><p class="muted center" style="padding:24px">Loading…</p></div>'
+  )
+  sbFetch('/rest/v1/ai_proposals?order=created_at.desc&limit=30')
+    .then(function(r) { return r.json() })
+    .then(function(rows) {
+      var el = document.getElementById('prop-list')
+      if (!el) return
+      if (!Array.isArray(rows) || !rows.length) {
+        el.innerHTML = '<p class="muted center" style="padding:24px">No proposals yet</p>'
+        return
+      }
+      el.innerHTML = rows.map(function(p) {
+        var cls = p.status === 'applied' ? 'bg' : p.status === 'rejected' ? 'br' : p.status === 'approved' ? 'bb' : 'by'
+        return '<div style="background:rgba(255,255,255,.04);border-radius:12px;padding:12px;margin-bottom:8px">' +
+          '<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">' +
+          '<span class="badge ' + cls + '">' + esc(p.status) + '</span>' +
+          '<span class="muted" style="font-size:11px">' + new Date(p.created_at).toLocaleString() + '</span></div>' +
+          '<div style="font-size:13px;line-height:1.4;margin-bottom:8px">' + esc(p.prompt) + '</div>' +
+          (p.status === 'pending'
+            ? '<div style="display:flex;gap:8px">' +
+              '<button class="btn bp bsm" onclick="decideProposal(' + p.id + ',\'approved\')">Approve &amp; build</button>' +
+              '<button class="btn bs bsm" onclick="decideProposal(' + p.id + ',\'rejected\')">Reject</button></div>'
+            : '') +
+          (p.commit_sha ? '<div class="muted" style="font-size:11px;margin-top:6px">commit ' + esc(p.commit_sha.slice(0,7)) + '</div>' : '') +
+          '</div>'
+      }).join('')
+    }).catch(function() {
+      var el = document.getElementById('prop-list')
+      if (el) el.innerHTML = '<p class="muted center" style="padding:24px">Could not load</p>'
+    })
+}
+
+function decideProposal(id, decision) {
+  if (!S.krypActive) return
+  if (decision === 'approved') {
+    if (!confirm('Approve and let Astranov AI build this change? It will commit to the repo.')) return
+    sbFetch('/rest/v1/ai_proposals?id=eq.' + id, {
+      method:'PATCH', body:JSON.stringify({status:'approved', decided_at:new Date().toISOString()}),
+      headers:{'Prefer':'return=minimal'}
+    }).then(function() {
+      sbFetch('/rest/v1/ai_proposals?id=eq.' + id + '&select=prompt').then(function(r){return r.json()}).then(function(rows) {
+        if (!rows || !rows[0]) return
+        toast('Building…')
+        sbFn('astranov-api', {
+          path: '/ai/krypteia/develop',
+          prompt: rows[0].prompt,
+          current_html: document.documentElement.outerHTML
+        }).then(function(resp) {
+          if (resp && resp.commit) {
+            sbFetch('/rest/v1/ai_proposals?id=eq.' + id, {
+              method:'PATCH', body:JSON.stringify({status:'applied', commit_sha:resp.commit}),
+              headers:{'Prefer':'return=minimal'}
+            }).catch(function() {})
+            toast('Applied! Commit ' + resp.commit.slice(0,7))
+          } else {
+            toast('Build returned no commit')
+          }
+          closePanel('proposals'); openProposals()
+        }).catch(function(e) { toast('Build failed: ' + (e.message || e)) })
+      })
+    }).catch(function() { toast('Could not update proposal') })
+  } else {
+    sbFetch('/rest/v1/ai_proposals?id=eq.' + id, {
+      method:'PATCH', body:JSON.stringify({status:'rejected', decided_at:new Date().toISOString()}),
+      headers:{'Prefer':'return=minimal'}
+    }).then(function() { closePanel('proposals'); openProposals() })
+      .catch(function() { toast('Could not reject') })
+  }
 }
 
 // ── VOICE ──────────────────────────────────────────
@@ -1317,19 +1471,23 @@ function krypInspect() {
 }
 
 function krypDevelop() {
-  toast('Sending code to AI…')
-  var src = document.documentElement.outerHTML.slice(0, 50000)
-  sbFn('astranov-api', {
-    action: 'develop', source: src,
-    instructions: 'Review AstranoV. Identify the top 3 improvements and describe them concisely.'
-  }).then(function(resp) {
-    var text = (resp && resp.text) ? resp.text : JSON.stringify(resp)
-    krypLog('develop', text)
-    openPanel('kryp-dev',
-      '<div class="ptitle">&#129516; AI Development</div>' +
-      '<div class="psect"><pre class="mono">' + esc(text) + '</pre></div>'
-    )
-  }).catch(function(e) { toast('AI unavailable: ' + (e.message || String(e))) })
+  if (!S.krypActive) return
+  openPanel('kryp-dev',
+    '<div class="ptitle">&#129516; Propose change</div>' +
+    '<div class="psect"><p class="muted" style="margin-bottom:10px">Describe the change. Astranov AI will build it and you approve before commit.</p>' +
+    '<div class="igrp"><textarea class="inp" id="kd-prompt" rows="5" placeholder="e.g. Add a dark/light toggle to the bottom bar"></textarea></div></div>' +
+    '<div class="brow">' +
+    '<button class="btn bs" onclick="closePanel(\'kryp-dev\')">Cancel</button>' +
+    '<button class="btn bp" onclick="krypSubmitDev()">Queue proposal</button></div>'
+  )
+}
+
+function krypSubmitDev() {
+  var el = document.getElementById('kd-prompt')
+  var p = el ? el.value.trim() : ''
+  if (!p) { toast('Describe the change first'); return }
+  proposeChange(p)
+  closePanel('kryp-dev')
 }
 
 function krypBrief() {
