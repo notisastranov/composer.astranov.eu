@@ -13,16 +13,29 @@ html,body{width:100%;height:100%;background:#000;color:#fff;font-family:-apple-s
 #globe-el{width:100%;height:100%;position:absolute;top:0;left:0}
 #map-el{width:100%;height:100%;position:absolute;top:0;left:0;display:none}
 #toast{position:fixed;bottom:28px;left:50%;transform:translateX(-50%);background:rgba(255,255,255,.12);backdrop-filter:blur(20px);border:1px solid rgba(255,255,255,.15);color:#fff;padding:10px 20px;border-radius:20px;font-size:13px;pointer-events:none;opacity:0;transition:opacity .3s;z-index:9999;white-space:nowrap}
-#bar{position:fixed;bottom:0;left:0;right:0;height:68px;background:rgba(0,0,0,.82);backdrop-filter:blur(28px);border-top:1px solid rgba(255,255,255,.1);display:flex;align-items:center;justify-content:space-around;padding:0 6px;z-index:100;transform:translateY(100%);transition:transform .35s cubic-bezier(.32,1,.23,1)}
-#bar.tray-open{transform:translateY(0)}
-#tray-trigger{position:fixed;bottom:0;left:0;right:0;height:28px;z-index:90;cursor:pointer}
-#tray-trigger::after{content:'';position:absolute;bottom:8px;left:50%;transform:translateX(-50%);width:44px;height:3px;background:rgba(255,255,255,.2);border-radius:2px;transition:background .2s}
-#tray-trigger:hover::after{background:rgba(255,255,255,.4)}
-.bar-btn{position:relative;display:flex;flex-direction:column;align-items:center;gap:2px;padding:8px 10px;border:none;background:none;color:rgba(255,255,255,.55);font-size:10px;cursor:pointer;border-radius:12px;transition:all .2s;min-width:50px}
-.bar-btn:active,.bar-btn.act{background:rgba(255,255,255,.1);color:#fff}
-.bar-icon{font-size:22px;line-height:1}
-.bar-badge{position:absolute;top:4px;right:6px;background:#ff3b30;color:#fff;border-radius:10px;min-width:16px;height:16px;font-size:10px;display:none;align-items:center;justify-content:center;padding:0 3px}
-#back-btn{position:fixed;top:16px;left:16px;width:44px;height:44px;border-radius:50%;background:rgba(0,0,0,.55);backdrop-filter:blur(20px);border:1px solid rgba(255,255,255,.2);color:#fff;font-size:22px;display:none;align-items:center;justify-content:center;cursor:pointer;z-index:200}
+#back-btn{position:fixed;top:16px;left:80px;width:40px;height:40px;border-radius:50%;background:rgba(0,0,0,.55);backdrop-filter:blur(20px);border:1px solid rgba(255,255,255,.2);color:#fff;font-size:20px;display:none;align-items:center;justify-content:center;cursor:pointer;z-index:200}
+/* Wallet widget — top left */
+#wallet-widget{position:fixed;top:16px;left:16px;z-index:200;display:flex;flex-direction:column;align-items:center;gap:2px;background:rgba(0,0,0,.55);backdrop-filter:blur(20px);border:1px solid rgba(255,255,255,.15);border-radius:14px;padding:8px 10px;cursor:pointer;transition:background .2s;min-width:54px}
+#wallet-widget:active{background:rgba(255,255,255,.08)}
+#wallet-icon{font-size:18px;line-height:1}
+#wallet-bal{font-size:9px;color:rgba(255,255,255,.5);white-space:nowrap;letter-spacing:.2px}
+/* Radar widget — top right */
+#radar-widget{position:fixed;top:16px;right:16px;z-index:200;display:flex;flex-direction:column;align-items:center;gap:2px;background:rgba(0,0,0,.55);backdrop-filter:blur(20px);border:1px solid rgba(255,255,255,.15);border-radius:14px;padding:8px 10px;cursor:pointer;transition:all .2s;min-width:54px}
+#radar-widget:active{background:rgba(255,255,255,.08)}
+#radar-widget.radar-active{border-color:rgba(255,59,48,.55);box-shadow:0 0 10px rgba(255,59,48,.2)}
+#radar-icon{font-size:18px;line-height:1}
+#radar-count{font-size:9px;color:rgba(255,255,255,.5);white-space:nowrap;letter-spacing:.2px}
+/* Unified multi-window panel */
+#multi{position:fixed;bottom:0;left:0;right:0;height:55vh;background:rgba(10,10,18,.96);backdrop-filter:blur(30px);border-top:1px solid rgba(255,255,255,.08);z-index:300;transform:translateY(100%);transition:transform .3s cubic-bezier(.32,1,.23,1);display:flex;flex-direction:column;overflow:hidden}
+#multi.open{transform:translateY(0)}
+#multi-handle{width:36px;height:4px;background:rgba(255,255,255,.2);border-radius:2px;margin:10px auto 4px;flex-shrink:0;cursor:ns-resize;touch-action:none}
+#multi-order-ribbon{flex-shrink:0;background:rgba(255,200,0,.07);border-bottom:1px solid rgba(255,200,0,.15);padding:7px 14px;font-size:11px;color:rgba(255,200,0,.9);display:none;white-space:nowrap;overflow-x:auto}
+#multi-order-ribbon.visible{display:block}
+#multi-zoom-bar{flex-shrink:0;display:flex;align-items:center;gap:8px;padding:4px 12px 5px;border-bottom:1px solid rgba(255,255,255,.06)}
+.multi-zoom-btn{background:rgba(255,255,255,.07);border:none;color:rgba(255,255,255,.55);width:26px;height:26px;border-radius:7px;font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;font-family:inherit;padding:0;transition:background .15s}
+.multi-zoom-btn:active{background:rgba(255,255,255,.15)}
+#multi-zoom-txt{font-size:11px;color:rgba(255,255,255,.35)}
+#multi-content{flex:1;overflow-y:auto;transform-origin:top left}
 #lvl-label{position:fixed;top:16px;left:50%;transform:translateX(-50%);background:rgba(0,0,0,.55);backdrop-filter:blur(20px);border:1px solid rgba(255,255,255,.12);color:rgba(255,255,255,.85);padding:6px 16px;border-radius:20px;font-size:13px;pointer-events:none;z-index:200;display:none;white-space:nowrap}
 .panel{position:fixed;bottom:0;left:0;right:0;max-height:100vh;overflow-y:auto;background:rgba(10,10,18,.96);backdrop-filter:blur(30px);border-top:1px solid rgba(255,255,255,.08);z-index:300;transform:translateY(100%);transition:transform .3s cubic-bezier(.32,1,.23,1)}
 .panel.open{transform:translateY(0)}
@@ -95,27 +108,26 @@ pre.mono{font-family:monospace;font-size:12px;color:rgba(255,255,255,.65);white-
 .leaflet-popup-content-wrapper{background:rgba(10,10,20,.97)!important;border:1px solid rgba(255,255,255,.1)!important;color:#fff!important;border-radius:14px!important;box-shadow:0 8px 30px rgba(0,0,0,.6)!important}
 .leaflet-popup-tip{background:rgba(10,10,20,.97)!important}
 /* ── COLLECTIVE INTELLIGENCE CYCLE ──────────────── */
-#cic-float{position:fixed;bottom:28px;right:16px;z-index:200;display:flex;flex-direction:column;align-items:center;cursor:pointer}
+#cic-float{position:fixed;bottom:28px;right:16px;z-index:200;display:flex;flex-direction:column;align-items:flex-end}
 #cic-orders-dot{position:absolute;top:-4px;right:-4px;width:14px;height:14px;border-radius:50%;background:#ff3b30;color:#fff;font-size:9px;font-weight:700;display:none;align-items:center;justify-content:center;z-index:3;border:2px solid #000}
-/* legacy widget class kept for transition */
-#cic-widget{position:relative;display:flex;flex-direction:column;align-items:center;cursor:pointer;padding:4px 0;min-width:50px;border:none;background:none;color:#fff;font-family:inherit}
-#cic-model-label{position:absolute;bottom:calc(100% + 4px);left:50%;transform:translateX(-50%);background:rgba(0,0,0,.82);backdrop-filter:blur(14px);border:1px solid rgba(255,255,255,.13);color:rgba(255,255,255,.92);padding:4px 10px;border-radius:9px;font-size:10px;white-space:nowrap;pointer-events:none;opacity:0;transition:opacity .35s,transform .35s;transform:translateX(-50%) translateY(4px);z-index:500}
-#cic-model-label.cic-show{opacity:1;transform:translateX(-50%) translateY(0)}
-.cic-ring{position:relative;width:60px;height:60px;flex-shrink:0}
+#cic-model-label{position:absolute;bottom:calc(100% + 4px);right:0;background:rgba(0,0,0,.82);backdrop-filter:blur(14px);border:1px solid rgba(255,255,255,.13);color:rgba(255,255,255,.92);padding:4px 10px;border-radius:9px;font-size:10px;white-space:nowrap;pointer-events:none;opacity:0;transition:opacity .35s,transform .35s;transform:translateY(4px);z-index:500}
+#cic-model-label.cic-show{opacity:1;transform:translateY(0)}
+.cic-ring{position:relative;width:60px;height:60px;flex-shrink:0;cursor:pointer}
 .cic-svg{position:absolute;top:0;left:0;pointer-events:none}
 .cic-center{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:26px;height:26px;border-radius:50%;border:1px solid rgba(255,255,255,.22);background:rgba(255,255,255,.1);color:#fff;font-size:13px;cursor:pointer;display:flex;align-items:center;justify-content:center;z-index:2;transition:all .2s;padding:0}
 .cic-center.hf-on{background:rgba(255,200,0,.3)!important;border-color:rgba(255,200,0,.7)!important;box-shadow:0 0 10px rgba(255,200,0,.4)}
-.cic-dot{position:absolute;width:9px;height:9px;border-radius:50%;background:rgba(255,255,255,.2);transition:background .3s,box-shadow .3s,transform .15s;cursor:pointer;z-index:1}
-.cic-dot:active{transform:scale(1.5)}
-.cic-dot.cic-active{background:var(--cc,#fff);box-shadow:0 0 6px var(--cc,#fff),0 0 14px rgba(255,255,255,.25)}
-.cic-dot.cic-locked{outline:2px solid #ffc800;outline-offset:2px}
-#cic-dot-astranov{width:11px;height:11px;background:radial-gradient(circle,#fff 0%,#ffc800 65%,rgba(255,200,0,.35) 100%)!important;box-shadow:0 0 5px rgba(255,200,0,.55);animation:cic-soul 2.6s ease-in-out infinite;margin-left:-1px;margin-top:-1px}
-#cic-dot-astranov.cic-active{box-shadow:0 0 10px #fff,0 0 18px rgba(255,200,0,.7)!important;animation:none}
-@keyframes cic-soul{0%,100%{box-shadow:0 0 5px rgba(255,200,0,.45)}50%{box-shadow:0 0 11px rgba(255,200,0,.85),0 0 20px rgba(255,200,0,.25)}}
-.cic-lbl-wrap{font-size:9px;color:rgba(255,255,255,.32);letter-spacing:.4px;margin-top:2px;line-height:1;white-space:nowrap}
-.cic-lbl-wrap span{color:rgba(255,255,255,.55)}
-@keyframes cic-think{0%,100%{opacity:.2}50%{opacity:.85}}
-.cic-thinking .cic-dot{animation:cic-think .75s ease-in-out infinite}
+@keyframes cic-ring-pulse{0%,100%{stroke:rgba(255,200,0,.12)}50%{stroke:rgba(255,200,0,.4)}}
+#cic-ring-base{animation:cic-ring-pulse 2.6s ease-in-out infinite}
+/* CIC provider chips — always visible below ring */
+#cic-node-chips{display:flex;gap:3px;margin-top:5px;flex-wrap:wrap;justify-content:flex-end;max-width:170px}
+.cic-chip{font-size:9px;padding:3px 7px;border-radius:7px;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.1);color:rgba(255,255,255,.5);cursor:pointer;transition:all .2s;white-space:nowrap;font-family:inherit}
+.cic-chip:active{transform:scale(.92)}
+.cic-chip.cic-chip-active{color:var(--cc,#fff);border-color:var(--cc,#fff);background:rgba(255,255,255,.1);font-weight:600}
+.cic-chip.cic-chip-locked{outline:1px solid #ffc800;outline-offset:1px}
+.cic-lbl-wrap{font-size:9px;color:rgba(255,255,255,.28);letter-spacing:.4px;margin-top:3px;line-height:1;white-space:nowrap;text-align:right}
+.cic-lbl-wrap span{color:rgba(255,255,255,.5)}
+@keyframes cic-think{0%,100%{opacity:.3}50%{opacity:1}}
+.cic-thinking .cic-chip{animation:cic-think .75s ease-in-out infinite}
 @keyframes cic-spin{from{stroke-dashoffset:145}to{stroke-dashoffset:0}}
 </style>
 </head>
@@ -125,24 +137,22 @@ pre.mono{font-family:monospace;font-size:12px;color:rgba(255,255,255,.65);white-
 <div id="toast"></div>
 <div id="back-btn" onclick="goBack()">&#8592;</div>
 <div id="lvl-label"></div>
-<!-- Swipe-up tray trigger — thin invisible strip at very bottom -->
-<div id="tray-trigger" onclick="trayShow()"></div>
-<!-- Navigation tray — hidden by default, appears on swipe-up -->
-<div id="bar">
-  <button class="bar-btn" onclick="openChannel('global');trayHide()"><span class="bar-icon">&#127760;</span>Feed</button>
-  <button class="bar-btn" id="radar-btn" onclick="openRadar();trayHide()">
-    <span class="bar-icon">&#128225;</span>Radar
-    <span id="radar-badge" class="bar-badge">0</span>
-  </button>
-  <button class="bar-btn" onclick="openAccounting();trayHide()"><span class="bar-icon">&#128176;</span>Wallet</button>
-  <button class="bar-btn" onclick="openYou();trayHide()"><span class="bar-icon">&#128100;</span>You</button>
+<!-- Top-left wallet widget -->
+<div id="wallet-widget" onclick="openAccounting()">
+  <div id="wallet-icon">&#128176;</div>
+  <div id="wallet-bal">Wallet</div>
+</div>
+<!-- Top-right radar widget -->
+<div id="radar-widget" onclick="openRadar()">
+  <div id="radar-icon">&#128225;</div>
+  <span id="radar-count">Radar</span>
 </div>
 <!-- CIC ring — always floating bottom-right, the OS heartbeat -->
-<div id="cic-float" onclick="openAIChat()">
+<div id="cic-float">
   <div id="cic-model-label"></div>
-  <div class="cic-ring" id="cic-ring">
+  <div class="cic-ring" id="cic-ring" onclick="openAIChat()">
     <svg class="cic-svg" width="60" height="60" viewBox="0 0 60 60">
-      <circle cx="30" cy="30" r="21" fill="none" stroke="rgba(255,255,255,.07)" stroke-width="1.5"/>
+      <circle id="cic-ring-base" cx="30" cy="30" r="21" fill="none" stroke="rgba(255,255,255,.07)" stroke-width="1.5"/>
       <circle id="cic-arc" cx="30" cy="30" r="21" fill="none" stroke="rgba(255,200,0,.6)" stroke-width="2"
         stroke-dasharray="0 132" stroke-linecap="round" transform="rotate(-90 30 30)" opacity="0"
         style="transition:stroke-dasharray .4s"/>
@@ -150,7 +160,20 @@ pre.mono{font-family:monospace;font-size:12px;color:rgba(255,255,255,.65);white-
     <button class="cic-center" id="cic-mic" onclick="event.stopPropagation();toggleHF()">&#127908;</button>
     <div id="cic-orders-dot"></div>
   </div>
+  <div id="cic-node-chips"></div>
   <div class="cic-lbl-wrap">C.I. <span id="cic-mode-txt">Auto</span></div>
+</div>
+<!-- Unified multi-window panel — the only bottom panel in the OS -->
+<div id="multi">
+  <div id="multi-handle"></div>
+  <div id="multi-order-ribbon"></div>
+  <div id="multi-zoom-bar">
+    <button class="multi-zoom-btn" onclick="multiZoom(-1)">&#8722;</button>
+    <span id="multi-zoom-txt">100%</span>
+    <button class="multi-zoom-btn" onclick="multiZoom(1)">&#43;</button>
+    <button class="multi-zoom-btn" style="margin-left:auto" onclick="closeMulti()">&#10005;</button>
+  </div>
+  <div id="multi-content"></div>
 </div>
 <div id="ui"></div>
 
@@ -360,33 +383,90 @@ function sbAuth(action, email, password, meta) {
   }).then(function(r) { return r.json() })
 }
 
-// ── PANEL SYSTEM ───────────────────────────────────
+// ── MULTI-WINDOW PANEL SYSTEM ──────────────────────
+var _panelJustOpened = false
+var _multiZoom = 1.0
+var _multiH = 0
+
 function openPanel(id, html) {
-  closePanel(id)
-  var el = document.createElement('div')
-  el.className = 'panel'
-  el.id = 'pan-' + id
-  el.innerHTML = '<div class="ph"></div>' + html
-  document.getElementById('ui').appendChild(el)
-  requestAnimationFrame(function() { el.classList.add('open') })
-  return el
+  _panelJustOpened = true
+  setTimeout(function() { _panelJustOpened = false }, 0)
+  var content = document.getElementById('multi-content')
+  if (content) {
+    content.innerHTML = '<div class="ph"></div>' + html
+    content.style.zoom = _multiZoom
+  }
+  var multi = document.getElementById('multi')
+  if (!multi) return null
+  if (!_multiH) _multiH = Math.round(window.innerHeight * 0.55)
+  multi.style.height = _multiH + 'px'
+  multi.classList.add('open')
+  updateMultiOrderRibbon()
+  return multi
 }
 
 function closePanel(id) {
-  var el = document.getElementById('pan-' + id)
-  if (!el) return
-  el.classList.remove('open')
-  setTimeout(function() { if (el.parentNode) el.parentNode.removeChild(el) }, 320)
+  if (_panelJustOpened) return
+  closeMulti()
 }
 
 function closeAll() {
-  var panels = document.querySelectorAll('.panel')
-  for (var i = 0; i < panels.length; i++) {
-    (function(p) {
-      p.classList.remove('open')
-      setTimeout(function() { if (p.parentNode) p.parentNode.removeChild(p) }, 320)
-    })(panels[i])
+  closeMulti()
+}
+
+function closeMulti() {
+  var multi = document.getElementById('multi')
+  if (multi) multi.classList.remove('open')
+}
+
+function multiZoom(dir) {
+  _multiZoom = Math.max(0.5, Math.min(2.0, _multiZoom + dir * 0.15))
+  var content = document.getElementById('multi-content')
+  if (content) content.style.zoom = _multiZoom
+  var txt = document.getElementById('multi-zoom-txt')
+  if (txt) txt.textContent = Math.round(_multiZoom * 100) + '%'
+}
+
+function updateMultiOrderRibbon() {
+  var ribbon = document.getElementById('multi-order-ribbon')
+  if (!ribbon) return
+  var active = Object.values(S.orders).filter(function(o) { return o.status === 'active' })
+  if (!active.length) { ribbon.classList.remove('visible'); return }
+  ribbon.innerHTML = active.map(function(o) {
+    return '<span style="cursor:pointer;margin-right:14px" onclick="openOrder(' + JSON.stringify(o.id) + ')">' +
+      '&#128225; ' + esc(o.vendor ? o.vendor.name : 'Order') +
+      (o.driver ? ' · ' + esc(o.driver.name) : '') + ' — ' + esc(o.status) + '</span>'
+  }).join('')
+  ribbon.classList.add('visible')
+}
+
+function initMultiResize() {
+  var handle = document.getElementById('multi-handle')
+  if (!handle) return
+  var startY = 0, startH = 0
+  function onStart(y) {
+    startY = y
+    startH = parseInt(document.getElementById('multi').style.height) || Math.round(window.innerHeight * 0.55)
   }
+  function onMove(y) {
+    var newH = Math.max(100, Math.min(window.innerHeight - 60, startH + (startY - y)))
+    _multiH = newH
+    document.getElementById('multi').style.height = newH + 'px'
+  }
+  function onEnd(y) {
+    if (startY - y < -80) closeMulti()
+  }
+  handle.addEventListener('touchstart', function(e) { onStart(e.touches[0].clientY) }, {passive:true})
+  handle.addEventListener('touchmove', function(e) { onMove(e.touches[0].clientY) }, {passive:true})
+  handle.addEventListener('touchend', function(e) { onEnd(e.changedTouches[0].clientY) }, {passive:true})
+  handle.addEventListener('mousedown', function(e) {
+    onStart(e.clientY)
+    function mm(ev) { onMove(ev.clientY) }
+    function mu(ev) { onEnd(ev.clientY); document.removeEventListener('mousemove', mm); document.removeEventListener('mouseup', mu) }
+    document.addEventListener('mousemove', mm)
+    document.addEventListener('mouseup', mu)
+    e.preventDefault()
+  })
 }
 
 // ── LEVEL MANAGEMENT ───────────────────────────────
@@ -435,42 +515,11 @@ function clearMarkers() {
 }
 
 // ── GLOBE ──────────────────────────────────────────
-// ── TRAY (swipe-up navigation) ─────────────────────
-var _trayTimer = null
-function trayShow() {
-  var bar = document.getElementById('bar')
-  if (bar) bar.classList.add('tray-open')
-  clearTimeout(_trayTimer)
-  _trayTimer = setTimeout(trayHide, 5000)
-}
-function trayHide() {
-  var bar = document.getElementById('bar')
-  if (bar) bar.classList.remove('tray-open')
-}
-function initTray() {
-  // Touch swipe-up from bottom 60px
-  var startY = 0
-  document.addEventListener('touchstart', function(e) {
-    startY = e.touches[0].clientY
-  }, {passive:true})
-  document.addEventListener('touchend', function(e) {
-    var endY = e.changedTouches[0].clientY
-    var fromBottom = startY > window.innerHeight - 60
-    if (fromBottom && startY - endY > 18) trayShow()
-  }, {passive:true})
-  // Click anywhere while tray is open → hide (unless clicking bar itself)
-  document.addEventListener('click', function(e) {
-    var bar = document.getElementById('bar')
-    if (bar && bar.classList.contains('tray-open') && !bar.contains(e.target)) {
-      trayHide()
-    }
-  })
-  // Brief peek on first load so user discovers the tray
-  setTimeout(function() { trayShow() }, 800)
-  setTimeout(function() { trayHide() }, 3200)
-}
-
 function initGlobe() {
+  if (typeof Globe === 'undefined') {
+    setTimeout(initGlobe, 250)
+    return
+  }
   var el = document.getElementById('globe-el')
 
   function nearestCountry(lat, lng) {
@@ -938,6 +987,13 @@ function doRegister() {
     }).catch(function() { toast('Registration error') })
 }
 
+function updateWalletWidget() {
+  var bal = document.getElementById('wallet-bal')
+  if (!bal) return
+  var b = (S.profile && S.profile.balance) ? S.profile.balance : 0
+  bal.textContent = b > 0 ? money(b) : 'Wallet'
+}
+
 function applySession(session) {
   S.session = session
   try { localStorage.setItem('av_session', JSON.stringify(session)) } catch(e) {}
@@ -946,6 +1002,7 @@ function applySession(session) {
     .then(function(rows) {
       if (rows && rows[0]) {
         S.profile = rows[0]
+        updateWalletWidget()
         if (S.profile.is_owner) activateKrypteia()
       }
     }).catch(function() {})
@@ -1233,11 +1290,16 @@ function submitPost(ch) {
 // ── RADAR ──────────────────────────────────────────
 function updateRadar() {
   var active = Object.values(S.orders).filter(function(o) { return o.status === 'active' }).length
-  var badge = document.getElementById('radar-badge')
-  if (badge) { badge.textContent = active; badge.style.display = active > 0 ? 'flex' : 'none' }
-  // Also show on CIC ring (always visible even when tray is hidden)
+  var cnt = document.getElementById('radar-count')
+  if (cnt) cnt.textContent = active > 0 ? active + ' active' : 'Radar'
+  var rw = document.getElementById('radar-widget')
+  if (rw) {
+    if (active > 0) rw.classList.add('radar-active')
+    else rw.classList.remove('radar-active')
+  }
   var dot = document.getElementById('cic-orders-dot')
   if (dot) { dot.textContent = active || ''; dot.style.display = active > 0 ? 'flex' : 'none' }
+  updateMultiOrderRibbon()
 }
 
 function openRadar() {
@@ -1532,29 +1594,19 @@ function getCICNodes() {
   return nodes
 }
 
-function cicNodePos(i, total) {
-  var r = 21, angle = (i / total) * 2 * Math.PI - Math.PI / 2
-  return {
-    left: Math.round(30 + r * Math.cos(angle) - 4.5),
-    top: Math.round(30 + r * Math.sin(angle) - 4.5)
-  }
-}
-
 function initCICWidget() {
-  var ring = document.getElementById('cic-ring')
-  if (!ring) return
-  ring.querySelectorAll('.cic-dot').forEach(function(d) { d.remove() })
-  var nodes = getCICNodes()
-  nodes.forEach(function(n, i) {
-    var pos = cicNodePos(i, nodes.length)
-    var d = document.createElement('div')
-    d.className = 'cic-dot'
-    d.id = 'cic-dot-' + n.id
-    d.style.cssText = 'left:' + pos.left + 'px;top:' + pos.top + 'px'
-    d.style.setProperty('--cc', CIC_COLORS[n.id] || '#fff')
-    d.title = CIC_LABELS[n.id] || n.id
-    d.addEventListener('click', function(e) { e.stopPropagation(); cicNodeClick(n.id) })
-    ring.appendChild(d)
+  var chipsEl = document.getElementById('cic-node-chips')
+  if (!chipsEl) return
+  chipsEl.innerHTML = ''
+  getCICNodes().forEach(function(n) {
+    var chip = document.createElement('button')
+    chip.className = 'cic-chip'
+    chip.id = 'cic-chip-' + n.id
+    chip.textContent = CIC_SHORT[n.id] || n.id
+    chip.title = CIC_LABELS[n.id] || n.id
+    chip.style.setProperty('--cc', CIC_COLORS[n.id] || '#fff')
+    chip.addEventListener('click', function(e) { e.stopPropagation(); cicNodeClick(n.id) })
+    chipsEl.appendChild(chip)
   })
   updateCICWidget(S.cicProvider, S.cicThinking)
 }
@@ -1574,17 +1626,17 @@ function updateCICWidget(provider, thinking, via) {
   if (provider) S.cicProvider = provider
   if (via !== undefined) S.cicVia = via
   S.cicThinking = !!thinking
-  var ring = document.getElementById('cic-ring')
-  if (ring) {
-    if (thinking) ring.classList.add('cic-thinking')
-    else ring.classList.remove('cic-thinking')
+  var chipsEl = document.getElementById('cic-node-chips')
+  if (chipsEl) {
+    if (thinking) chipsEl.classList.add('cic-thinking')
+    else chipsEl.classList.remove('cic-thinking')
   }
   getCICNodes().forEach(function(n) {
-    var dot = document.getElementById('cic-dot-' + n.id)
-    if (!dot) return
-    dot.classList.remove('cic-active', 'cic-locked')
-    if (n.id === S.cicManual) dot.classList.add('cic-locked')
-    if (!thinking && n.id === S.cicProvider) dot.classList.add('cic-active')
+    var chip = document.getElementById('cic-chip-' + n.id)
+    if (!chip) return
+    chip.classList.remove('cic-chip-active', 'cic-chip-locked')
+    if (n.id === S.cicManual) chip.classList.add('cic-chip-locked')
+    if (!thinking && n.id === S.cicProvider) chip.classList.add('cic-chip-active')
   })
   // Arc: fill while thinking, empty when done
   var arc = document.getElementById('cic-arc')
@@ -1625,10 +1677,10 @@ function cicStartThinking() {
 function cicStopThinking(provider, via) {
   updateCICWidget(provider || null, false, via)
   if (provider) {
-    var dot = document.getElementById('cic-dot-' + provider)
-    if (dot) {
-      dot.style.transform = 'scale(1.5)'
-      setTimeout(function() { dot.style.transform = '' }, 300)
+    var chip = document.getElementById('cic-chip-' + provider)
+    if (chip) {
+      chip.style.transform = 'scale(1.25)'
+      setTimeout(function() { chip.style.transform = '' }, 300)
     }
   }
 }
@@ -2014,7 +2066,7 @@ function init() {
     }
   } catch(e) {}
 
-  initTray()
+  initMultiResize()
   initCICWidget()
   initGlobe()
 }
