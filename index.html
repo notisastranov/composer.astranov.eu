@@ -14,17 +14,26 @@ html,body{width:100%;height:100%;background:#000;color:#fff;font-family:-apple-s
 #map-el{width:100%;height:100%;position:absolute;top:0;left:0;display:none}
 #toast{position:fixed;bottom:28px;left:50%;transform:translateX(-50%);background:rgba(255,255,255,.12);backdrop-filter:blur(20px);border:1px solid rgba(255,255,255,.15);color:#fff;padding:10px 20px;border-radius:20px;font-size:13px;pointer-events:none;opacity:0;transition:opacity .3s;z-index:9999;white-space:nowrap}
 #back-btn{position:fixed;top:16px;left:80px;width:40px;height:40px;border-radius:50%;background:rgba(0,0,0,.55);backdrop-filter:blur(20px);border:1px solid rgba(255,255,255,.2);color:#fff;font-size:20px;display:none;align-items:center;justify-content:center;cursor:pointer;z-index:200}
+/* Globe loading overlay */
+#globe-loading{position:fixed;top:0;left:0;width:100%;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:1;pointer-events:none;gap:14px}
+#globe-loading.done{display:none}
+.g-spin{width:36px;height:36px;border:2px solid rgba(255,255,255,.08);border-top-color:rgba(255,200,0,.65);border-radius:50%;animation:gspin 1s linear infinite}
+@keyframes gspin{to{transform:rotate(360deg)}}
+#globe-ltxt{font-size:12px;color:rgba(255,255,255,.35)}
+/* Drag handle shared */
+.wdh{font-size:13px;color:rgba(255,255,255,.2);cursor:move;touch-action:none;user-select:none;-webkit-user-select:none;line-height:1;align-self:stretch;display:flex;align-items:center;justify-content:center;padding:0 2px;border-radius:4px}
+.wdh:hover{color:rgba(255,255,255,.5)}
 /* Wallet widget — top left */
-#wallet-widget{position:fixed;top:16px;left:16px;z-index:200;display:flex;flex-direction:column;align-items:center;gap:2px;background:rgba(0,0,0,.55);backdrop-filter:blur(20px);border:1px solid rgba(255,255,255,.15);border-radius:14px;padding:8px 10px;cursor:pointer;transition:background .2s;min-width:54px}
+#wallet-widget{position:fixed;top:16px;left:16px;z-index:200;display:flex;flex-direction:row;align-items:center;gap:6px;background:rgba(0,0,0,.55);backdrop-filter:blur(20px);border:1px solid rgba(255,255,255,.15);border-radius:14px;padding:7px 10px 7px 6px;transition:background .2s;min-width:54px}
 #wallet-widget:active{background:rgba(255,255,255,.08)}
-#wallet-icon{font-size:18px;line-height:1}
-#wallet-bal{font-size:9px;color:rgba(255,255,255,.5);white-space:nowrap;letter-spacing:.2px}
+#wallet-icon{font-size:18px;line-height:1;cursor:pointer}
+#wallet-bal{font-size:9px;color:rgba(255,255,255,.5);white-space:nowrap;letter-spacing:.2px;cursor:pointer}
 /* Radar widget — top right */
-#radar-widget{position:fixed;top:16px;right:16px;z-index:200;display:flex;flex-direction:column;align-items:center;gap:2px;background:rgba(0,0,0,.55);backdrop-filter:blur(20px);border:1px solid rgba(255,255,255,.15);border-radius:14px;padding:8px 10px;cursor:pointer;transition:all .2s;min-width:54px}
+#radar-widget{position:fixed;top:16px;right:16px;z-index:200;display:flex;flex-direction:row;align-items:center;gap:6px;background:rgba(0,0,0,.55);backdrop-filter:blur(20px);border:1px solid rgba(255,255,255,.15);border-radius:14px;padding:7px 10px 7px 6px;transition:all .2s;min-width:54px}
 #radar-widget:active{background:rgba(255,255,255,.08)}
 #radar-widget.radar-active{border-color:rgba(255,59,48,.55);box-shadow:0 0 10px rgba(255,59,48,.2)}
-#radar-icon{font-size:18px;line-height:1}
-#radar-count{font-size:9px;color:rgba(255,255,255,.5);white-space:nowrap;letter-spacing:.2px}
+#radar-icon{font-size:18px;line-height:1;cursor:pointer}
+#radar-count{font-size:9px;color:rgba(255,255,255,.5);white-space:nowrap;letter-spacing:.2px;cursor:pointer}
 /* Unified multi-window panel */
 #multi{position:fixed;bottom:0;left:0;right:0;height:55vh;background:rgba(10,10,18,.96);backdrop-filter:blur(30px);border-top:1px solid rgba(255,255,255,.08);z-index:300;transform:translateY(100%);transition:transform .3s cubic-bezier(.32,1,.23,1);display:flex;flex-direction:column;overflow:hidden}
 #multi.open{transform:translateY(0)}
@@ -109,6 +118,8 @@ pre.mono{font-family:monospace;font-size:12px;color:rgba(255,255,255,.65);white-
 .leaflet-popup-tip{background:rgba(10,10,20,.97)!important}
 /* ── COLLECTIVE INTELLIGENCE CYCLE ──────────────── */
 #cic-float{position:fixed;bottom:28px;right:16px;z-index:200;display:flex;flex-direction:column;align-items:flex-end}
+#cic-drag{position:absolute;top:-12px;right:0;font-size:11px;color:rgba(255,255,255,.18);cursor:move;touch-action:none;user-select:none;-webkit-user-select:none;padding:2px 4px}
+#cic-drag:hover{color:rgba(255,255,255,.5)}
 #cic-orders-dot{position:absolute;top:-4px;right:-4px;width:14px;height:14px;border-radius:50%;background:#ff3b30;color:#fff;font-size:9px;font-weight:700;display:none;align-items:center;justify-content:center;z-index:3;border:2px solid #000}
 #cic-model-label{position:absolute;bottom:calc(100% + 4px);right:0;background:rgba(0,0,0,.82);backdrop-filter:blur(14px);border:1px solid rgba(255,255,255,.13);color:rgba(255,255,255,.92);padding:4px 10px;border-radius:9px;font-size:10px;white-space:nowrap;pointer-events:none;opacity:0;transition:opacity .35s,transform .35s;transform:translateY(4px);z-index:500}
 #cic-model-label.cic-show{opacity:1;transform:translateY(0)}
@@ -137,18 +148,23 @@ pre.mono{font-family:monospace;font-size:12px;color:rgba(255,255,255,.65);white-
 <div id="toast"></div>
 <div id="back-btn" onclick="goBack()">&#8592;</div>
 <div id="lvl-label"></div>
+<!-- Globe loading overlay -->
+<div id="globe-loading"><div class="g-spin"></div><div id="globe-ltxt">Loading…</div></div>
 <!-- Top-left wallet widget -->
-<div id="wallet-widget" onclick="openAccounting()">
-  <div id="wallet-icon">&#128176;</div>
-  <div id="wallet-bal">Wallet</div>
+<div id="wallet-widget">
+  <div class="wdh" title="Drag to move">&#8942;</div>
+  <div id="wallet-icon" onclick="openAccounting()">&#128176;</div>
+  <div id="wallet-bal" onclick="openAccounting()">Wallet</div>
 </div>
 <!-- Top-right radar widget -->
-<div id="radar-widget" onclick="openRadar()">
-  <div id="radar-icon">&#128225;</div>
-  <span id="radar-count">Radar</span>
+<div id="radar-widget">
+  <div class="wdh" title="Drag to move">&#8942;</div>
+  <div id="radar-icon" onclick="openRadar()">&#128225;</div>
+  <span id="radar-count" onclick="openRadar()">Radar</span>
 </div>
 <!-- CIC ring — always floating bottom-right, the OS heartbeat -->
 <div id="cic-float">
+  <div id="cic-drag" title="Drag to move">&#8942;</div>
   <div id="cic-model-label"></div>
   <div class="cic-ring" id="cic-ring" onclick="openAIChat()">
     <svg class="cic-svg" width="60" height="60" viewBox="0 0 60 60">
@@ -515,12 +531,27 @@ function clearMarkers() {
 }
 
 // ── GLOBE ──────────────────────────────────────────
+var _globeTries = 0
+function showGlobeFallback() {
+  var lo = document.getElementById('globe-loading')
+  if (!lo) return
+  lo.style.pointerEvents = 'auto'
+  lo.innerHTML = '<div style="font-size:16px;color:rgba(255,255,255,.7);margin-bottom:18px;letter-spacing:.5px">ASTRANOV</div>' +
+    '<div style="display:flex;flex-wrap:wrap;gap:10px;justify-content:center;max-width:300px;padding:0 20px">' +
+    COUNTRIES.slice(0,8).map(function(c) {
+      return '<button style="padding:9px 14px;border-radius:11px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.15);color:#fff;cursor:pointer;font-size:13px;font-family:inherit" onclick="openNational(' + JSON.stringify(c) + ')">' + esc(c.name) + '</button>'
+    }).join('') + '</div>'
+}
+
 function initGlobe() {
   if (typeof Globe === 'undefined') {
+    _globeTries++
+    if (_globeTries > 40) { showGlobeFallback(); return }
     setTimeout(initGlobe, 250)
     return
   }
   var el = document.getElementById('globe-el')
+  var lo = document.getElementById('globe-loading')
 
   function nearestCountry(lat, lng) {
     var best = null, bestD = Infinity
@@ -545,10 +576,12 @@ function initGlobe() {
       })
   } catch(e) {
     console.error('Globe init failed:', e)
-    el.style.cssText = 'display:flex;align-items:center;justify-content:center;color:rgba(255,255,255,.4);font-size:14px'
-    el.textContent = 'Globe loading… tap a region below to navigate.'
+    _globeTries++
+    if (_globeTries < 6) { setTimeout(initGlobe, 1000); return }
+    showGlobeFallback()
     return
   }
+  if (lo) lo.classList.add('done')
 
   var arcs = []
   for (var i = 0; i < COUNTRIES.length; i++) {
@@ -2049,6 +2082,57 @@ function showPlaceInfo(lat, lng) {
     }).catch(function() {})
 }
 
+// ── DRAGGABLE WIDGETS ──────────────────────────────
+function makeDraggable(elId, handleSel, storageKey) {
+  var el = document.getElementById(elId)
+  if (!el) return
+  var handle = handleSel ? el.querySelector(handleSel) : el
+  if (!handle) return
+
+  // Restore saved position
+  try {
+    var saved = JSON.parse(localStorage.getItem(storageKey) || 'null')
+    if (saved && saved.top != null && saved.left != null) {
+      el.style.top = saved.top + 'px'
+      el.style.left = saved.left + 'px'
+      el.style.right = 'auto'
+      el.style.bottom = 'auto'
+    }
+  } catch(e) {}
+
+  var sx = 0, sy = 0, sl = 0, st = 0, active = false
+
+  function start(x, y) {
+    var r = el.getBoundingClientRect()
+    sx = x; sy = y; sl = r.left; st = r.top; active = true
+  }
+  function move(x, y) {
+    if (!active) return
+    var nl = Math.max(0, Math.min(window.innerWidth - 50, sl + x - sx))
+    var nt = Math.max(0, Math.min(window.innerHeight - 50, st + y - sy))
+    el.style.left = nl + 'px'; el.style.top = nt + 'px'
+    el.style.right = 'auto'; el.style.bottom = 'auto'
+  }
+  function end() {
+    if (!active) return
+    active = false
+    var r = el.getBoundingClientRect()
+    try { localStorage.setItem(storageKey, JSON.stringify({top: Math.round(r.top), left: Math.round(r.left)})) } catch(e) {}
+  }
+
+  handle.addEventListener('mousedown', function(e) {
+    start(e.clientX, e.clientY)
+    e.preventDefault()
+    function mm(ev) { move(ev.clientX, ev.clientY) }
+    function mu() { end(); document.removeEventListener('mousemove', mm); document.removeEventListener('mouseup', mu) }
+    document.addEventListener('mousemove', mm)
+    document.addEventListener('mouseup', mu)
+  })
+  handle.addEventListener('touchstart', function(e) { if (e.touches.length === 1) start(e.touches[0].clientX, e.touches[0].clientY) }, {passive:true})
+  handle.addEventListener('touchmove', function(e) { if (e.touches.length === 1) move(e.touches[0].clientX, e.touches[0].clientY) }, {passive:true})
+  handle.addEventListener('touchend', function() { end() }, {passive:true})
+}
+
 // ── INIT ───────────────────────────────────────────
 function init() {
   var h = new Date().getHours()
@@ -2068,6 +2152,9 @@ function init() {
 
   initMultiResize()
   initCICWidget()
+  makeDraggable('wallet-widget', '.wdh', 'av_pos_wallet')
+  makeDraggable('radar-widget', '.wdh', 'av_pos_radar')
+  makeDraggable('cic-float', '#cic-drag', 'av_pos_cic')
   initGlobe()
 }
 
