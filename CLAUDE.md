@@ -31,32 +31,56 @@ AVC currency only. Krypteia = owner-only hidden panel.
 
 ---
 
-## ZERO UI LAW — NEVER VIOLATE
+## CELESTIAL CIRCLES UI LAW — NEVER VIOLATE
 
-AstranoV is a **Virtual Reality Operating System**. The globe and space are permanent. Everything else is transient.
+AstranoV is a **planetary Internet Operating System**. The globe and space are permanent and untouchable. Every other element of the UI is a **celestial circle** — a floating, draggable, pinch-scalable circular gadget that appears when needed and dissolves when it is not.
 
-### Core rules:
-1. **The globe and space are ALWAYS on screen.** They are never covered permanently. No elements may sit permanently on top of the main canvas.
-2. **No permanent menus, toolbars, or navigation bars.** The bottom navigation tray is HIDDEN by default. It appears only on swipe-up gesture or swipe from the bottom edge, then auto-hides after 5 seconds.
-3. **Only what is needed appears — and then disappears.** Panels, labels, buttons slide in for a task and slide out. Auto-dismiss timers are preferred over close buttons.
-4. **The Collective Intelligence Cycle (CIC) ring is the ONLY always-visible UI element** — it is the OS heartbeat, not a menu. It lives bottom-right as a subtle floating ring. It is never removed.
-5. **Back button and level label** appear contextually (when navigation level > global) and may auto-fade when idle. Never permanent.
-6. **Panels** slide up from bottom, close on swipe-down or tap outside. They must not have a permanent home indicator bar below them.
-7. **Zero labels on the globe by default** — country labels appear as part of globe.gl's native interaction, not as DOM overlays.
+There are no rectangles in the AstranoV UI. No square pop-ups, no modals, no sheets, no toolbars, no tab bars, no ribbons, no boxed content. Anything that used to be one of those — chat windows, vendor menus, posts, notifications, search results, payments, settings, Krypteia — is a circle. The circle is the universal carrier.
 
-### What Claude must NOT do:
-- Add permanent bottom bars, nav bars, tab bars, or any fixed navigation chrome
-- Add floating action buttons beyond the CIC ring
-- Add persistent overlay UI that covers the globe
-- Make radical structural changes without telling the owner first
-- Break the globe rendering (always wrap Globe() init in try-catch with fallback)
-- Deploy changes that kill the app (syntax-check JS before every commit)
+### The Four Primordial Circles
+These exist by default at app boot:
 
-### Tray design:
-- Triggered by swipe-up from bottom 60px OR tap on `#tray-trigger` (thin strip)
-- Shows: Feed | Radar | Wallet | You
-- Auto-hides after 5 seconds of no interaction
-- On first load: briefly peeks for 2.5 seconds to teach the gesture
+1. **Economics Circle** (top-left, green glow) — wallet, AVC balance, recent ledger, micro-graph of balance over time. Replaces the wallet widget.
+2. **Radar Circle** (top-right, amber glow) — active orders, nearby vendors, delivery ETAs, pulsing dot when activity. Replaces the radar widget.
+3. **AI Circle** (bottom-right, violet glow) — Collective Intelligence heartbeat, provider chips orbiting the rim, mic in the center, locks/auto state. Replaces the CIC ring.
+4. **View Circle** (white-blue glow, spawned on demand) — the universal content carrier. Used for ANY chat, vendor menu, post, video, search result, message, photo, settings panel, Krypteia tool. The app is allowed to spawn as many View Circles as needed, each independently positioned, sized, scrollable, and dismissible.
+
+The app itself may instantiate new circle types at runtime through the same primitive (`Circles.spawn({type:'custom', glow:'#hex', content:...})`).
+
+### Anatomy of a Celestial Circle
+- Frosted glass interior (`backdrop-filter: blur(28px)`), thin rim, type-specific glow color
+- A radial mask fades content near the curved edge so the text inside reads cleanly
+- A rim-arc shows scroll position in lieu of any scrollbar
+- A subtle outside label (small caps, ≤10px) names the circle's purpose — never a chrome bar
+- A drag handle is NOT a separate element — the outer ~12% of the radius is the drag rim
+
+### Unified Gesture Contract — identical on every circle
+- **One finger, interior (< 88% of radius from center):** scrolls the content vertically
+- **One finger, rim (≥ 88% of radius from center):** drags the entire circle anywhere on screen
+- **Two fingers, pinch:** scales the *content* inside (zoom). When the content scale would shrink below ~0.6, the *circle itself* begins to shrink instead; when it would grow above ~1.4, the *circle itself* grows. Threshold values are tunable but the principle is invariant: pinch never feels stuck.
+- **Tap outside, or pinch all the way down:** the circle collapses toward its spawn-origin coordinate and dissolves
+- **Long-press on rim:** "pin" the circle so it persists across navigation (otherwise it auto-dismisses when not in focus for 30s, unless it is a primordial circle)
+
+### Positioning & Layout
+- Circles always float on top of the globe — never docked, never anchored to an edge
+- Default positions are remembered per-circle in `localStorage` (`av_circle_pos_<id>`)
+- When a new circle is spawned without a position, it auto-places in the largest empty quadrant
+- Circles never auto-arrange or snap to grid — the user's drag positions are sovereign
+- Two circles may be dragged near each other to "constellation-link" (visual: a faint connecting line, semantic: linked context, e.g. a vendor circle next to a payment circle)
+
+### What Claude must NOT do
+- NEVER create rectangular DOM containers for transient content. Use `Circles.spawn(...)`.
+- NEVER add a permanent tab bar, nav bar, footer, sidebar, ribbon, or toolbar — the four primordials plus on-demand View Circles ARE the navigation.
+- NEVER use modals, alerts, prompts, sheets, drawers, or any framework primitive that imposes a rectangle. Replace with a View Circle.
+- NEVER let a circle's content escape the radial mask — text must be readable inside the circle, not clipped by it.
+- NEVER cover the globe with opaque pixels. All circles are translucent and the globe must remain visible through them.
+- NEVER break the gesture contract: every circle, including future ones the app creates, must support the same one-finger / two-finger semantics.
+- NEVER reintroduce close-button chrome inside circles — close is implicit (tap outside, or pinch-collapse).
+
+### Retired concepts (kept here so they don't sneak back)
+- ~~`#multi` bottom rectangular panel~~ — gone. Replaced by View Circles.
+- ~~`#tray-trigger` swipe-up tray with Feed/Radar/Wallet/You buttons~~ — gone. Navigation is the four primordials.
+- ~~Atari-style emoji buttons (💰 Wallet, 📡 Radar)~~ — gone. Circles display data, not labels.
 - CIC ring is NOT in the tray — it's always floating independently
 
 ---

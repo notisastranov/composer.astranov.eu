@@ -155,6 +155,78 @@ pre.mono{font-family:monospace;font-size:12px;color:rgba(255,255,255,.65);white-
 @keyframes cic-think{0%,100%{opacity:.3}50%{opacity:1}}
 .cic-thinking .cic-chip{animation:cic-think .75s ease-in-out infinite}
 @keyframes cic-spin{from{stroke-dashoffset:145}to{stroke-dashoffset:0}}
+
+/* ═══════════════════════════════════════════════════════════════════════
+   CELESTIAL CIRCLES — universal floating-gadget primitive
+   See CLAUDE.md "CELESTIAL CIRCLES UI LAW" for the contract.
+   ═══════════════════════════════════════════════════════════════════════ */
+.cc{position:fixed;z-index:250;border-radius:50%;overflow:visible;touch-action:none;-webkit-tap-highlight-color:transparent;
+  background:radial-gradient(circle at 32% 28%,rgba(255,255,255,.06) 0%,transparent 55%),rgba(10,15,25,.55);
+  backdrop-filter:blur(28px) saturate(1.4);-webkit-backdrop-filter:blur(28px) saturate(1.4);
+  border:1px solid rgba(255,255,255,.10);
+  box-shadow:0 10px 44px rgba(0,0,0,.55),inset 0 0 30px rgba(255,255,255,.04),0 0 var(--cc-glow-r,22px) var(--cc-glow-c,rgba(255,255,255,.12));
+  color:rgba(255,255,255,.92);font-family:-apple-system,'SF Pro Text',inherit;font-size:13px;line-height:1.45;
+  opacity:0;transform:scale(.6);
+  transition:opacity .35s ease,transform .45s cubic-bezier(.34,1.56,.64,1),filter .2s,box-shadow .3s,width .25s ease,height .25s ease}
+.cc.cc-shown{opacity:1;transform:scale(1)}
+.cc.cc-collapsing{opacity:0;transform:scale(.12);pointer-events:none;transition:opacity .3s,transform .3s ease-in}
+.cc.cc-dragging{transition:none;cursor:grabbing}
+.cc.cc-pinching{filter:brightness(1.06)}
+.cc.cc-link-near{box-shadow:0 0 0 1px rgba(255,255,255,.35),0 10px 44px rgba(0,0,0,.55),0 0 32px var(--cc-glow-c,rgba(255,255,255,.25))}
+.cc-rim{position:absolute;inset:0;border-radius:50%;border:1px solid rgba(255,255,255,.06);pointer-events:none}
+.cc-scroll{position:absolute;inset:0;border-radius:50%;overflow:hidden;
+  -webkit-mask-image:radial-gradient(circle,#000 0%,#000 76%,transparent 100%);
+          mask-image:radial-gradient(circle,#000 0%,#000 76%,transparent 100%)}
+.cc-content{position:absolute;inset:0;overflow-y:auto;overflow-x:hidden;padding:18% 16%;
+  -webkit-overflow-scrolling:touch;scrollbar-width:none;transform-origin:center center}
+.cc-content::-webkit-scrollbar{display:none}
+.cc-content > *{transform-origin:top center}
+.cc-content h1,.cc-content h2,.cc-content h3{font-weight:500;letter-spacing:.3px}
+.cc-arc{position:absolute;inset:-1px;pointer-events:none;width:calc(100% + 2px);height:calc(100% + 2px)}
+.cc-arc circle{fill:none;stroke-width:1.8;stroke-linecap:round;transform-origin:center;transform:rotate(-90deg)}
+.cc-arc .cc-arc-track{stroke:rgba(255,255,255,.04)}
+.cc-arc .cc-arc-prog{stroke:var(--cc-glow-c,rgba(255,255,255,.35));transition:stroke-dasharray .15s ease}
+.cc-label{position:absolute;left:50%;bottom:-20px;transform:translateX(-50%);
+  font-size:9px;letter-spacing:2.4px;color:rgba(255,255,255,.34);text-transform:uppercase;
+  pointer-events:none;white-space:nowrap;font-weight:500}
+.cc-data{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);text-align:center;pointer-events:none}
+.cc-data .v{font-size:28px;font-weight:300;letter-spacing:.5px;color:rgba(255,255,255,.95);font-variant-numeric:tabular-nums;line-height:1}
+.cc-data .u{font-size:9px;letter-spacing:2px;color:rgba(255,255,255,.4);text-transform:uppercase;margin-top:4px;display:block}
+.cc-data .delta{font-size:10px;font-weight:500;margin-top:6px;display:block}
+.cc-data .delta.up{color:#32d74b}.cc-data .delta.dn{color:#ff453a}
+.cc-sparkline{position:absolute;left:18%;right:18%;bottom:28%;height:32px;pointer-events:none;opacity:.85}
+.cc-sparkline path{fill:none;stroke:var(--cc-glow-c,rgba(255,255,255,.35));stroke-width:1.4;stroke-linecap:round;stroke-linejoin:round}
+.cc-sparkline .fill{stroke:none;fill:var(--cc-glow-c,rgba(255,255,255,.18));opacity:.35}
+
+/* Type-specific glow & accent */
+.cc-economics{--cc-glow-c:rgba(50,215,75,.22);--cc-glow-r:20px}
+.cc-economics .cc-arc-prog{stroke:rgba(50,215,75,.6)}
+.cc-radar{--cc-glow-c:rgba(255,159,10,.22);--cc-glow-r:20px}
+.cc-radar.active{--cc-glow-r:32px;--cc-glow-c:rgba(255,159,10,.4)}
+.cc-radar .cc-arc-prog{stroke:rgba(255,159,10,.65)}
+.cc-ai{--cc-glow-c:rgba(191,90,242,.25);--cc-glow-r:24px}
+.cc-ai .cc-arc-prog{stroke:rgba(191,90,242,.7)}
+.cc-view{--cc-glow-c:rgba(100,180,255,.18);--cc-glow-r:22px}
+.cc-view .cc-arc-prog{stroke:rgba(100,180,255,.55)}
+.cc-krypteia{--cc-glow-c:rgba(255,200,0,.26);--cc-glow-r:26px}
+
+/* Tiny pulsing dot (for radar active) */
+.cc-pulse-dot{position:absolute;width:8px;height:8px;border-radius:50%;background:#ff9f0a;
+  top:24%;left:50%;transform:translateX(-50%);box-shadow:0 0 10px rgba(255,159,10,.8);
+  animation:ccPulse 1.6s ease-in-out infinite}
+@keyframes ccPulse{0%,100%{transform:translateX(-50%) scale(1);opacity:1}50%{transform:translateX(-50%) scale(1.4);opacity:.55}}
+
+/* Long-press pin indicator */
+.cc.cc-pinned::after{content:'';position:absolute;top:8%;right:18%;width:6px;height:6px;
+  border-radius:50%;background:var(--cc-glow-c,#fff);box-shadow:0 0 6px var(--cc-glow-c,#fff)}
+
+/* Constellation link line — drawn by JS as svg between two circles */
+#cc-links-svg{position:fixed;inset:0;pointer-events:none;z-index:240}
+#cc-links-svg line{stroke:rgba(255,255,255,.18);stroke-width:1;stroke-dasharray:2 4}
+
+/* Hide retired chrome (kept in DOM for now; will be removed in follow-up) */
+#multi{display:none!important}
+#wallet-widget,#radar-widget{display:none!important}
 </style>
 </head>
 <body>
@@ -258,6 +330,406 @@ pre.mono{font-family:monospace;font-size:12px;color:rgba(255,255,255,.65);white-
   }
   window._dbg = dbg
   window._dbgFlush = flush
+})()
+
+// ═══════════════════════════════════════════════════════════════════════
+// CELESTIAL CIRCLES — universal floating-gadget primitive.
+// Spec: CLAUDE.md "CELESTIAL CIRCLES UI LAW".
+// API: Circles.spawn({id,type,title,content,glow,x,y,diameter,persistent,onClose,spawnFrom})
+//      Circles.get(id) · Circles.close(id) · Circles.closeAll() · Circles.update(id,patch)
+// Gestures: 1-finger interior=scroll · 1-finger rim(≥86%R)=drag · 2-finger=pinch
+//           pinch < .6 shrinks the circle itself · pinch > 1.6 grows the circle itself
+// ═══════════════════════════════════════════════════════════════════════
+var Circles = (function() {
+  var instances = {}
+  var nextZ = 251
+  var linksSvg = null
+
+  function $el(tag, cls, html) {
+    var n = document.createElement(tag)
+    if (cls) n.className = cls
+    if (html != null) n.innerHTML = html
+    return n
+  }
+
+  function loadPos(id) {
+    try { return JSON.parse(localStorage.getItem('av_cc_pos_' + id) || 'null') } catch(e) { return null }
+  }
+  function savePos(c) {
+    try { localStorage.setItem('av_cc_pos_' + c.id, JSON.stringify({x:Math.round(c.x),y:Math.round(c.y),d:Math.round(c.diameter)})) } catch(e) {}
+  }
+
+  // Auto-place in the largest empty quadrant
+  function autoPlace(d) {
+    var W = window.innerWidth, H = window.innerHeight
+    var quads = [
+      {x: W*0.18, y: H*0.22}, {x: W*0.82, y: H*0.22},
+      {x: W*0.18, y: H*0.78}, {x: W*0.82, y: H*0.78},
+      {x: W*0.5,  y: H*0.5}
+    ]
+    var best = quads[0], bestScore = -1
+    quads.forEach(function(q) {
+      var min = 1e9
+      Object.keys(instances).forEach(function(k) {
+        var ci = instances[k]
+        var dx = q.x - ci.x, dy = q.y - ci.y
+        var dist = Math.sqrt(dx*dx + dy*dy)
+        if (dist < min) min = dist
+      })
+      if (min > bestScore) { bestScore = min; best = q }
+    })
+    // Clamp inside viewport with margin
+    var r = d / 2
+    return {
+      x: Math.max(r + 12, Math.min(W - r - 12, best.x)),
+      y: Math.max(r + 12, Math.min(H - r - 12, best.y))
+    }
+  }
+
+  function applyTransform(c) {
+    c.element.style.left   = (c.x - c.diameter/2) + 'px'
+    c.element.style.top    = (c.y - c.diameter/2) + 'px'
+    c.element.style.width  = c.diameter + 'px'
+    c.element.style.height = c.diameter + 'px'
+    var content = c.element.querySelector('.cc-content')
+    if (content) content.style.transform = 'scale(' + c.contentScale + ')'
+    updateArc(c)
+  }
+
+  function updateArc(c) {
+    var arc = c.element.querySelector('.cc-arc-prog')
+    if (!arc) return
+    var content = c.element.querySelector('.cc-content')
+    if (!content) return
+    var max = content.scrollHeight - content.clientHeight
+    var pct = max > 4 ? Math.max(0, Math.min(1, content.scrollTop / max)) : 0
+    // SVG arc is sized to viewBox 0 0 100 100. Circumference 2πr where r=49.
+    var circ = 2 * Math.PI * 49
+    arc.setAttribute('stroke-dasharray', (pct * circ) + ' ' + circ)
+  }
+
+  function buildElement(c) {
+    var el = $el('div', 'cc cc-' + c.type)
+    el.dataset.ccId = c.id
+    el.style.zIndex = nextZ++
+    el.innerHTML =
+      '<div class="cc-scroll"><div class="cc-content"></div></div>' +
+      '<svg class="cc-arc" viewBox="0 0 100 100">' +
+        '<circle class="cc-arc-track" cx="50" cy="50" r="49"/>' +
+        '<circle class="cc-arc-prog"  cx="50" cy="50" r="49" stroke-dasharray="0 308"/>' +
+      '</svg>' +
+      '<div class="cc-rim"></div>' +
+      (c.title ? '<div class="cc-label">' + c.title + '</div>' : '')
+    var content = el.querySelector('.cc-content')
+    if (typeof c.content === 'string') content.innerHTML = c.content
+    else if (c.content instanceof Node) content.appendChild(c.content)
+    content.addEventListener('scroll', function(){ updateArc(c) }, {passive:true})
+    return el
+  }
+
+  // ─── GESTURE HANDLING ──────────────────────────────
+  function attachGestures(c) {
+    var el = c.element
+    var pointers = {}
+    var drag = null, pinch = null
+    var pressTimer = null
+
+    function center() {
+      var r = el.getBoundingClientRect()
+      return { cx: r.left + r.width/2, cy: r.top + r.height/2, R: r.width/2 }
+    }
+    function roleAt(x, y) {
+      var c0 = center()
+      var dx = x - c0.cx, dy = y - c0.cy
+      var d = Math.sqrt(dx*dx + dy*dy)
+      return d / c0.R > 0.86 ? 'drag' : 'scroll'
+    }
+
+    el.addEventListener('pointerdown', function(e) {
+      if (e.pointerType === 'mouse' && e.button !== 0) return
+      try { el.setPointerCapture(e.pointerId) } catch(_) {}
+      el.style.zIndex = nextZ++
+      pointers[e.pointerId] = { x:e.clientX, y:e.clientY, lastX:e.clientX, lastY:e.clientY, role: roleAt(e.clientX, e.clientY) }
+      var n = Object.keys(pointers).length
+      if (n === 1) {
+        var p = pointers[e.pointerId]
+        if (p.role === 'drag') {
+          drag = { sx:e.clientX, sy:e.clientY, cx:c.x, cy:c.y }
+          el.classList.add('cc-dragging')
+          // Long-press on rim → toggle pin
+          pressTimer = setTimeout(function() {
+            c.persistent = !c.persistent
+            el.classList.toggle('cc-pinned', c.persistent)
+            haptic()
+            drag = null
+          }, 650)
+        }
+      } else if (n === 2) {
+        var ids = Object.keys(pointers)
+        var p1 = pointers[ids[0]], p2 = pointers[ids[1]]
+        var dx = p1.x - p2.x, dy = p1.y - p2.y
+        pinch = { dist: Math.sqrt(dx*dx + dy*dy), d0: c.diameter, s0: c.contentScale }
+        drag = null
+        el.classList.remove('cc-dragging')
+        el.classList.add('cc-pinching')
+      }
+    })
+
+    el.addEventListener('pointermove', function(e) {
+      var p = pointers[e.pointerId]
+      if (!p) return
+      var ldx = e.clientX - p.lastX, ldy = e.clientY - p.lastY
+      p.lastX = e.clientX; p.lastY = e.clientY; p.x = e.clientX; p.y = e.clientY
+      var n = Object.keys(pointers).length
+
+      if (n === 2 && pinch) {
+        var ids = Object.keys(pointers)
+        var p1 = pointers[ids[0]], p2 = pointers[ids[1]]
+        var dx = p1.x - p2.x, dy = p1.y - p2.y
+        var d = Math.sqrt(dx*dx + dy*dy)
+        var ratio = d / Math.max(1, pinch.dist)
+        var s = pinch.s0 * ratio
+        if (s < 0.6) {
+          c.contentScale = 0.6
+          c.diameter = Math.max(c.minD, pinch.d0 * (s / 0.6))
+        } else if (s > 1.6) {
+          c.contentScale = 1.6
+          c.diameter = Math.min(c.maxD, pinch.d0 * (s / 1.6))
+        } else {
+          c.contentScale = s
+        }
+        applyTransform(c)
+      } else if (n === 1) {
+        if (p.role === 'drag' && drag) {
+          if (pressTimer && (Math.abs(e.clientX - drag.sx) > 6 || Math.abs(e.clientY - drag.sy) > 6)) {
+            clearTimeout(pressTimer); pressTimer = null
+          }
+          c.x = drag.cx + (e.clientX - drag.sx)
+          c.y = drag.cy + (e.clientY - drag.sy)
+          // Soft-clamp inside viewport
+          var r = c.diameter / 2
+          c.x = Math.max(r * 0.4, Math.min(window.innerWidth  - r * 0.4, c.x))
+          c.y = Math.max(r * 0.4, Math.min(window.innerHeight - r * 0.4, c.y))
+          applyTransform(c)
+          checkConstellation(c)
+        } else if (p.role === 'scroll') {
+          var content = el.querySelector('.cc-content')
+          if (content) content.scrollTop -= ldy
+          updateArc(c)
+        }
+      }
+    })
+
+    function endPointer(e) {
+      if (!pointers[e.pointerId]) return
+      delete pointers[e.pointerId]
+      var n = Object.keys(pointers).length
+      if (n < 2 && pinch) {
+        pinch = null
+        el.classList.remove('cc-pinching')
+        // If user pinched almost to nothing → close
+        if (c.diameter <= c.minD + 6 && c.contentScale <= 0.62 && !c.persistent) {
+          close(c)
+          return
+        }
+      }
+      if (n === 0) {
+        if (drag) {
+          var moved = Math.abs(e.clientX - drag.sx) + Math.abs(e.clientY - drag.sy)
+          // Treat as tap if no significant movement and on rim → toggle pin handled by long-press
+          if (moved < 6 && !c.persistent && c.onTapRim) c.onTapRim()
+          drag = null
+        }
+        if (pressTimer) { clearTimeout(pressTimer); pressTimer = null }
+        el.classList.remove('cc-dragging')
+        savePos(c)
+      }
+    }
+    el.addEventListener('pointerup', endPointer)
+    el.addEventListener('pointercancel', endPointer)
+    el.addEventListener('lostpointercapture', endPointer)
+
+    // Double-tap to close (when not persistent)
+    var lastTap = 0
+    el.addEventListener('click', function(e) {
+      var now = Date.now()
+      if (now - lastTap < 320 && !c.persistent) {
+        e.stopPropagation()
+        close(c); return
+      }
+      lastTap = now
+    })
+  }
+
+  function haptic() { try { navigator.vibrate && navigator.vibrate(8) } catch(_) {} }
+
+  // ─── CONSTELLATION LINKS ───────────────────────────
+  function checkConstellation(c) {
+    var nearAny = false
+    Object.keys(instances).forEach(function(k) {
+      if (k === c.id) return
+      var o = instances[k]
+      var dx = c.x - o.x, dy = c.y - o.y
+      var dist = Math.sqrt(dx*dx + dy*dy)
+      var threshold = (c.diameter + o.diameter) / 2 + 24
+      var near = dist < threshold * 1.25 && dist > threshold * 0.55
+      o.element.classList.toggle('cc-link-near', near && o._linkedTo === c.id || false)
+      if (near) { o._linkedTo = c.id; c._linkedTo = o.id; nearAny = true }
+    })
+    if (!nearAny) c._linkedTo = null
+    drawLinks()
+  }
+
+  function drawLinks() {
+    if (!linksSvg) {
+      linksSvg = document.createElementNS('http://www.w3.org/2000/svg', 'svg')
+      linksSvg.id = 'cc-links-svg'
+      linksSvg.setAttribute('width', '100%')
+      linksSvg.setAttribute('height', '100%')
+      document.body.appendChild(linksSvg)
+    }
+    linksSvg.innerHTML = ''
+    var seen = {}
+    Object.keys(instances).forEach(function(k) {
+      var c = instances[k]
+      if (!c._linkedTo) return
+      var pair = [k, c._linkedTo].sort().join('|')
+      if (seen[pair]) return
+      seen[pair] = true
+      var o = instances[c._linkedTo]
+      if (!o) return
+      var l = document.createElementNS('http://www.w3.org/2000/svg', 'line')
+      l.setAttribute('x1', c.x); l.setAttribute('y1', c.y)
+      l.setAttribute('x2', o.x); l.setAttribute('y2', o.y)
+      linksSvg.appendChild(l)
+    })
+  }
+
+  // ─── SPAWN / UPDATE / CLOSE ────────────────────────
+  function spawn(opts) {
+    opts = opts || {}
+    var id = opts.id || ('cc_' + Math.random().toString(36).slice(2, 8))
+    if (instances[id]) {
+      var existing = instances[id]
+      if (opts.content != null) setContent(existing, opts.content)
+      if (opts.title != null) {
+        var lbl = existing.element.querySelector('.cc-label')
+        if (lbl) lbl.textContent = opts.title
+        existing.title = opts.title
+      }
+      existing.element.style.zIndex = nextZ++
+      return existing
+    }
+    var minD = opts.minD || 96
+    var maxD = opts.maxD || Math.min(window.innerWidth, window.innerHeight) - 32
+    var d = opts.diameter || (opts.type === 'view' ? Math.round(Math.min(window.innerWidth, window.innerHeight) * 0.62) : 168)
+    d = Math.max(minD, Math.min(maxD, d))
+    var saved = loadPos(id)
+    var c = {
+      id: id,
+      type: opts.type || 'view',
+      title: opts.title || '',
+      content: opts.content || '',
+      diameter: saved && saved.d ? saved.d : d,
+      minD: minD, maxD: maxD,
+      contentScale: 1,
+      persistent: opts.persistent === true,
+      onClose: opts.onClose,
+      spawnFrom: opts.spawnFrom || null,
+      _linkedTo: null
+    }
+    if (saved) { c.x = saved.x; c.y = saved.y }
+    else if (opts.x != null && opts.y != null) { c.x = opts.x; c.y = opts.y }
+    else { var p = autoPlace(c.diameter); c.x = p.x; c.y = p.y }
+
+    c.element = buildElement(c)
+    if (c.persistent) c.element.classList.add('cc-pinned')
+    document.body.appendChild(c.element)
+    applyTransform(c)
+    attachGestures(c)
+    instances[id] = c
+    // Animate in from spawn origin if provided
+    if (c.spawnFrom) {
+      c.element.style.transformOrigin = (c.spawnFrom.x - (c.x - c.diameter/2)) + 'px ' + (c.spawnFrom.y - (c.y - c.diameter/2)) + 'px'
+    }
+    requestAnimationFrame(function() { c.element.classList.add('cc-shown') })
+    requestAnimationFrame(function() { updateArc(c) })
+    return c
+  }
+
+  function setContent(c, html) {
+    var content = c.element.querySelector('.cc-content')
+    if (!content) return
+    if (typeof html === 'string') content.innerHTML = html
+    else if (html instanceof Node) { content.innerHTML = ''; content.appendChild(html) }
+    requestAnimationFrame(function() { updateArc(c) })
+  }
+
+  function close(c) {
+    if (!c || !instances[c.id]) return
+    delete instances[c.id]
+    if (c.onClose) try { c.onClose() } catch(_){}
+    c.element.classList.add('cc-collapsing')
+    if (c.spawnFrom) {
+      var fx = c.spawnFrom.x - c.x, fy = c.spawnFrom.y - c.y
+      c.element.style.transform = 'translate(' + fx + 'px,' + fy + 'px) scale(.08)'
+    }
+    setTimeout(function() {
+      if (c.element.parentNode) c.element.parentNode.removeChild(c.element)
+      drawLinks()
+    }, 340)
+  }
+
+  function update(id, patch) {
+    var c = instances[id]; if (!c) return null
+    if (patch.content != null) setContent(c, patch.content)
+    if (patch.title != null) {
+      c.title = patch.title
+      var lbl = c.element.querySelector('.cc-label')
+      if (lbl) lbl.textContent = patch.title
+    }
+    if (patch.diameter != null) { c.diameter = patch.diameter; applyTransform(c) }
+    if (patch.glow != null) c.element.style.setProperty('--cc-glow-c', patch.glow)
+    if (patch.active != null) c.element.classList.toggle('active', !!patch.active)
+    if (patch.pulse) {
+      c.element.classList.remove('cc-shown')
+      void c.element.offsetWidth
+      c.element.classList.add('cc-shown')
+    }
+    return c
+  }
+
+  function get(id) { return instances[id] || null }
+  function closeById(id) { close(instances[id]) }
+  function closeAll(includePersistent) {
+    Object.keys(instances).forEach(function(k) {
+      if (includePersistent || !instances[k].persistent) close(instances[k])
+    })
+  }
+  function closeOthers(keepId) {
+    Object.keys(instances).forEach(function(k) {
+      if (k !== keepId && !instances[k].persistent && instances[k].type === 'view') close(instances[k])
+    })
+  }
+  function all() { return instances }
+
+  // Reposition on viewport resize so circles stay on-screen
+  window.addEventListener('resize', function() {
+    Object.keys(instances).forEach(function(k) {
+      var c = instances[k]
+      var r = c.diameter / 2
+      c.x = Math.max(r * 0.4, Math.min(window.innerWidth  - r * 0.4, c.x))
+      c.y = Math.max(r * 0.4, Math.min(window.innerHeight - r * 0.4, c.y))
+      applyTransform(c)
+    })
+    drawLinks()
+  })
+
+  return {
+    spawn: spawn, get: get, update: update,
+    close: closeById, closeAll: closeAll, closeOthers: closeOthers,
+    all: all
+  }
 })()
 
 // ── CONSTANTS ──────────────────────────────────────
@@ -463,61 +935,60 @@ function sbAuth(action, email, password, meta) {
   }).then(function(r) { return r.json() })
 }
 
-// ── MULTI-WINDOW PANEL SYSTEM ──────────────────────
+// ═══════════════════════════════════════════════════════════════════════
+// PANEL → CELESTIAL VIEW CIRCLE adapter
+// All existing open*() functions call openPanel(id, html); we route them
+// through Circles.spawn so every pop-up becomes a draggable, pinch-scalable
+// circular gadget. There are no rectangular panels in AstranoV anymore.
+// ═══════════════════════════════════════════════════════════════════════
 var _panelJustOpened = false
-var _multiZoom = 1.0
-var _multiH = 0
+var _panelTitles = {
+  login:'Sign In', register:'Register', profile:'You',
+  accounting:'Economics', radar:'Radar', ai:'C.I.', vendor:'Vendor',
+  order:'Order', city:'City', national:'Region',
+  krypteia:'Krypteia', memory:'Memory', queue:'Queue',
+  basket:'Basket', invoice:'Invoice'
+}
 
-function openPanel(id, html) {
+function openPanel(id, html, opts) {
   _panelJustOpened = true
   setTimeout(function() { _panelJustOpened = false }, 0)
-  var content = document.getElementById('multi-content')
-  if (content) {
-    content.innerHTML = '<div class="ph"></div>' + html
-    content.style.zoom = _multiZoom
-  }
-  var multi = document.getElementById('multi')
-  if (!multi) return null
-  if (!_multiH) _multiH = Math.round(window.innerHeight * 0.55)
-  multi.style.height = _multiH + 'px'
-  multi.classList.add('open')
-  updateMultiOrderRibbon()
-  return multi
+  opts = opts || {}
+  var circleId = 'view_' + (id || 'panel')
+  var type = opts.type || (id === 'krypteia' ? 'krypteia' : 'view')
+  var title = opts.title || _panelTitles[id] || id || ''
+  // Close other transient view circles when opening a new one — avoids stacking
+  // unless caller asks to keep them (e.g. constellation-link a vendor + payment)
+  if (!opts.keepOthers) Circles.closeOthers(circleId)
+  var c = Circles.spawn({
+    id: circleId,
+    type: type,
+    title: title,
+    content: html,
+    diameter: opts.diameter,
+    spawnFrom: opts.spawnFrom,
+    persistent: opts.persistent
+  })
+  // Always re-render in case spawn returned an existing instance
+  Circles.update(circleId, { content: html, title: title })
+  return c && c.element
 }
 
 function closePanel(id) {
   if (_panelJustOpened) return
-  closeMulti()
+  if (id) Circles.close('view_' + id)
+  else Circles.closeAll(false)
 }
 
-function closeAll() {
-  closeMulti()
-}
+function closeAll() { Circles.closeAll(false) }
 
-function closeMulti() {
-  var multi = document.getElementById('multi')
-  if (multi) multi.classList.remove('open')
-}
-
-function multiZoom(dir) {
-  _multiZoom = Math.max(0.5, Math.min(2.0, _multiZoom + dir * 0.15))
-  var content = document.getElementById('multi-content')
-  if (content) content.style.zoom = _multiZoom
-  var txt = document.getElementById('multi-zoom-txt')
-  if (txt) txt.textContent = Math.round(_multiZoom * 100) + '%'
-}
+// Backwards-compatible shims for code that still references the multi panel
+function closeMulti() { Circles.closeAll(false) }
+function multiZoom() { /* deprecated — pinch the view circle instead */ }
 
 function updateMultiOrderRibbon() {
-  var ribbon = document.getElementById('multi-order-ribbon')
-  if (!ribbon) return
-  var active = Object.values(S.orders).filter(function(o) { return o.status === 'active' })
-  if (!active.length) { ribbon.classList.remove('visible'); return }
-  ribbon.innerHTML = active.map(function(o) {
-    return '<span style="cursor:pointer;margin-right:14px" onclick="openOrder(' + JSON.stringify(o.id) + ')">' +
-      '&#128225; ' + esc(o.vendor ? o.vendor.name : 'Order') +
-      (o.driver ? ' · ' + esc(o.driver.name) : '') + ' — ' + esc(o.status) + '</span>'
-  }).join('')
-  ribbon.classList.add('visible')
+  // Retired in Celestial Circles era — order info lives inside the Radar circle now.
+  // Kept as a no-op so any old call sites don't throw.
 }
 
 function initMultiResize() {
@@ -1123,19 +1594,78 @@ function doRegister() {
     }).catch(function() { toast('Registration error') })
 }
 
+// ── ECONOMICS PRIMORDIAL CIRCLE ───────────────────
+var _ecoHistory = []
 function updateWalletWidget() {
-  var w = document.getElementById('wallet-widget')
-  var bal = document.getElementById('wallet-bal')
-  if (!w || !bal) return
-  if (!S.session || !S.profile) { w.classList.remove('shown'); return }
-  var b = S.profile.balance || 0
-  var prev = bal.dataset.last || ''
-  var fmt = (b >= 1000 ? b.toLocaleString('en-US',{maximumFractionDigits:0}) : b.toFixed(2).replace(/\.?0+$/,''))
-  bal.textContent = fmt
-  w.classList.add('shown')
-  if (prev && prev !== fmt) { w.classList.remove('pulse'); void w.offsetWidth; w.classList.add('pulse') }
-  bal.dataset.last = fmt
-  gadgetWake(w)
+  // Hide entirely when unauthenticated
+  if (!S.session || !S.profile) {
+    if (Circles.get('eco')) Circles.close('eco')
+    return
+  }
+  var b = +S.profile.balance || 0
+  // Track balance points for the sparkline (max 24 samples)
+  var last = _ecoHistory[_ecoHistory.length - 1]
+  if (!last || last !== b) {
+    _ecoHistory.push(b)
+    if (_ecoHistory.length > 24) _ecoHistory.shift()
+  }
+  var prevTotal = (last != null) ? last : b
+  var delta = b - prevTotal
+  var fmt = b >= 1000 ? b.toLocaleString('en-US',{maximumFractionDigits:0}) : b.toFixed(2).replace(/\.?0+$/,'')
+  var deltaHtml = ''
+  if (Math.abs(delta) > 0.001) {
+    deltaHtml = '<span class="delta ' + (delta > 0 ? 'up' : 'dn') + '">' +
+      (delta > 0 ? '▲ +' : '▼ ') + Math.abs(delta).toFixed(2).replace(/\.?0+$/,'') + '</span>'
+  }
+  // Sparkline (last 24 balance snapshots)
+  var spark = sparklinePath(_ecoHistory, 100, 32)
+  var inner =
+    '<div class="cc-sparkline"><svg viewBox="0 0 100 32" preserveAspectRatio="none">' +
+      '<path class="fill" d="' + spark + ' L100,32 L0,32 Z"/>' +
+      '<path d="' + spark + '"/>' +
+    '</svg></div>' +
+    '<div class="cc-data">' +
+      '<div class="v">' + fmt + '</div>' +
+      '<div class="u">AVC</div>' +
+      deltaHtml +
+    '</div>'
+  var existing = Circles.get('eco')
+  if (existing) {
+    Circles.update('eco', { content: inner })
+    if (delta !== 0) Circles.update('eco', { pulse: true })
+  } else {
+    Circles.spawn({
+      id: 'eco', type: 'economics', title: 'Economics',
+      diameter: 152, minD: 96, content: inner,
+      persistent: true,
+      x: 90, y: 100,
+      onTapRim: function() { openAccounting() }
+    })
+    // Make tap on interior open accounting view (since content here is read-only)
+    var el = Circles.get('eco').element
+    el.addEventListener('click', function(e) {
+      // Ignore clicks that are part of pinch/drag end (handled internally)
+      if (el.classList.contains('cc-dragging') || el.classList.contains('cc-pinching')) return
+      // Only when tap is on interior (i.e., not a drag end on the rim)
+      var r = el.getBoundingClientRect()
+      var dx = e.clientX - (r.left + r.width/2), dy = e.clientY - (r.top + r.height/2)
+      var dist = Math.sqrt(dx*dx + dy*dy)
+      if (dist / (r.width/2) < 0.7) openAccounting()
+    })
+  }
+}
+
+function sparklinePath(arr, w, h) {
+  if (!arr || arr.length < 2) return 'M0,' + (h-1) + ' L' + w + ',' + (h-1)
+  var min = Math.min.apply(null, arr), max = Math.max.apply(null, arr)
+  var span = Math.max(0.01, max - min)
+  var step = w / Math.max(1, arr.length - 1)
+  var pts = arr.map(function(v, i) {
+    var x = (i * step).toFixed(2)
+    var y = (h - 2 - ((v - min) / span) * (h - 4)).toFixed(2)
+    return (i === 0 ? 'M' : 'L') + x + ',' + y
+  })
+  return pts.join(' ')
 }
 
 function applySession(session) {
@@ -1431,36 +1961,52 @@ function submitPost(ch) {
   trackEvent('post', {channel:ch})
 }
 
-// ── RADAR ──────────────────────────────────────────
+// ── RADAR PRIMORDIAL CIRCLE ────────────────────────
 function updateRadar() {
-  var active = Object.values(S.orders).filter(function(o) { return o.status === 'active' }).length
-  var rw = document.getElementById('radar-widget')
-  var cnt = document.getElementById('radar-count')
-  if (rw && cnt) {
-    var showIt = active > 0 || S.level !== 'global'
-    if (showIt) rw.classList.add('shown'); else rw.classList.remove('shown')
-    var prev = cnt.dataset.last || ''
-    var txt = String(active)
-    cnt.textContent = txt
-    if (active > 0) rw.classList.add('radar-active'); else rw.classList.remove('radar-active')
-    if (prev && prev !== txt && showIt) { rw.classList.remove('pulse'); void rw.offsetWidth; rw.classList.add('pulse') }
-    cnt.dataset.last = txt
-    if (showIt) gadgetWake(rw)
+  var orders = Object.values(S.orders || {})
+  var active = orders.filter(function(o) { return o.status === 'active' })
+  var pending = orders.filter(function(o) { return o.status === 'pending' })
+  var nearbyVendors = (S.vendors && S.vendors.length) || 0
+  var showRadar = active.length > 0 || pending.length > 0 || S.level !== 'global'
+  if (!showRadar) {
+    if (Circles.get('radar')) Circles.close('radar')
+    var dot0 = document.getElementById('cic-orders-dot')
+    if (dot0) { dot0.textContent = ''; dot0.style.display = 'none' }
+    return
   }
+  // Compact summary inside the radar circle: count + status breakdown + first vendor
+  var inner =
+    (active.length > 0 ? '<div class="cc-pulse-dot"></div>' : '') +
+    '<div class="cc-data">' +
+      '<div class="v">' + active.length + '</div>' +
+      '<div class="u">' + (active.length === 1 ? 'order' : 'orders') + '</div>' +
+      (pending.length > 0 ? '<span class="delta up">+' + pending.length + ' pending</span>' :
+       nearbyVendors > 0  ? '<span class="delta up" style="color:rgba(255,255,255,.5)">' + nearbyVendors + ' nearby</span>' : '') +
+    '</div>'
+  var existing = Circles.get('radar')
+  if (existing) {
+    Circles.update('radar', { content: inner, active: active.length > 0 })
+  } else {
+    var x = window.innerWidth - 90, y = 100
+    Circles.spawn({
+      id: 'radar', type: 'radar', title: 'Radar',
+      diameter: 152, minD: 96, content: inner,
+      persistent: true, x: x, y: y,
+      active: active.length > 0
+    })
+    Circles.update('radar', { active: active.length > 0 })
+    var el = Circles.get('radar').element
+    if (active.length > 0) el.classList.add('active')
+    el.addEventListener('click', function(e) {
+      if (el.classList.contains('cc-dragging') || el.classList.contains('cc-pinching')) return
+      var r = el.getBoundingClientRect()
+      var dx = e.clientX - (r.left + r.width/2), dy = e.clientY - (r.top + r.height/2)
+      if (Math.sqrt(dx*dx + dy*dy) / (r.width/2) < 0.7) openRadar()
+    })
+  }
+  // CIC heartbeat still shows active count as a small dot
   var dot = document.getElementById('cic-orders-dot')
-  if (dot) { dot.textContent = active || ''; dot.style.display = active > 0 ? 'flex' : 'none' }
-  updateMultiOrderRibbon()
-}
-
-// ── GADGET IDLE-FADE ───────────────────────────────
-// Widgets brighten on state change, fade to .idle opacity after 4s of inactivity.
-var _gadgetTimers = {}
-function gadgetWake(el) {
-  if (!el) return
-  el.classList.remove('idle')
-  var id = el.id
-  if (_gadgetTimers[id]) clearTimeout(_gadgetTimers[id])
-  _gadgetTimers[id] = setTimeout(function(){ el.classList.add('idle') }, 4000)
+  if (dot) { dot.textContent = active.length || ''; dot.style.display = active.length > 0 ? 'flex' : 'none' }
 }
 
 function openRadar() {
@@ -2279,11 +2825,14 @@ function init() {
     }
   } catch(e) {}
 
-  initMultiResize()
   initCICWidget()
-  makeDraggable('wallet-widget', '.wdh', 'av_pos_wallet')
-  makeDraggable('radar-widget', '.wdh', 'av_pos_radar')
+  // CIC (AI) primordial stays as the legacy floating ring for now — it has its
+  // own provider-chip orbital system and will be folded into the Circles
+  // primitive in a follow-up pass. All other gadgets are celestial circles.
   makeDraggable('cic-float', '#cic-drag', 'av_pos_cic')
+  // Spawn radar circle on demand (it'll early-return when nothing to show)
+  updateRadar()
+  // Wallet (Economics) circle is spawned by applySession when the user logs in
   initGlobe()
 }
 
