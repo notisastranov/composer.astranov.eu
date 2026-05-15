@@ -5,3 +5,6 @@ verify_jwt = false
 
 [functions.astranov-api]
 verify_jwt = false
+
+[functions.debug-reader]
+verify_jwt = false
