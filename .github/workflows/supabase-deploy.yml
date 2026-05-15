@@ -34,8 +34,10 @@ jobs:
 
       - name: Deploy Edge Functions
         run: |
-          supabase functions deploy ai-router --no-verify-jwt
+          supabase functions deploy ai-router    --no-verify-jwt
           supabase functions deploy astranov-api --no-verify-jwt
+          supabase functions deploy debug-write  --no-verify-jwt
+          supabase functions deploy debug-reader --no-verify-jwt
 
       - name: Set Edge Function secrets
         env:

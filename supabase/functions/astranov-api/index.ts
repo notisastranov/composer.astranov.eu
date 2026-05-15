@@ -32,6 +32,33 @@ serve(async (req) => {
 
   const path = String(body.path || '')
 
+  // ── /debug/write ──────────────────────────────────────────────────
+  // Self-diagnosis fallback: same payload shape as the dedicated debug-write
+  // function. Lives here so the in-app logger always has a deployed endpoint.
+  if (path === '/debug/write') {
+    const supabase = createClient(
+      Deno.env.get('SUPABASE_URL')!,
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
+    )
+    try {
+      await supabase.storage.createBucket('debug-pub', { public: true }).catch(() => {})
+      const blob = JSON.stringify({ received_at: new Date().toISOString(), ...body }, null, 2)
+      await supabase.storage.from('debug-pub').upload('errors.json',
+        new Blob([blob], { type: 'application/json' }), { upsert: true })
+      const events = Array.isArray(body.events) ? body.events as Array<Record<string, unknown>> : []
+      const rows = events.slice(0, 50).map((ev) => ({
+        type: 'debug_' + String(ev.type || 'event'),
+        data: ev.data ?? null,
+        session_id: String(body.session || ''),
+        ts: Number(ev.t) || Date.now(),
+      }))
+      if (rows.length) await supabase.from('analytics_events').insert(rows).catch(() => {})
+      return json({ ok: true, wrote: events.length })
+    } catch (e) {
+      return json({ ok: false, error: String(e) }, 500)
+    }
+  }
+
   // ── /balance/recharge ─────────────────────────────────────────────
   if (path === '/balance/recharge') {
     const authHeader = req.headers.get('Authorization') || ''

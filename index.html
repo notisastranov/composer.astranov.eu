@@ -23,29 +23,42 @@ html,body{width:100%;height:100%;background:#000;color:#fff;font-family:-apple-s
 #splash-prog{height:100%;width:5%;background:#0a84ff;border-radius:1px;transition:width .25s ease;animation:splashload 1.1s ease-out forwards}
 @keyframes splashload{0%{width:5%}100%{width:100%}}
 /* Drag handle shared */
-.wdh{font-size:13px;color:rgba(255,255,255,.2);cursor:move;touch-action:none;user-select:none;-webkit-user-select:none;line-height:1;align-self:stretch;display:flex;align-items:center;justify-content:center;padding:0 2px;border-radius:4px}
-.wdh:hover{color:rgba(255,255,255,.5)}
+.wdh{font-size:10px;color:rgba(255,255,255,.18);cursor:move;touch-action:none;user-select:none;-webkit-user-select:none;line-height:1;display:flex;align-items:center;justify-content:center;padding:0 1px;border-radius:3px;opacity:0;transition:opacity .25s,color .15s}
+#wallet-widget:hover .wdh,#radar-widget:hover .wdh,#cic-float:hover .wdh,.wdh:active{opacity:1}
+.wdh:hover{color:rgba(255,255,255,.55)}
 /* Wallet widget — top left */
-#wallet-widget{position:fixed;top:16px;left:16px;z-index:200;display:flex;flex-direction:row;align-items:center;gap:6px;background:rgba(0,0,0,.55);backdrop-filter:blur(20px);border:1px solid rgba(255,255,255,.15);border-radius:14px;padding:7px 10px 7px 6px;transition:background .2s;min-width:54px}
-#wallet-widget:active{background:rgba(255,255,255,.08)}
-#wallet-icon{font-size:18px;line-height:1;cursor:pointer}
-#wallet-bal{font-size:9px;color:rgba(255,255,255,.5);white-space:nowrap;letter-spacing:.2px;cursor:pointer}
+#wallet-widget{position:fixed;top:14px;left:14px;z-index:200;display:none;align-items:center;gap:4px;background:rgba(10,15,25,.4);backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);border:1px solid rgba(255,255,255,.08);border-radius:999px;padding:6px 12px 6px 8px;transition:opacity .4s,background .2s,border-color .2s,transform .25s cubic-bezier(.34,1.56,.64,1);transform-origin:left center;font-family:-apple-system,'SF Pro Text',inherit}
+#wallet-widget.shown{display:flex}
+#wallet-widget.idle{opacity:.32}
+#wallet-widget:hover,#wallet-widget:active{opacity:1;background:rgba(20,25,40,.55);border-color:rgba(255,255,255,.18)}
+#wallet-widget.pulse{animation:gadgetPulse .9s ease-out}
+@keyframes gadgetPulse{0%{transform:scale(1)}30%{transform:scale(1.06);background:rgba(40,55,90,.6)}100%{transform:scale(1)}}
+#wallet-bal{font-size:12px;font-weight:500;color:rgba(255,255,255,.92);white-space:nowrap;letter-spacing:.3px;cursor:pointer;font-variant-numeric:tabular-nums}
+#wallet-bal::before{content:'AVC ';font-size:9px;font-weight:400;color:rgba(255,255,255,.45);letter-spacing:1.2px;margin-right:2px}
 /* Radar widget — top right */
-#radar-widget{position:fixed;top:16px;right:16px;z-index:200;display:flex;flex-direction:row;align-items:center;gap:6px;background:rgba(0,0,0,.55);backdrop-filter:blur(20px);border:1px solid rgba(255,255,255,.15);border-radius:14px;padding:7px 10px 7px 6px;transition:all .2s;min-width:54px}
-#radar-widget:active{background:rgba(255,255,255,.08)}
-#radar-widget.radar-active{border-color:rgba(255,59,48,.55);box-shadow:0 0 10px rgba(255,59,48,.2)}
-#radar-icon{font-size:18px;line-height:1;cursor:pointer}
-#radar-count{font-size:9px;color:rgba(255,255,255,.5);white-space:nowrap;letter-spacing:.2px;cursor:pointer}
+#radar-widget{position:fixed;top:14px;right:14px;z-index:200;display:none;align-items:center;gap:6px;background:rgba(10,15,25,.4);backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);border:1px solid rgba(255,255,255,.08);border-radius:999px;padding:6px 12px;transition:opacity .4s,background .2s,border-color .2s,transform .25s cubic-bezier(.34,1.56,.64,1);transform-origin:right center;font-family:-apple-system,'SF Pro Text',inherit}
+#radar-widget.shown{display:flex}
+#radar-widget.idle{opacity:.32}
+#radar-widget:hover,#radar-widget:active{opacity:1;background:rgba(20,25,40,.55);border-color:rgba(255,255,255,.18)}
+#radar-widget.radar-active{border-color:rgba(255,159,10,.45);background:rgba(40,30,15,.5)}
+#radar-widget.radar-active #radar-dot{background:#ff9f0a;box-shadow:0 0 8px rgba(255,159,10,.7);animation:radarPulse 1.6s ease-in-out infinite}
+#radar-widget.pulse{animation:gadgetPulse .9s ease-out}
+#radar-dot{width:6px;height:6px;border-radius:50%;background:rgba(255,255,255,.35);flex-shrink:0;transition:all .25s}
+@keyframes radarPulse{0%,100%{box-shadow:0 0 8px rgba(255,159,10,.7)}50%{box-shadow:0 0 14px rgba(255,159,10,1)}}
+#radar-count{font-size:12px;font-weight:500;color:rgba(255,255,255,.92);white-space:nowrap;letter-spacing:.3px;cursor:pointer;font-variant-numeric:tabular-nums}
 /* Unified multi-window panel */
 #multi{position:fixed;bottom:0;left:0;right:0;height:55vh;background:rgba(10,10,18,.96);backdrop-filter:blur(30px);border-top:1px solid rgba(255,255,255,.08);z-index:300;transform:translateY(100%);transition:transform .3s cubic-bezier(.32,1,.23,1);display:flex;flex-direction:column;overflow:hidden}
 #multi.open{transform:translateY(0)}
 #multi-handle{width:36px;height:4px;background:rgba(255,255,255,.2);border-radius:2px;margin:10px auto 4px;flex-shrink:0;cursor:ns-resize;touch-action:none}
 #multi-order-ribbon{flex-shrink:0;background:rgba(255,200,0,.07);border-bottom:1px solid rgba(255,200,0,.15);padding:7px 14px;font-size:11px;color:rgba(255,200,0,.9);display:none;white-space:nowrap;overflow-x:auto}
 #multi-order-ribbon.visible{display:block}
-#multi-zoom-bar{flex-shrink:0;display:flex;align-items:center;gap:8px;padding:4px 12px 5px;border-bottom:1px solid rgba(255,255,255,.06)}
-.multi-zoom-btn{background:rgba(255,255,255,.07);border:none;color:rgba(255,255,255,.55);width:26px;height:26px;border-radius:7px;font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;font-family:inherit;padding:0;transition:background .15s}
-.multi-zoom-btn:active{background:rgba(255,255,255,.15)}
-#multi-zoom-txt{font-size:11px;color:rgba(255,255,255,.35)}
+#multi-zoom-bar{flex-shrink:0;display:flex;align-items:center;gap:6px;padding:6px 14px 6px;border-bottom:1px solid rgba(255,255,255,.04)}
+.multi-zoom-btn{background:transparent;border:none;color:rgba(255,255,255,.38);width:24px;height:24px;border-radius:50%;font-size:15px;font-weight:300;cursor:pointer;display:flex;align-items:center;justify-content:center;font-family:inherit;padding:0;transition:color .15s,background .15s,transform .15s;line-height:1}
+.multi-zoom-btn:hover{color:rgba(255,255,255,.85);background:rgba(255,255,255,.06)}
+.multi-zoom-btn:active{transform:scale(.92);background:rgba(255,255,255,.1)}
+.multi-zoom-btn.close-btn{margin-left:auto;font-size:13px}
+.multi-zoom-btn.close-btn:hover{color:#ff453a;background:rgba(255,69,58,.1)}
+#multi-zoom-txt{font-size:10px;color:rgba(255,255,255,.32);letter-spacing:1px;font-variant-numeric:tabular-nums;min-width:34px;text-align:center}
 #multi-content{flex:1;overflow-y:auto;transform-origin:top left}
 #lvl-label{position:fixed;top:16px;left:50%;transform:translateX(-50%);background:rgba(0,0,0,.55);backdrop-filter:blur(20px);border:1px solid rgba(255,255,255,.12);color:rgba(255,255,255,.85);padding:6px 16px;border-radius:20px;font-size:13px;pointer-events:none;z-index:200;display:none;white-space:nowrap}
 .panel{position:fixed;bottom:0;left:0;right:0;max-height:100vh;overflow-y:auto;background:rgba(10,10,18,.96);backdrop-filter:blur(30px);border-top:1px solid rgba(255,255,255,.08);z-index:300;transform:translateY(100%);transition:transform .3s cubic-bezier(.32,1,.23,1)}
@@ -151,17 +164,16 @@ pre.mono{font-family:monospace;font-size:12px;color:rgba(255,255,255,.65);white-
 <div id="back-btn" onclick="goBack()">&#8592;</div>
 <div id="lvl-label"></div>
 <div id="splash"><div id="splash-name">ASTRANOV</div><div id="splash-bar"><div id="splash-prog"></div></div></div>
-<!-- Top-left wallet widget -->
-<div id="wallet-widget">
-  <div class="wdh" title="Drag to move">&#8942;</div>
-  <div id="wallet-icon" onclick="openAccounting()">&#128176;</div>
-  <div id="wallet-bal" onclick="openAccounting()">Wallet</div>
+<!-- Top-left wallet — appears when authenticated -->
+<div id="wallet-widget" onclick="openAccounting()">
+  <div class="wdh" title="Drag" onclick="event.stopPropagation()">&#8942;</div>
+  <div id="wallet-bal">0</div>
 </div>
-<!-- Top-right radar widget -->
-<div id="radar-widget">
-  <div class="wdh" title="Drag to move">&#8942;</div>
-  <div id="radar-icon" onclick="openRadar()">&#128225;</div>
-  <span id="radar-count" onclick="openRadar()">Radar</span>
+<!-- Top-right radar — appears when active orders or nearby vendors -->
+<div id="radar-widget" onclick="openRadar()">
+  <div class="wdh" title="Drag" onclick="event.stopPropagation()">&#8942;</div>
+  <div id="radar-dot"></div>
+  <span id="radar-count">0</span>
 </div>
 <!-- CIC ring — always floating bottom-right, the OS heartbeat -->
 <div id="cic-float">
@@ -185,10 +197,10 @@ pre.mono{font-family:monospace;font-size:12px;color:rgba(255,255,255,.65);white-
   <div id="multi-handle"></div>
   <div id="multi-order-ribbon"></div>
   <div id="multi-zoom-bar">
-    <button class="multi-zoom-btn" onclick="multiZoom(-1)">&#8722;</button>
+    <button class="multi-zoom-btn" onclick="multiZoom(-1)" aria-label="Zoom out">&#8722;</button>
     <span id="multi-zoom-txt">100%</span>
-    <button class="multi-zoom-btn" onclick="multiZoom(1)">&#43;</button>
-    <button class="multi-zoom-btn" style="margin-left:auto" onclick="closeMulti()">&#10005;</button>
+    <button class="multi-zoom-btn" onclick="multiZoom(1)" aria-label="Zoom in">&#43;</button>
+    <button class="multi-zoom-btn close-btn" onclick="closeMulti()" aria-label="Close">&#10005;</button>
   </div>
   <div id="multi-content"></div>
 </div>
@@ -206,16 +218,22 @@ pre.mono{font-family:monospace;font-size:12px;color:rgba(255,255,255,.65);white-
 
   function flush() {
     var payload = { session: _sid, ua: navigator.userAgent.slice(0,120), ts: Date.now(), events: _log.slice() }
-    // Edge function writes to public storage via service-role (bypasses all RLS)
-    fetch(SBD + '/functions/v1/debug-write', {
-      method: 'POST',
-      headers: { 'apikey': KEY, 'Authorization': 'Bearer ' + KEY, 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload)
-    }).catch(function(){})
-    // Fallback: also write to analytics_events
+    var hdr = { 'apikey': KEY, 'Authorization': 'Bearer ' + KEY, 'Content-Type': 'application/json' }
+    // Primary: dedicated debug-write function (writes to public storage via service-role).
+    // Fallback: astranov-api with path '/debug/write' does the same thing — kept here so the
+    // pipeline survives even if debug-write hasn't been deployed.
+    fetch(SBD + '/functions/v1/debug-write', { method: 'POST', headers: hdr, body: JSON.stringify(payload) })
+      .then(function(r){ if (!r || r.status === 404) throw 0 })
+      .catch(function(){
+        fetch(SBD + '/functions/v1/astranov-api', {
+          method: 'POST', headers: hdr,
+          body: JSON.stringify(Object.assign({ path: '/debug/write' }, payload))
+        }).catch(function(){})
+      })
+    // Also append to analytics_events for SQL inspection (ts is bigint ms epoch)
     fetch(SBD + '/rest/v1/analytics_events', {
       method: 'POST',
-      headers: { 'apikey': KEY, 'Authorization': 'Bearer ' + KEY, 'Content-Type': 'application/json', 'Prefer': 'return=minimal' },
+      headers: Object.assign({}, hdr, { 'Prefer': 'return=minimal' }),
       body: JSON.stringify({ type: 'debug_snapshot', data: payload, ts: Date.now(), session_id: _sid })
     }).catch(function(){})
   }
@@ -534,6 +552,8 @@ function initMultiResize() {
 // ── LEVEL MANAGEMENT ───────────────────────────────
 function setLevel(lvl) {
   S.level = lvl
+  if (typeof updateRadar === 'function') updateRadar()
+  if (typeof updateWalletWidget === 'function') updateWalletWidget()
   var mapEl = document.getElementById('map-el')
   var globeEl = document.getElementById('globe-el')
   var backBtn = document.getElementById('back-btn')
@@ -1104,10 +1124,18 @@ function doRegister() {
 }
 
 function updateWalletWidget() {
+  var w = document.getElementById('wallet-widget')
   var bal = document.getElementById('wallet-bal')
-  if (!bal) return
-  var b = (S.profile && S.profile.balance) ? S.profile.balance : 0
-  bal.textContent = b > 0 ? money(b) : 'Wallet'
+  if (!w || !bal) return
+  if (!S.session || !S.profile) { w.classList.remove('shown'); return }
+  var b = S.profile.balance || 0
+  var prev = bal.dataset.last || ''
+  var fmt = (b >= 1000 ? b.toLocaleString('en-US',{maximumFractionDigits:0}) : b.toFixed(2).replace(/\.?0+$/,''))
+  bal.textContent = fmt
+  w.classList.add('shown')
+  if (prev && prev !== fmt) { w.classList.remove('pulse'); void w.offsetWidth; w.classList.add('pulse') }
+  bal.dataset.last = fmt
+  gadgetWake(w)
 }
 
 function applySession(session) {
@@ -1406,16 +1434,33 @@ function submitPost(ch) {
 // ── RADAR ──────────────────────────────────────────
 function updateRadar() {
   var active = Object.values(S.orders).filter(function(o) { return o.status === 'active' }).length
-  var cnt = document.getElementById('radar-count')
-  if (cnt) cnt.textContent = active > 0 ? active + ' active' : 'Radar'
   var rw = document.getElementById('radar-widget')
-  if (rw) {
-    if (active > 0) rw.classList.add('radar-active')
-    else rw.classList.remove('radar-active')
+  var cnt = document.getElementById('radar-count')
+  if (rw && cnt) {
+    var showIt = active > 0 || S.level !== 'global'
+    if (showIt) rw.classList.add('shown'); else rw.classList.remove('shown')
+    var prev = cnt.dataset.last || ''
+    var txt = String(active)
+    cnt.textContent = txt
+    if (active > 0) rw.classList.add('radar-active'); else rw.classList.remove('radar-active')
+    if (prev && prev !== txt && showIt) { rw.classList.remove('pulse'); void rw.offsetWidth; rw.classList.add('pulse') }
+    cnt.dataset.last = txt
+    if (showIt) gadgetWake(rw)
   }
   var dot = document.getElementById('cic-orders-dot')
   if (dot) { dot.textContent = active || ''; dot.style.display = active > 0 ? 'flex' : 'none' }
   updateMultiOrderRibbon()
+}
+
+// ── GADGET IDLE-FADE ───────────────────────────────
+// Widgets brighten on state change, fade to .idle opacity after 4s of inactivity.
+var _gadgetTimers = {}
+function gadgetWake(el) {
+  if (!el) return
+  el.classList.remove('idle')
+  var id = el.id
+  if (_gadgetTimers[id]) clearTimeout(_gadgetTimers[id])
+  _gadgetTimers[id] = setTimeout(function(){ el.classList.add('idle') }, 4000)
 }
 
 function openRadar() {
