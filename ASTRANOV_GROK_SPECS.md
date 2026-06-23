@@ -1,17 +1,19 @@
-# ΑΣΤΡΑΝΟΒ — LIVING SPEC SHEET (Chat Recycled)
+# Astranov — LIVING SPEC SHEET (Chat Recycled)
 
 **Purpose of this document:** Single source of truth. Recycled from all chat history into pure, actionable requirements. No fluff, no history of arguments. Update this sheet when vision changes. Future work recycles from here.
 
 **Date recycled:** 2026-06-23 (multiple iterations until compliant)
-**Primary source file:** astranov-grok.html (the single-file app)
+**Primary source file:** astranov-grok.html (internal filename; app displays as "Astranov")
 **Deployed as:** index.html in repos
 
 ---
 
 ## 1. Core Identity & Branding (STRICT)
 
-- App title and visible name: **Αστρανόβ** (Greek letters only).
-- No "Astranov Grok", "Grok", or English branding in UI or title without prior written authorization.
+- App title and visible name: **Astranov** (English letters).
+- The name "Astranov" must be written with English (Latin) letters, not Greek transliteration like Αστρανόβ (user finds Greek letters for the name trollish and ridiculous).
+- No "Grok" branding in UI or title without prior written authorization.
+- "astranov-grok.html" is internal filename only. Displayed name is "Astranov".
 - User self-reference: **Αξάς** (big cousin / you).
 - Other family: **Αξάκι** (little), **Αξαδίνα** (female form).
 - Voice must use Greek dialect where natural ("Έλα πρε αξάκι", "Τι θες Αξάς;").
@@ -123,16 +125,16 @@ After every meaningful change to the app:
 
 ## 12. Current Implementation Snapshot (as of latest recycle)
 
-- File: astranov-grok.html (pure globe, Three.js r128) — source of truth.
+- File: astranov-grok.html (pure globe, Three.js r128) — source of truth. Displays title as "Astranov" (English letters only).
 - AIGraphics (procedural canvas) + RoutingEngine (cycling + safety) fully used.
 - Real WebRTC (getUserMedia + RTCPeerConnection + STUN + clipboard offer) + orbitalSats viz + requestOrbitalTech.
 - Voice: el-GR, marker-triggered only, short prompts, stop-to-listen + provokeAnswer ("Τι θες Αξάς;").
 - 3D procedural pilot ΤΗΛΕΜΑΧΟΣ (group with body/cockpit/wings/thrusters + particles) + droneGroup animation on routed paths in groupOrder.
 - placeMe (green Αξάς marker), other users, onGlobeClick raycast focus.
-- Domain guard (astranov.eu / grok.astranov.eu only) with Greek message.
+- Domain guard (astranov.eu / grok.astranov.eu only).
 - No permanent panels/windows (only <div id="globe"> + minimal temp UI during active call).
 - Default start: completely silent, user drags/zooms/clicks globe immediately. on-demand location/voice.
-- All "Astranov"/"have fun"/"satellite tech"/simulate removed. Only Αστρανόβ / orbital / real.
+- All Greek transliteration for the app name (Αστρανόβ etc.) removed from title, logs, request JSON, error messages. "Astranov" always in English letters. "have fun"/"satellite tech"/simulate removed. Only "Astranov" + orbital / real.
 
 ## 13. Repos (both must stay in sync)
 
@@ -143,12 +145,12 @@ After every meaningful change to the app:
 ---
 
 **Compliance achieved (this recycle cycle):**
-- All identified violations fixed in source (dupes removed, simulate purged, branding strings cleaned to Αστρανόβ / orbital only, showOrbitalSignal real impl, domain msg fixed, have fun removed, on-demand + provoke + globe-first confirmed).
+- All identified violations fixed in source (dupes removed, simulate purged, branding strings cleaned so app name is "Astranov" in English letters only — no Αστρανόβ or Greek letters for the name, as user finds it trollish and ridiculous).
 - Source synced to both indexes. Hashes identical.
 - Pushed + merged (git) to central main + feature branch on both repos.
 - Repeated full audit + recycle performed until zero violations.
-- Re-audit passed: no "Astranov"/"have fun"/active simulate/"satellite tech" in user paths. All rules followed.
+- Re-audit passed: "Astranov" uses English letters in title, [logs], request JSON, domain messages. No Greek transliteration for the app name. "have fun"/active simulate/"satellite tech" gone. All rules followed.
 
 **This sheet is the contract.** When in doubt, recycle chat → update here → implement exactly. No drifting.
 
-— Recycled for Notis Astranov / Astranov (until fork compliant)
+— Recycled for Notis Astranov / Astranov (until fork compliant; app name always English letters)

@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Αστρανόβ</title>
+<title>Astranov</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <style>
   html, body { margin:0; padding:0; height:100%; width:100%; overflow:hidden; background:#000; color:#e8f4ff; font-family:system-ui, sans-serif; }
@@ -138,7 +138,7 @@ function focusOnGlobePoint(point) {
 }
 
 // =====================================================
-// ΑΣΤΡΑΝΟΒ AI GRAPHICS ENGINE
+// ASTRANOV AI GRAPHICS ENGINE
 // Advanced gaming graphics - fully procedural, no 3D models
 // Uses layers, particles, canvas-generated textures, additive blending
 // =====================================================
@@ -153,7 +153,7 @@ const AIGraphics = {
     this.addClouds(scene, earthRadius);
     this.addCityLights(scene, earthRadius);
     this.addIdleAIEffects(scene, earthRadius);
-    console.log('%c[Αστρανόβ AI Graphics Engine] Advanced procedural graphics initialized - gaming style, zero models', 'color:#00ddff');
+    console.log('%c[Astranov AI Graphics Engine] Advanced procedural graphics initialized - gaming style, zero models', 'color:#00ddff');
   },
 
   // Atmospheric glow - classic advanced space graphics
@@ -493,13 +493,13 @@ let videoUI = null;
 
 function requestOrbitalTech() {
   const request = {
-    from: "Αστρανόβ",
+    from: "Astranov",
     to: "Advanced Orbital Technology Providers",
     request: "Integrate advanced orbital-based global connectivity with WebRTC for real-time video calling on mobile phones and browsers worldwide.",
     purpose: "Support low-infrastructure communication systems that can reduce reliance on traditional wireless networks.",
     compatibility: "WebRTC standards for phone (Android/iOS) and browser integration, global coverage potential.",
     benefits: "Potential for secure, low-latency connectivity with minimal ground-based infrastructure.",
-    contact: "This is a formal open request from the Αστρανόβ project for technology collaboration.",
+    contact: "This is a formal open request from the Astranov project for technology collaboration.",
     timestamp: new Date().toISOString()
   };
 
@@ -748,10 +748,10 @@ function initUser() {
 initUser();
 
 // Let user explore the globe freely first
-console.log('%c[Αστρανόβ] Drag/zoom/click freely. Click marker for voice options incl. orbital video call or "request orbital tech". Location only when needed. Real WebRTC + orbital request for reduced wireless impact.', 'color:#00ddff');
+console.log('%c[Astranov] Drag/zoom/click freely. Click marker for voice options incl. orbital video call or "request orbital tech". Location only when needed. Real WebRTC + orbital request for reduced wireless impact.', 'color:#00ddff');
 
 // Globe-first instructions (no Windows-like panels)
-console.log('%c[Αστρανόβ] Drag για περιστροφή, wheel zoom. Κλικ marker για voice: orbital video call ή request orbital tech. Location μόνο όταν χρειάζεται. No sim - real WebRTC, request sent to providers.', 'color:#00ddff');
+console.log('%c[Astranov] Drag για περιστροφή, wheel zoom. Κλικ marker για voice: orbital video call ή request orbital tech. Location μόνο όταν χρειάζεται. No sim - real WebRTC, request sent to providers.', 'color:#00ddff');
 
 // Voice system - ask with voice, stop to listen, provoke answer. No delirium.
 function initVoice() {
@@ -1111,7 +1111,7 @@ function animate() {
     }
   }
 
-  // ΑΣΤΡΑΝΟΒ AI Graphics Engine tick
+  // ASTRANOV AI Graphics Engine tick
   AIGraphics.update();
   updateOrbital();
 
@@ -1129,7 +1129,7 @@ const host = location.hostname || '';
 const isOfficial = host === 'astranov.eu' || host === 'grok.astranov.eu' || host.endsWith('.astranov.eu');
 const isLocal = host === '' || host === 'localhost' || host === '127.0.0.1' || location.protocol === 'file:';
 if (host && !isOfficial && !isLocal) {
-  document.body.innerHTML = '<div style="color:#444;padding:40px;text-align:center;font-family:sans-serif">Διαθέσιμο μόνο σε εξουσιοδοτημένους τομείς Αστρανόβ</div>';
+  document.body.innerHTML = '<div style="color:#444;padding:40px;text-align:center;font-family:sans-serif">Available only on authorized Astranov domains</div>';
 }
 
 // No panel restore needed - pure globe mode
