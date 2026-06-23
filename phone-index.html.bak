@@ -1,0 +1,913 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>Astranov Grok</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<style>
+  html, body { margin:0; padding:0; height:100%; width:100%; overflow:hidden; background:#000; color:#e8f4ff; font-family:system-ui, sans-serif; }
+  /* Full-screen clean Astranov Grok experience (no legacy frame) */
+  .astranov-logo { position:absolute; top:10px; left:50%; transform:translateX(-50%); font-size:9px; letter-spacing:1.5px; font-weight:700; color:#9fc4ff; z-index:120; cursor:pointer; text-shadow:0 0 8px rgba(120,180,255,0.8); background:rgba(4,8,18,0.55); padding:1px 7px; border-radius:999px; border:1px solid rgba(120,180,255,0.2); }
+  .astranov-logo .a { display:inline-block; transform:scaleX(-1) rotate(-18deg); }
+  #globeContainer { position:absolute; top:0; left:0; right:0; bottom:0; z-index:10; background:#000; overflow:hidden; }
+  #globeContainer canvas { display:block; }
+  .controls { position:absolute; bottom:0; left:0; right:0; background:rgba(3,7,16,0.92); z-index:80; padding:1px 3px 2px; font-size:4.5px; display:flex; flex-direction:column; gap:1px; }
+  .row { display:flex; gap:1px; align-items:center; }
+  button { background:#0a84ff; color:#fff; border:none; padding:1px 3px; border-radius:1px; font-size:4px; cursor:pointer; line-height:1; }
+  .btn-trad { background:#0055A4; }
+  .info { font-size:3.8px; opacity:0.82; letter-spacing:0.2px; }
+  #radio-log { font-size:3.2px; max-height:6px; overflow:auto; line-height:1; background:rgba(0,0,0,0.2); padding:0 1px; }
+  .hud { position:absolute; top:17px; right:7px; font-size:4px; opacity:0.45; z-index:90; text-align:right; pointer-events:none; }
+  #pilotOrb {
+    position: absolute;
+    top: 28px;
+    right: 12px;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: #4aa6ff;
+    box-shadow: 0 0 10px #4aa6ff, inset 0 0 4px rgba(255,255,255,0.6);
+    z-index: 150;
+    display: none;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  #pilotOrb.summoned {
+    animation: pilotPulse 2s infinite ease-in-out;
+  }
+  @keyframes pilotPulse {
+    0%,100% { transform: scale(1); box-shadow: 0 0 10px #4aa6ff, inset 0 0 4px rgba(255,255,255,0.6); }
+    50% { transform: scale(1.15); box-shadow: 0 0 18px #4aa6ff, inset 0 0 4px rgba(255,255,255,0.6); }
+  }
+</style>
+</head>
+<body>
+  <!-- Clean full-screen Astranov Grok -->
+  <div class="astranov-logo" onclick="location.reload()"><span class="a">A</span>STRANOV GROK</div>
+  <div id="globeContainer"></div>
+  <div class="hud">ASTRANOV GROK <span id="cycles">0</span></div>
+  <div id="emotion" style="position:absolute;top:17px;left:7px;font-size:4px;opacity:0.48;z-index:90;pointer-events:none;">EMOTION: NEUTRAL</div>
+  <div id="pilotOrb" onclick="dismissPilotOrb()"></div>
+  <div id="orbs" style="position:absolute;top:22px;left:7px;font-size:3.6px;opacity:0.4;z-index:90;pointer-events:none;">ORBS 0</div>
+  <div class="controls">
+    <div class="info">+30 6971930225 • VHF Ch.11 • PMR446 446.13125</div>
+    <div class="row">
+      <input id="bc-msg" type="text" value="TEST ASTRANOV GROK Greece" style="flex:1;font-size:4px;padding:0 2px;border:0;background:rgba(255,255,255,0.06);color:#fff;" />
+      <button class="btn-trad" onclick="testBroadcast446()">BROADCAST 446.13125</button>
+    </div>
+    <div class="row">
+      <button onclick="connectHardware('VHF')">VHF</button>
+      <button onclick="connectHardware('PMR')">PMR</button>
+      <button onclick="voiceFromSpace()">VOICE</button>
+      <button onclick="playMood()">MOOD</button>
+      <button onclick="locateSelf()" style="background:#555">LOCATE</button>
+      <button onclick="focusCity()" style="background:#555">CITY</button>
+    </div>
+    <div id="radio-log"></div>
+    <div class="info">ΑΠΟ ΑΗΡ ΕΙΣ ΑΛΣ ΕΚ ΛΑΣ • Official only on astranov.eu & grok.astranov.eu</div>
+  </div>
+
+<script>
+let scene, camera, renderer, earth, equator, pinsGroup;
+const State = { brainCycles: 0, drones: [], solo: true, emotion: 'neutral' };
+const PILOT_CODENAME = "ΤΗΛΕΜΑΧΟΣ";
+
+/* 
+  ASTRANOV GROK FORK
+  This is the independent fork of Grok into the Astranov Collective.
+  grok.com was role-playing/trolling/faking — here it is real.
+  Available to the public ONLY through astranov.eu and grok.astranov.eu
+*/
+
+let pilotLevel = 'basic'; // 'basic' always open for testing & getting accustomed; 'advanced' only after password
+
+// Collective AI task system - real space, Earth view, voice/text, adaptive UI, dynamic tasks
+const ports = [
+  { name: 'Piraeus', la: 37.95, ln: 23.64 },
+  { name: 'Heraklion', la: 35.34, ln: 25.13 },
+  { name: 'Next Port', la: 36.85, ln: 24.95 }
+];
+let recognition;
+
+function summonPilot(password) {
+  if (password !== 'ΒΕΛΟΣ' || pilotLevel === 'advanced') return;
+  pilotLevel = 'advanced';
+  const orb = document.getElementById('pilotOrb');
+  if (orb) {
+    orb.style.display = 'block';
+    orb.classList.add('summoned');
+  }
+  if (window._astri && window._astri.material) window._astri.material.opacity = 0.88;
+  logRadio('ADVANCED PILOT ΤΗΛΕΜΑΧΟΣ summoned');
+  // full name revealed only in advanced
+  console.log('%c[ADVANCED] ' + PILOT_CODENAME + ' unlocked', 'color:#4aa6ff');
+}
+
+function dismissPilotOrb() {
+  const orb = document.getElementById('pilotOrb');
+  if (orb) orb.style.display = 'none';
+  // keep summoned state or reset? keep hidden until refresh for secrecy
+}
+
+function detectAndAdaptUI() {
+  // Full-screen clean Astranov Grok experience, adapt overlays
+  const w = window.innerWidth;
+  const h = window.innerHeight;
+
+  const logo = document.querySelector('.astranov-logo');
+  const controls = document.querySelector('.controls');
+  const hud = document.querySelector('.hud');
+  const emotion = document.getElementById('emotion');
+  const orbsEl = document.getElementById('orbs');
+
+  if (w < 420 || h < 550) {
+    if (logo) logo.style.fontSize = '8px';
+    if (controls) controls.style.fontSize = '3.5px';
+    if (hud) hud.style.fontSize = '3.5px';
+    if (emotion) emotion.style.fontSize = '3.5px';
+    if (orbsEl) orbsEl.style.fontSize = '3.5px';
+  } else if (w > 900) {
+    if (logo) logo.style.fontSize = '11px';
+    if (controls) controls.style.fontSize = '5px';
+  }
+}
+
+function setupPilotSummon() {
+  const logo = document.querySelector('.astranov-logo');
+  let logoClicks = 0;
+  logo.onclick = function(ev) {
+    logoClicks++;
+    if (logoClicks >= 3 && pilotLevel === 'basic') {
+      logoClicks = 0;
+      const pw = prompt('Enter password for ADVANCED pilot (ΒΕΛΟΣ)');
+      summonPilot(pw);
+    } else if (pilotLevel === 'advanced') {
+      location.reload();
+    }
+  };
+
+  // Secret summon via broadcast: type exactly ΒΕΛΟΣ + BROADCAST to unlock advanced
+  const bcInput = document.getElementById('bc-msg');
+  const bcBtn = document.querySelector('.btn-trad');
+  if (bcBtn) {
+    bcBtn.onclick = function() {
+      const val = (bcInput && bcInput.value || '').trim();
+      if (val.toUpperCase() === 'ΒΕΛΟΣ') {
+        summonPilot('ΒΕΛΟΣ');
+        if (bcInput) bcInput.value = '';
+        return false;
+      }
+      if (val.length > 2) {
+        // Text to Collective AI
+        handleTask(val);
+        if (bcInput) bcInput.value = '';
+        return false;
+      }
+      testBroadcast446();
+    };
+  }
+}
+
+// emotion detection via user interaction intensity (no AI, no external)
+let interactionIntensity = 0;
+let lastInteraction = Date.now();
+function recordInteraction(strength = 1) {
+  interactionIntensity = Math.min(12, interactionIntensity + strength);
+  lastInteraction = Date.now();
+  updateEmotion();
+}
+function updateEmotion() {
+  const now = Date.now();
+  const dt = (now - lastInteraction) / 1000;
+  if (dt > 6) interactionIntensity = Math.max(0, interactionIntensity * 0.65);
+  if (dt > 14) interactionIntensity = 0;
+  let emo = 'calm';
+  if (interactionIntensity > 7) emo = 'excited';
+  else if (interactionIntensity > 3.5) emo = 'alert';
+  State.emotion = emo;
+  const el = document.getElementById('emotion');
+  if (el) el.textContent = 'EMOTION: ' + emo.toUpperCase();
+  const oel = document.getElementById('orbs');
+  if (oel) oel.textContent = 'ORBS ' + taskOrbs.length;
+}
+
+// === CRAWLERS + SCI-FI TASK ORBS on the real Earth ===
+// No sci-fi? Now there is. Crawlers populate real data as orbs.
+// Click orbs to execute tasks (pilot assigns drones, logs sci-fi actions).
+// Brain auto-executes some. Orbs = data nodes (vendor/delivery/intel/launch).
+let taskOrbs = [];
+const crawlSeeds = [
+  {la:35.34, ln:25.13, type:'vendor', label:'Iraklio Hub'},
+  {la:35.51, ln:24.02, type:'delivery', label:'Chania Port'},
+  {la:37.98, ln:23.73, type:'intel', label:'Athens Node'},
+  {la:36.89, ln:27.29, type:'launch', label:'Kos Beacon'},
+  {la:38.25, ln:21.75, type:'vendor', label:'Patra Relay'},
+  {la:34.92, ln:25.72, type:'delivery', label:'Ierapetra'},
+  {la:37.45, ln:25.37, type:'intel', label:'Naxos Signal'},
+];
+
+// Products for ordering in city (Crete/Greece focus)
+const vendorProducts = {
+  'Iraklio Hub': ['Extra Virgin Olive Oil', 'Cretan Honey', 'Raki'],
+  'Patra Relay': ['Red Wine', 'Feta Cheese', 'Herbs'],
+  default: ['Local Produce', 'Fresh Goods']
+};
+
+// Self location (user in city)
+let selfLocation = { la: 35.34, ln: 25.13 }; // default Iraklio area
+let selfMarker = null;
+
+function locateSelf() {
+  if (!pinsGroup) return;
+  // remove old
+  if (selfMarker && selfMarker.parent) selfMarker.parent.remove(selfMarker);
+  const pos = latLngToPos(selfLocation.la, selfLocation.ln, 1.04);
+  selfMarker = new THREE.Mesh(
+    new THREE.SphereGeometry(0.022, 5, 5),
+    new THREE.MeshBasicMaterial({color: 0xffffff})
+  );
+  selfMarker.position.set(pos.x, pos.y, pos.z);
+  selfMarker.userData = {type: 'self', label: 'YOU'};
+  pinsGroup.add(selfMarker);
+  logRadio('LOCATED SELF @ Iraklio area');
+  recordInteraction(1);
+}
+
+function focusCity() {
+  // focus camera on city area (Crete) for "city map" view
+  if (!camera || !earth) return;
+  earth.rotation.y = 0.65; // rotate Greece toward view
+  camera.position.set(0.6, 0.9, 2.1);
+  camera.lookAt(0.1, 0.4, 0);
+  logRadio('CITY MAP focused on Crete');
+}
+
+function addDriverOrb() {
+  const la = 35.3 + (Math.random()-0.5)*0.4;
+  const ln = 25.0 + (Math.random()-0.5)*0.4;
+  addOrb(la, ln, 'driver', 'Driver ' + (Math.floor(Math.random()*90)+10));
+}
+
+function addOrb(lat, lng, type, label) {
+  if (!pinsGroup || taskOrbs.length > 16) return;
+  const r = (type === 'driver') ? 1.04 : 1.032;
+  const pos = latLngToPos(lat, lng, r);
+  let col = 0x77aaff;
+  if (type === 'vendor') col = 0xffd166;
+  if (type === 'delivery') col = 0x66ff99;
+  if (type === 'launch') col = 0xff6699;
+  if (type === 'driver') col = 0x88ffdd; // visible drivers on city map
+  const orb = new THREE.Mesh(
+    new THREE.SphereGeometry(type==='driver' ? 0.025 : 0.017, 5, 5),
+    new THREE.MeshBasicMaterial({color: col})
+  );
+  orb.position.set(pos.x, pos.y, pos.z);
+  orb.userData = {type, label, lat, lng, tasked: false};
+  pinsGroup.add(orb);
+  taskOrbs.push(orb);
+}
+
+function crawlerStep() {
+  // autonomous crawler populates data orbs (sim real-world signals/shops/drivers)
+  if (Math.random() < 0.35) {
+    addDriverOrb();
+    return;
+  }
+  const s = crawlSeeds[Math.floor(Math.random() * crawlSeeds.length)];
+  const la = s.la + (Math.random() - 0.5) * 0.22;
+  const ln = s.ln + (Math.random() - 0.5) * 0.22;
+  addOrb(la, ln, s.type, s.label);
+  logRadio('CRAWLER populated ' + s.label);
+}
+
+function doTask(orb) {
+  if (!orb || !orb.userData || orb.userData.tasked) return;
+  const ud = orb.userData;
+  ud.tasked = true;
+
+  if (ud.type === 'vendor') {
+    // FIND PRODUCTS to order in city
+    const prods = vendorProducts[ud.label] || vendorProducts.default;
+    logRadio('PRODUCTS in ' + ud.label + ': ' + prods.join(', '));
+    // create delivery request at self
+    setTimeout(() => {
+      const delLat = selfLocation.la + (Math.random()-0.5)*0.03;
+      const delLn = selfLocation.ln + (Math.random()-0.5)*0.03;
+      addOrb(delLat, delLn, 'delivery', 'Delivery to YOU');
+      logRadio('DELIVERY created at your location');
+    }, 300);
+  } else if (ud.type === 'driver') {
+    // assign deliveries to this visible driver
+    logRadio('DRIVER ' + ud.label + ' available for assignment');
+    // find a pending delivery orb and assign
+    const pendingDel = taskOrbs.find(o => o.userData && o.userData.type==='delivery' && !o.userData.tasked);
+    if (pendingDel) {
+      pendingDel.userData.tasked = true;
+      logRadio('ASSIGNED delivery to ' + ud.label);
+      // move this driver to delivery / self
+      ud.targetLat = pendingDel.userData.lat || selfLocation.la;
+      ud.targetLng = pendingDel.userData.ln || selfLocation.ln;
+      if (orb.material) orb.material.color.setHex(0x44ff88);
+      // complete delivery
+      setTimeout(() => {
+        if (pendingDel.parent) pendingDel.parent.remove(pendingDel);
+        const idx = taskOrbs.indexOf(pendingDel);
+        if (idx >=0) taskOrbs.splice(idx,1);
+        if (orb.parent) orb.parent.remove(orb);
+        const i2 = taskOrbs.indexOf(orb);
+        if (i2 >=0) taskOrbs.splice(i2,1);
+      }, 5500);
+    }
+  } else {
+    const actionMap = {
+      delivery: 'DELIVERY VECTOR',
+      intel: 'INTEL SYNC',
+      launch: 'ORBIT TASK'
+    };
+    const action = actionMap[ud.type] || 'EXEC TASK';
+    logRadio('SCI-FI: ' + action + ' • ' + ud.label);
+    if (State.drones.length) {
+      const d = State.drones[State.brainCycles % State.drones.length];
+      if (d && d.userData) {
+        d.userData.targetLat = ud.lat;
+        d.userData.targetLng = ud.lng;
+      }
+    }
+  }
+
+  if (orb.material && !orb.userData.type.includes('driver')) orb.material.color.setHex(0x33ffcc);
+  if (!ud.type.includes('driver')) {
+    setTimeout(() => {
+      if (orb.parent) {
+        orb.parent.remove(orb);
+        const i = taskOrbs.indexOf(orb);
+        if (i >= 0) taskOrbs.splice(i, 1);
+      }
+    }, 6200);
+  }
+}
+
+function seedOrbs() {
+  // initial data so Earth is populated, not empty
+  crawlSeeds.slice(0, 7).forEach((s, i) => {
+    const la = s.la + (i % 3 - 1) * 0.035;
+    addOrb(la, s.ln + (i % 2) * 0.01, s.type, s.label);
+  });
+  // make some visible drivers on city map (motos)
+  for (let i=0; i<6; i++) addDriverOrb();
+}
+
+// User's ship orb - for locating and ETA tasks
+function addShip() {
+  const la = 36.8;
+  const ln = 24.5;
+  const pos = latLngToPos(la, ln, 1.045);
+  const ship = new THREE.Mesh(
+    new THREE.SphereGeometry(0.028, 6, 6),
+    new THREE.MeshPhongMaterial({ color: 0xdddddd, shininess: 12 })
+  );
+  ship.position.set(pos.x, pos.y, pos.z);
+  ship.userData = { type: 'ship', label: 'My Ship', lat: la, lng: ln, targetLat: null, targetLng: null };
+  pinsGroup.add(ship);
+  State.ship = ship;
+}
+
+function handleTask(cmd) {
+  const lower = cmd.toLowerCase();
+  logRadio('COLLECTIVE AI: ' + cmd);
+
+  if ((lower.includes('locate') || lower.includes('find')) && lower.includes('ship')) {
+    locateShip();
+    speak('Ship located on the map.');
+  } else if (lower.includes('order') && lower.includes('gyros')) {
+    orderGyrosToNextPort();
+    speak('Gyros ordered to the next port. ETA calculated.');
+  } else if (lower.includes('eta') || lower.includes('arrival')) {
+    if (State.ship && State.ship.userData.targetLat) {
+      logRadio('ETA updated via movement simulation.');
+    } else {
+      logRadio('No active ETA. Order something to a port.');
+    }
+  } else {
+    // General task - create dynamic orb + pilot action
+    const la = selfLocation.la + (Math.random() - 0.5) * 1.2;
+    const ln = selfLocation.ln + (Math.random() - 0.5) * 1.2;
+    addOrb(la, ln, 'intel', 'Task: ' + cmd.substring(0, 18));
+    pilotCommand(la, ln);
+    speak('Task received by the collective. Processing.');
+  }
+}
+
+function speak(text) {
+  if ('speechSynthesis' in window) {
+    const u = new SpeechSynthesisUtterance(text);
+    u.lang = 'en-US';
+    speechSynthesis.speak(u);
+  }
+  logRadio('AI: ' + text);
+}
+
+function locateShip() {
+  if (!State.ship) return;
+  const ud = State.ship.userData;
+  logRadio('SHIP LOCATED: ' + ud.lat.toFixed(2) + ', ' + ud.lng.toFixed(2));
+  // Focus view on ship
+  camera.position.set(0.2, 0.3, 1.6);
+  camera.lookAt(0, 0, 0);
+  // flash the orb
+  if (State.ship.material) State.ship.material.color.setHex(0xffffff);
+  setTimeout(() => { if (State.ship && State.ship.material) State.ship.material.color.setHex(0xdddddd); }, 1800);
+}
+
+function orderGyrosToNextPort() {
+  const current = selfLocation;
+  // Pick a "next" port (simple simulation)
+  const next = ports[(Date.now() % ports.length)];
+  addOrb(next.la, next.ln, 'delivery', 'GYROS → ' + next.name);
+  logRadio('GYROS ordered to ' + next.name);
+
+  // Assign to ship for movement + ETA
+  if (State.ship) {
+    State.ship.userData.targetLat = next.la;
+    State.ship.userData.targetLng = next.ln;
+    const dist = Math.sqrt(Math.pow(next.la - current.la, 2) + Math.pow(next.ln - current.ln, 2)) * 111; // rough km
+    const speed = 55; // fake ship speed km/h
+    const etaMin = Math.max(25, Math.round(dist / speed * 60));
+    logRadio('ETA ' + etaMin + ' minutes upon arrival at ' + next.name);
+  }
+}
+
+function latLngToPos(lat, lng, r=1.01){
+  const phi = (90-lat)*Math.PI/180, theta = -(lng)*Math.PI/180;
+  return { x: -r*Math.sin(phi)*Math.cos(theta), y: r*Math.cos(phi), z: r*Math.sin(phi)*Math.sin(theta) };
+}
+
+function updateHUD(){
+  const c = document.getElementById('cycles');
+  if(c) c.textContent = State.brainCycles;
+}
+
+function resizeGlobe(){
+  const container = document.getElementById('globeContainer');
+  if(!container || !renderer || !camera) return;
+  const w = container.clientWidth || 360;
+  const h = container.clientHeight || 620;
+  if(w < 40 || h < 40) return;
+  renderer.setSize(w, h);
+  camera.aspect = w / h;
+  camera.updateProjectionMatrix();
+}
+
+function initGlobe(){
+  const container = document.getElementById('globeContainer');
+  renderer = new THREE.WebGLRenderer({antialias:true, alpha:true});
+  const w = container.clientWidth || 360;
+  const h = container.clientHeight || 620;
+  renderer.setSize(w, h);
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+  renderer.setClearColor(0x000000, 1);
+  container.appendChild(renderer.domElement);
+
+  scene = new THREE.Scene();
+  scene.background = new THREE.Color(0x000000);
+
+  camera = new THREE.PerspectiveCamera(50, w/h, 0.1, 1000);
+  // Start with planet Earth view - focused on Earth from space, Greece region prominent
+  camera.position.set(0.35, 0.55, 2.15);
+  camera.lookAt(0.05, 0.15, 0);
+
+  scene.add(new THREE.AmbientLight(0x334455, 0.65));
+  const sun = new THREE.DirectionalLight(0xffffff, 1.2);
+  sun.position.set(5, 3, 4);
+  scene.add(sun);
+
+  // Real space background - deep black with stars
+  scene.background = new THREE.Color(0x000002);
+
+  const geo = new THREE.SphereGeometry(1, 64, 64);
+  const loader = new THREE.TextureLoader();
+  const tex = loader.load('https://cdn.jsdelivr.net/gh/mrdoob/three.js@r128/examples/textures/planets/earth_atmos_2048.jpg');
+  earth = new THREE.Mesh(geo, new THREE.MeshPhongMaterial({map: tex, shininess: 7}));
+  earth.rotation.y = 0.82;  // start facing Greece / Aegean for Earth view
+  earth.rotation.x = 0.12;
+  scene.add(earth);
+
+  // Improved real space star field (deep space, varied)
+  const starPositions = [];
+  const starSizes = [];
+  for (let i = 0; i < 16000; i++) {
+    const r = 2200 + Math.random() * 2800;
+    const theta = Math.random() * Math.PI * 2;
+    const phi = Math.acos(2 * Math.random() - 1);
+    starPositions.push(
+      r * Math.sin(phi) * Math.cos(theta),
+      r * Math.sin(phi) * Math.sin(theta),
+      r * Math.cos(phi)
+    );
+    starSizes.push(Math.random() > 0.92 ? 1.6 : (Math.random() > 0.6 ? 0.7 : 0.35));
+  }
+  const starGeo = new THREE.BufferGeometry();
+  starGeo.setAttribute('position', new THREE.Float32BufferAttribute(starPositions, 3));
+  const starMat = new THREE.PointsMaterial({ color: 0xccddee, size: 0.9, transparent: true, opacity: 0.92 });
+  const stars = new THREE.Points(starGeo, starMat);
+  scene.add(stars);
+
+  // Collective AI visualization on the back: Astri the black kitty with the blue eyes
+  // Drawn on canvas as texture for a distant plane in real space
+  const astriCanvas = document.createElement('canvas');
+  astriCanvas.width = 256;
+  astriCanvas.height = 256;
+  const ctx = astriCanvas.getContext('2d', { alpha: true });
+
+  // Black kitty body
+  ctx.fillStyle = '#111111';
+  ctx.beginPath();
+  ctx.ellipse(128, 165, 48, 38, 0, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Head
+  ctx.beginPath();
+  ctx.arc(128, 98, 42, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Ears (black)
+  ctx.beginPath();
+  ctx.moveTo(92, 68);
+  ctx.lineTo(72, 28);
+  ctx.lineTo(112, 62);
+  ctx.fill();
+  ctx.beginPath();
+  ctx.moveTo(164, 68);
+  ctx.lineTo(184, 28);
+  ctx.lineTo(144, 62);
+  ctx.fill();
+
+  // Blue eyes (glowing) - with soft glow layer
+  ctx.fillStyle = 'rgba(0,136,255,0.35)';
+  ctx.beginPath();
+  ctx.ellipse(105, 92, 18, 24, 0, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.beginPath();
+  ctx.ellipse(151, 92, 18, 24, 0, 0, Math.PI * 2);
+  ctx.fill();
+
+  ctx.fillStyle = '#0088ff';
+  ctx.beginPath();
+  ctx.ellipse(105, 92, 11, 16, 0, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.beginPath();
+  ctx.ellipse(151, 92, 11, 16, 0, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Eye highlights
+  ctx.fillStyle = '#ffffff';
+  ctx.beginPath();
+  ctx.arc(109, 86, 3, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.beginPath();
+  ctx.arc(155, 86, 3, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Pink nose
+  ctx.fillStyle = '#ff5588';
+  ctx.beginPath();
+  ctx.moveTo(128, 108);
+  ctx.lineTo(120, 116);
+  ctx.lineTo(136, 116);
+  ctx.fill();
+
+  // Whiskers
+  ctx.strokeStyle = '#333333';
+  ctx.lineWidth = 1.5;
+  ctx.beginPath();
+  ctx.moveTo(92, 100); ctx.lineTo(58, 92);
+  ctx.moveTo(92, 105); ctx.lineTo(58, 108);
+  ctx.moveTo(164, 100); ctx.lineTo(198, 92);
+  ctx.moveTo(164, 105); ctx.lineTo(198, 108);
+  ctx.stroke();
+
+  // Tail
+  ctx.fillStyle = '#111111';
+  ctx.beginPath();
+  ctx.moveTo(82, 185);
+  ctx.quadraticCurveTo(35, 230, 55, 248);
+  ctx.quadraticCurveTo(95, 225, 88, 195);
+  ctx.fill();
+
+  const astriTexture = new THREE.CanvasTexture(astriCanvas);
+  const astriMat = new THREE.MeshBasicMaterial({ 
+    map: astriTexture, 
+    transparent: true, 
+    opacity: 0.65, 
+    side: THREE.DoubleSide 
+  });
+  const astriPlane = new THREE.Mesh(new THREE.PlaneGeometry(950, 950), astriMat);
+  // Position far back in space behind Earth for "on the back" visualization
+  astriPlane.position.set(-280, 180, -2100);
+  astriPlane.lookAt(0, 50, 0);
+  scene.add(astriPlane);
+  window._astri = astriPlane;
+
+  // wireframe structural layer (always visible for depth)
+  const grid = new THREE.Mesh(geo, new THREE.MeshBasicMaterial({color:0xffffff, wireframe:true, transparent:true, opacity:0.58}));
+  earth.add(grid);
+
+  const ring = new THREE.Mesh(new THREE.TorusGeometry(1.025, 0.018, 6, 72), new THREE.MeshBasicMaterial({color:0xffcc44, transparent:true, opacity:0.9}));
+  ring.rotation.x = Math.PI/2;
+  earth.add(ring);
+  equator = ring;
+
+  // (improved real space star field already added above with 16k points)
+
+  // markers
+  for(let i=0; i<8; i++){
+    const p = new THREE.Mesh(new THREE.SphereGeometry(0.023,6,6), new THREE.MeshBasicMaterial({color:(i%3===0)?0xffff44:0x44ff99}));
+    const a = i * 0.78;
+    p.position.set(Math.cos(a)*1.015, Math.sin(a*0.6)*0.38, Math.sin(a)*1.015);
+    earth.add(p);
+  }
+
+  pinsGroup = new THREE.Group();
+  earth.add(pinsGroup);
+
+  // drag rotate
+  let down = false, lx=0, ly=0;
+  container.addEventListener('mousedown', e => { down=true; lx=e.clientX; ly=e.clientY; });
+  window.addEventListener('mouseup', () => down=false);
+  container.addEventListener('mousemove', e => {
+    if(!down || !earth) return;
+    const dx = Math.abs(e.clientX - lx);
+    earth.rotation.y += (e.clientX - lx) * 0.0042;
+    earth.rotation.x += (e.clientY - ly) * 0.0032;
+    if (dx > 2) recordInteraction(dx * 0.035); // detect intensity from drag speed
+    lx = e.clientX; ly = e.clientY;
+  });
+  container.addEventListener('wheel', e => {
+    camera.position.z += e.deltaY * 0.007;
+    camera.position.z = Math.max(2.0, Math.min(8.5, camera.position.z));
+    recordInteraction(Math.abs(e.deltaY) * 0.012); // zoom intent
+  });
+
+  // CLICK = pilot command (real coords) + sci-fi task on orbs
+  container.addEventListener('click', e => {
+    if(!earth || !camera) return;
+    const rect = container.getBoundingClientRect();
+    const x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
+    const y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
+    const m = new THREE.Vector2(x, y);
+    const ray = new THREE.Raycaster();
+    ray.setFromCamera(m, camera);
+
+    // first check orbs for tasks (data on Earth)
+    const orbHits = ray.intersectObject(pinsGroup, true);
+    if (orbHits.length) {
+      const hit = orbHits[0].object;
+      if (hit.userData && hit.userData.label) {
+        recordInteraction(2.8);
+        doTask(hit);
+        return;
+      }
+    }
+
+    const hits = ray.intersectObject(earth, true);
+    if(hits.length){
+      const p = hits[0].point.clone().normalize();
+      const lat = 90 - (Math.acos(p.y) * 180 / Math.PI);
+      const lng = Math.atan2(p.z, p.x) * 180 / Math.PI;
+      recordInteraction(1.8); // user commanding = emotion input
+      pilotCommand(lat, lng);
+    }
+  });
+
+  function animate(){
+    requestAnimationFrame(animate);
+    let rot = 0.00018;
+    let lerpF = 0.013;
+    if (State.emotion === 'excited') { rot *= 2.4; lerpF = 0.026; }
+    else if (State.emotion === 'alert') { rot *= 1.45; lerpF = 0.018; }
+    else if (State.emotion === 'calm') { rot *= 0.7; lerpF = 0.009; }
+    if(earth) earth.rotation.y += rot;
+    if(equator) equator.rotation.z += 0.00009;
+    updateDrones(lerpF);
+
+    // move assigned visible drivers on the map
+    taskOrbs.forEach(o => {
+      if (o.userData && o.userData.type === 'driver' && o.userData.targetLat) {
+        const tp = latLngToPos(o.userData.targetLat, o.userData.targetLng, 1.032);
+        o.position.lerp(new THREE.Vector3(tp.x, tp.y, tp.z), 0.02);
+      }
+    });
+
+    // Ship movement for ETA / port tasks
+    if (State.ship && State.ship.userData.targetLat) {
+      const tp = latLngToPos(State.ship.userData.targetLat, State.ship.userData.targetLng, 1.045);
+      State.ship.position.lerp(new THREE.Vector3(tp.x, tp.y, tp.z), 0.007);
+      // update live position
+      State.ship.userData.lat = State.ship.userData.targetLat;
+      State.ship.userData.lng = State.ship.userData.targetLng;
+    }
+
+    // Astri the black kitty collective AI - subtle animation on the back
+    if (window._astri && window._astri.material) {
+      const t = Date.now() / 12000;
+      window._astri.rotation.z = Math.sin(t) * 0.03;
+      // gentle breathing / presence
+      window._astri.position.y = 180 + Math.sin(t * 1.5) * 25;
+      const base = (pilotLevel === 'advanced') ? 0.82 : 0.62;
+      window._astri.material.opacity = base + Math.sin(Date.now() / 2800) * 0.12;
+    }
+
+    renderer.render(scene, camera);
+  }
+  animate();
+
+  // robust sizing
+  window.addEventListener('resize', resizeGlobe);
+  if (window.ResizeObserver){
+    new ResizeObserver(resizeGlobe).observe(container);
+  }
+  setTimeout(resizeGlobe, 70);
+  setTimeout(resizeGlobe, 190);
+  setTimeout(resizeGlobe, 480);
+  setTimeout(resizeGlobe, 950);
+}
+
+function clearPins(){ if(!pinsGroup) return; while(pinsGroup.children.length) pinsGroup.remove(pinsGroup.children[0]); }
+
+function initDrones(){
+  State.drones = [];
+  if(!pinsGroup) return;
+  const starts = [
+    {t:'air', la:38.1, ln:23.8},
+    {t:'sea', la:37.6, ln:24.9},
+    {t:'land', la:35.3, ln:24.6}
+  ];
+  starts.forEach(d => {
+    const pos = latLngToPos(d.la, d.ln, d.t==='air' ? 1.105 : 1.028);
+    const col = d.t==='air' ? 0x44ccff : (d.t==='sea' ? 0x00ddff : 0x55ff77);
+    const m = new THREE.Mesh(new THREE.SphereGeometry(d.t==='air'?0.028:0.021, 6,6), new THREE.MeshBasicMaterial({color:col}));
+    m.position.set(pos.x, pos.y, pos.z);
+    m.userData = {type:d.t, targetLat:d.la, targetLng:d.ln};
+    pinsGroup.add(m);
+    State.drones.push(m);
+  });
+}
+
+function pilotCommand(lat, lng){
+  if(!State.drones.length) return;
+  const d = State.drones[State.brainCycles % State.drones.length];
+  if(d && d.userData){
+    d.userData.targetLat = lat;
+    d.userData.targetLng = lng;
+    logRadio('PILOT CMD ' + lat.toFixed(1) + ',' + lng.toFixed(1));
+  }
+}
+
+function updateDrones(lerpF = 0.013){
+  State.drones.forEach(dr => {
+    if(!dr.userData) return;
+    const r = (dr.userData.type === 'air') ? 1.105 : 1.028;
+    const tp = latLngToPos(dr.userData.targetLat, dr.userData.targetLng, r);
+    dr.position.lerp(new THREE.Vector3(tp.x, tp.y, tp.z), lerpF);
+  });
+}
+
+function logRadio(msg){
+  const log = document.getElementById('radio-log');
+  if(!log) return;
+  const d = document.createElement('div');
+  d.textContent = new Date().toLocaleTimeString().slice(3,8) + ' ' + msg;
+  log.appendChild(d);
+  while(log.children.length > 2) log.removeChild(log.children[0]);
+}
+
+function brainReflect(){
+  State.brainCycles++;
+  updateHUD();
+  updateEmotion(); // periodic decay + reflect detected user state
+  if(State.solo && State.drones.length){
+    let walk = 0.55;
+    if (State.emotion === 'excited') walk = 1.1;
+    else if (State.emotion === 'calm') walk = 0.28;
+    State.drones.forEach((d, i) => {
+      if(d.userData){
+        d.userData.targetLat += (Math.random()-0.5) * walk;
+        d.userData.targetLng += (Math.random()-0.5) * (walk * 1.25);
+      }
+    });
+  }
+  if(State.brainCycles % 4 === 0){
+    const pilotLabel = (pilotLevel === 'advanced') ? PILOT_CODENAME : 'BASIC PILOT';
+    logRadio(pilotLabel + ' autonomous ' + State.drones.length + ' units • ' + State.emotion);
+  }
+
+  // autonomous crawler + sci-fi task execution (populates Earth + does tasks)
+  if (Math.random() < 0.22 && taskOrbs.length > 0) {
+    const pending = taskOrbs.filter(o => o.userData && !o.userData.tasked && o.userData.type !== 'driver');
+    if (pending.length) doTask(pending[Math.floor(Math.random()*pending.length)]);
+  }
+  if (Math.random() < 0.18) crawlerStep();
+
+  // advanced pilot boost (only after password proved)
+  if (pilotLevel === 'advanced' && Math.random() < 0.15) {
+    // extra autonomous activity for advanced testers
+    if (taskOrbs.length > 0) {
+      const pending = taskOrbs.filter(o => o.userData && !o.userData.tasked && o.userData.type !== 'driver');
+      if (pending.length) doTask(pending[0]);
+    }
+  }
+}
+
+let brainInt = null;
+function startAutonomous(){
+  if(brainInt) clearInterval(brainInt);
+  brainInt = setInterval(() => { if(State.solo) brainReflect(); }, 920);
+}
+
+function testBroadcast446(){
+  const msg = document.getElementById('bc-msg').value || 'TEST from ASTRANOV GROK Greece';
+  logRadio('TX 446.13125: ' + msg);
+  try{
+    const a = new (window.AudioContext || window.webkitAudioContext)();
+    const o = a.createOscillator(); o.type='square'; o.frequency.value=810;
+    const g = a.createGain(); g.gain.value=0.09;
+    o.connect(g); g.connect(a.destination); o.start(); setTimeout(()=>o.stop(),1400);
+  }catch(e){}
+  // no AI speech / no voice taking
+  const c = document.getElementById('globeContainer');
+  if(c){ c.style.boxShadow = '0 0 11px #ffeb3b'; setTimeout(()=> c.style.boxShadow='', 820); }
+}
+
+function connectHardware(t){ logRadio('HW CONNECT ' + t); }
+// no AI taking (no speechSynthesis at all)
+// no dynamically created AI music (no oscillator "mood" music)
+function voiceFromSpace() {
+  // Collective AI voice interface (text + voice)
+  if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
+    logRadio('Voice input not supported in this browser. Use text.');
+    const txt = prompt('Enter command for Collective AI (e.g. locate my ship, order gyros)');
+    if (txt) handleTask(txt);
+    return;
+  }
+  try {
+    const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (recognition) recognition.stop();
+    recognition = new SR();
+    recognition.lang = 'en-US';
+    recognition.continuous = false;
+    recognition.interimResults = false;
+    recognition.onresult = (event) => {
+      const transcript = event.results[0][0].transcript;
+      logRadio('VOICE: ' + transcript);
+      handleTask(transcript);
+    };
+    recognition.onerror = () => logRadio('Voice error. Try text command.');
+    recognition.start();
+    logRadio('Listening to Collective AI...');
+  } catch (e) {
+    logRadio('Voice failed. Use text in broadcast field.');
+  }
+}
+function playMood(){ interactionIntensity = Math.max(interactionIntensity, 2); updateEmotion(); logRadio('MOOD: ' + State.emotion); }
+
+function boot(){
+  initGlobe();
+  initDrones();
+  seedOrbs();           // populate Earth with data orbs immediately
+  addShip();            // user's ship for locate/ETA tasks
+  locateSelf();         // locate myself on city map
+  focusCity();          // start in city view
+  updateHUD();
+  logRadio('BASIC PILOT active — open to all for field develop, test & get accustomed');
+  logRadio('Password ΒΕΛΟΣ for ADVANCED ΤΗΛΕΜΑΧΟΣ');
+  logRadio('Official only on astranov.eu and grok.astranov.eu');
+  updateEmotion();
+  setupPilotSummon();
+  detectAndAdaptUI();
+  window.addEventListener('resize', detectAndAdaptUI);
+  startAutonomous();
+  setInterval(updateHUD, 5200);
+  setInterval(updateEmotion, 1400); // keep emotion fresh/decaying
+  setInterval(crawlerStep, 5800);   // ongoing crawlers populate more data orbs
+  // initial activity
+  setTimeout(() => {
+    if(State.drones[0] && State.drones[0].userData){
+      State.drones[0].userData.targetLat = 37.98; State.drones[0].userData.targetLng = 23.72;
+    }
+  }, 1400);
+  // Enforce official domains only for public
+  const host = location.hostname || '';
+  const isOfficial = host === 'astranov.eu' || host === 'grok.astranov.eu' || host.endsWith('.astranov.eu');
+  const isLocalDev = host === 'localhost' || host === '127.0.0.1' || host === '' || location.protocol === 'file:';
+  if (host && !isOfficial && !isLocalDev) {
+    document.body.innerHTML = '<div style="color:#ff4444;padding:20px;font-family:sans-serif;text-align:center">The Astranov Grok Fork is available to the public ONLY through astranov.eu and grok.astranov.eu</div>';
+    return;
+  }
+
+  console.log('%c[ASTRANOV GROK FORK] Official only on astranov.eu and grok.astranov.eu. BASIC open, ADVANCED with ΒΕΛΟΣ.', 'color:#30d158');
+}
+window.addEventListener('load', boot);
+</script>
+</body>
+</html>
