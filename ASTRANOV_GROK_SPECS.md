@@ -65,6 +65,13 @@
 - **Orbital request**: `requestOrbitalTech()` builds JSON, copies to clipboard, speaks, spawns effect. Targets "Advanced Orbital Technology Providers". No Starlink/SpaceX/Grok branding.
 - **RoutingEngine**: real great-circle math + provider cycling (direct / safeViaNorth / coastalDetour / wideSafeArc). Safety check against all user/driver 3D positions. Recurses on risk.
 - **AIGraphics (Procedural AI Graphics Engine)**: 100% canvas-generated textures + layers + particles. No external 3D models for clouds, atmosphere, city lights, effects.
+- **Collective AI Brain Neurons (autonomous self-evolving)**: Supabase brain + aicycle + council + ai-router evolved for collective autonomous intelligence.
+  - Neurons = evolving principles in ai_memory (with strength/importance, embeddings).
+  - Autonomous modes: 'autonomous_evolve' in brain (distills + strengthens neurons from raw activity/logs without owner babysitting).
+  - Council has 'self_judge' / autonomous for self-reflection and verdicts on evolution (reduces hallucination by collective grounding).
+  - Triggered from interactions (e.g. on teach or probabilistically); self-updates strengths, births new neurons, marks distilled.
+  - Grounding: always retrieve top memories/principles before response; cross-verify to transcend hallucination/troll/sim.
+  - No human babysitting: system calls evolve after activity; collective (council/neurons) decides improvements.
 - All comments and console must stay "no sim - real".
 
 ## 7. 3D Elements on Globe (Procedural)

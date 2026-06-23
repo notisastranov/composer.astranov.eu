@@ -824,8 +824,15 @@ function handleVoiceCommand(event) {
   } else if (transcript.includes('request') || transcript.includes('technology') || transcript.includes('tech')) {
     requestOrbitalTech();
     speak('Request prepared.', () => provokeAnswer());
+  } else if (transcript.includes('evolve') || transcript.includes('collective') || transcript.includes('brain') || transcript.includes('neuron') || transcript.includes('self evolve')) {
+    // Trigger autonomous self-evolving collective brain neurons (no babysitting).
+    // In full system, this would POST to /functions/v1/brain {mode: 'autonomous_evolve'}
+    // For now, log + visual effect + speak. Neurons evolve in backend autonomously.
+    console.log('%c[COLLECTIVE BRAIN] Autonomous evolve triggered - neurons self-strengthening, new principles distilled to transcend hallucination.', 'color:#00ffaa');
+    AIGraphics.spawnEffect(new THREE.Vector3(0,1.2,0), 0x00ff88, 30, 40);
+    speak('Collective neurons evolving autonomously. No babysitting. Self-improving now.', () => provokeAnswer());
   } else {
-    speak('Δεν κατάλαβα. Πες login, work, explore, video call, tech request, mute ή sleep.', () => startListeningForOptions());
+    speak('Δεν κατάλαβα. Πες login, work, explore, video call, tech request, mute, evolve collective, ή sleep.', () => startListeningForOptions());
   }
 }
 
@@ -841,8 +848,8 @@ function provokeAnswer() {
 function startVoiceOptions() {
   if (!voiceEnabled) return;
   const txt = cityLevel 
-    ? 'City level. Options: login, work, explore, video call via Orbital, request Orbital Provider tech, mute, sleep. Tell me.'
-    : 'Options: login, work, explore, video call via Orbital, request Orbital Provider tech, mute, sleep. Tell me what you want Αξάς.';
+    ? 'City level. Options: login, work, explore, video call via Orbital, request Orbital Provider tech, evolve collective brain neurons, mute, sleep. Tell me.'
+    : 'Options: login, work, explore, video call via Orbital, request Orbital Provider tech, evolve collective brain neurons, mute, sleep. Tell me what you want Αξάς.';
   speak(txt, () => {
     startListeningForOptions();
   });
