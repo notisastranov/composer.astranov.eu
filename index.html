@@ -833,7 +833,7 @@ initUser();
 console.log('%c[Αστρανόβ] Drag/zoom/click freely. Click marker for voice options incl. orbital video call or "request satellite tech". Location only when needed. Real WebRTC + orbital request for reduced wireless impact.', 'color:#00ddff');
 
 // Globe-first instructions (no Windows-like panels)
-console.log('%c[Αστρανόβ] Drag για περιστροφή, wheel zoom. Κλικ marker για voice: orbital video call ή request satellite tech. Location μόνο όταν χρειαστούν. No sim - real WebRTC, request sent to providers.', 'color:#00ddff');
+console.log('%c[Αστρανόβ] Drag για περιστροφή, wheel zoom. Κλικ marker για voice: orbital video call ή request satellite tech. Location μόνο όταν χρειάζεται. No sim - real WebRTC, request sent to providers.', 'color:#00ddff');
 
 // Voice system - ask with voice, stop to listen, provoke answer. No delirium.
 function initVoice() {
@@ -879,7 +879,7 @@ function handleVoiceCommand(event) {
   } else if (transcript.includes('work') || transcript.includes('δουλειά')) {
     requestLocationIfNeeded(() => {
       groupOrder();
-      speak('Ξεκινάμε δουλειά με τον ΤΗΛΕΜΑΧΟΣ.', () => provokeAnswer());
+      speak('Ξεκινάμε δουλειά με τον ΤΗΛΕΜΑΧΟ.', () => provokeAnswer());
     });
   } else if (transcript.includes('explore') || transcript.includes('εξερεύνηση')) {
     requestLocationIfNeeded(() => {
@@ -901,7 +901,7 @@ function handleVoiceCommand(event) {
   } else if (transcript.includes('sleep') || transcript.includes('ύπνος')) {
     idleRoll = 0.00005;
     voiceEnabled = false;
-    speak('ύπνος.', () => {});
+    speak('Ύπνος.', () => {});
   } else if (transcript.includes('request') || transcript.includes('technology') || transcript.includes('tech')) {
     requestOrbitalTech();
     speak('Request prepared.', () => provokeAnswer());
@@ -934,7 +934,7 @@ function requestLocationIfNeeded(onLocated) {
     if (onLocated) onLocated();
     return;
   }
-  speak('Για καλύτερη εμπειρία στη πόλη, δώσε άδεια τοποθεσίας.', () => {
+  speak('Για καλύτερη εμπειρία στην πόλη, δώσε άδεια τοποθεσίας.', () => {
     navigator.geolocation.getCurrentPosition(pos => {
       placeMe(pos.coords.latitude, pos.coords.longitude);
       userLocated = true;
@@ -998,3 +998,224 @@ function groupOrder() {
   earth.rotation.y = -28.1 * Math.PI / 180 + Math.PI/2;
   earth.rotation.x = -0.01;
   camera.position.z = 1.6;
+  camera.lookAt(0, 0, 0);
+  
+  // STRONG ROUTING FALLBACK PROVIDER CYCLING for safety
+  const vendorLat = 36.8, vendorLng = 27.5;
+  const deliveryLat = 36.2, deliveryLng = 28.1;
+  const userPos3D = others.map(o => latLngToPos(o.lat, o.lng, 1.025));
+  if (window._meMarker) userPos3D.push(window._meMarker.position);
+  const routeData = RoutingEngine.computeRoute(vendorLat, vendorLng, deliveryLat, deliveryLng, userPos3D);
+  console.log('%c[Safe Routing] Provider: ' + routeData.provider + ' | Safety: ' + routeData.safetyScore + ' | ETA: ' + routeData.etaSim + ' (users & drivers protected)', 'color:#44ff88');
+
+  // Visualize safe route on the globe (temporary)
+  const routeGeo = new THREE.BufferGeometry().setFromPoints(routeData.points);
+  let routeLine = new THREE.Line(routeGeo, new THREE.LineBasicMaterial({ color: 0x00ffaa, transparent: true, opacity: 0.35 }));
+  scene.add(routeLine);
+
+  // Drone delivery animation using the routed path
+  const droneGroup = new THREE.Group();
+
+  // Main body
+  const body = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.008, 0.008, 0.02, 6),
+    new THREE.MeshBasicMaterial({ color: 0x44ccff })
+  );
+  body.rotation.x = Math.PI / 2;
+  droneGroup.add(body);
+
+  // Top sensor / rotor hub
+  const hub = new THREE.Mesh(
+    new THREE.SphereGeometry(0.006, 6, 6),
+    new THREE.MeshBasicMaterial({ color: 0x00ff88 })
+  );
+  hub.position.y = 0.01;
+  droneGroup.add(hub);
+
+  // Small wings / arms
+  const arm1 = new THREE.Mesh(
+    new THREE.BoxGeometry(0.03, 0.003, 0.003),
+    new THREE.MeshBasicMaterial({ color: 0x0088ff })
+  );
+  droneGroup.add(arm1);
+  const arm2 = arm1.clone();
+  arm2.rotation.z = Math.PI / 2;
+  droneGroup.add(arm2);
+
+  droneGroup.position.copy(routeData.points[0]);
+  scene.add(droneGroup);
+
+  // Spawn initial AI graphics particle burst
+  AIGraphics.spawnEffect(droneGroup.position, 0x44ccff, 22, 40);
+  
+  let steps = 0;
+  let routeIdx = 0;
+  const anim = setInterval(() => {
+    steps++;
+    
+    // Follow the safe routed path
+    if (routeIdx < routeData.points.length - 1) {
+      const target = routeData.points[routeIdx + 1];
+      droneGroup.position.lerp(target, 0.12);
+      if (droneGroup.position.distanceTo(target) < 0.008) {
+        routeIdx++;
+      }
+    }
+    
+    // Make pilot follow the drone a bit (stays near delivery)
+    if (window._pilot) {
+      const final = routeData.points[routeData.points.length - 1];
+      window._pilot.position.lerp(final, 0.2);
+    }
+
+    // Advanced particle trail from AI Graphics Engine (every few steps)
+    if (steps % 4 === 0) {
+      AIGraphics.spawnEffect(droneGroup.position, 0x44ccff, 8, 22);
+    }
+
+    // Real-time safety check vs users/drivers
+    userPos3D.forEach(up => {
+      if (droneGroup.position.distanceTo(up) < 0.09) {
+        console.log('%c[RoutingEngine] ⚠️ Πολύ κοντά σε user/driver! Προστασία ενεργή.', 'color:#ff8800');
+      }
+    });
+    
+    if (steps > 45 || routeIdx >= routeData.points.length - 1) {
+      clearInterval(anim);
+      if (droneGroup.parent) droneGroup.parent.remove(droneGroup);
+      if (routeLine && routeLine.parent) routeLine.parent.remove(routeLine);
+      if (window._pilot && window._pilot.parent) {
+        setTimeout(() => {
+          if (window._pilot && window._pilot.parent) window._pilot.parent.remove(window._pilot);
+        }, 3000);
+      }
+      console.log('%c[Drone Arrival - Πιλότος ΤΗΛΕΜΑΧΟΣ] Pitogyra, μπίρες & τσιγάρα παραδόθηκαν! Καλή απόλαυση αξά <3 (safe routing used)', 'color:#44ff88');
+    }
+  }, 70);
+}
+
+function showPilotTelemachos() {
+  // Εμφάνισε τον Πιλότο ΤΗΛΕΜΑΧΟΣ (drone pilot) - πιο έντονα, σαν μικρό πλοιάριο
+  if (window._pilot && window._pilot.parent) window._pilot.parent.remove(window._pilot);
+  
+  const pos = latLngToPos(36.2, 28.1, 1.04);
+  
+  // Pilot group for better visual - bigger ship-like
+  const pilotGroup = new THREE.Group();
+  
+  // Body (bigger orb)
+  const body = new THREE.Mesh(
+    new THREE.SphereGeometry(0.028, 10, 10),
+    new THREE.MeshBasicMaterial({ color: 0x00ccff, transparent: true, opacity: 0.95 })
+  );
+  pilotGroup.add(body);
+  
+  // Cockpit / nose (larger)
+  const cockpit = new THREE.Mesh(
+    new THREE.ConeGeometry(0.014, 0.032, 4),
+    new THREE.MeshBasicMaterial({ color: 0x00ff99 })
+  );
+  cockpit.rotation.x = Math.PI / 2;
+  cockpit.position.z = 0.02;
+  pilotGroup.add(cockpit);
+  
+  // Add small "wing" or stabilizer for ship look
+  const wing = new THREE.Mesh(
+    new THREE.BoxGeometry(0.05, 0.005, 0.01),
+    new THREE.MeshBasicMaterial({ color: 0x0088ff })
+  );
+  wing.position.z = 0.005;
+  pilotGroup.add(wing);
+
+  // Extra AI core glow ring (advanced gaming detail, no model)
+  const core = new THREE.Mesh(
+    new THREE.SphereGeometry(0.008, 8, 8),
+    new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.6 })
+  );
+  pilotGroup.add(core);
+
+  // Thrusters - gaming ship style (back engines)
+  const thruster1 = new THREE.Mesh(
+    new THREE.ConeGeometry(0.006, 0.018, 4),
+    new THREE.MeshBasicMaterial({ color: 0xff4400, transparent: true, opacity: 0.7 })
+  );
+  thruster1.rotation.x = Math.PI / 2;
+  thruster1.position.set(0.015, 0, -0.02);
+  pilotGroup.add(thruster1);
+
+  const thruster2 = thruster1.clone();
+  thruster2.position.set(-0.015, 0, -0.02);
+  pilotGroup.add(thruster2);
+
+  // Store thrusters for animation
+  pilotGroup.userData.thrusters = [thruster1, thruster2];
+  
+  pilotGroup.position.set(pos.x, pos.y, pos.z);
+  pilotGroup.userData = { type: 'pilot', name: 'ΤΗΛΕΜΑΧΟΣ' };
+  scene.add(pilotGroup);
+  window._pilot = pilotGroup;
+
+  // Advanced AI Graphics: spawn particle aura around pilot (gaming effect)
+  AIGraphics.spawnEffect(pilotGroup.position, 0x00ff99, 18, 55);
+  
+  console.log('%c[Πιλότος ΤΗΛΕΜΑΧΟΣ] Αναλαμβάνω την παράδοση με drone! Pitogyra + μπίρες + τσιγάρα on the way. Aksako <3', 'color:#00ddff');
+}
+
+let idleRoll = 0.00035;
+let cityLevel = false;
+let voiceEnabled = true;
+let isListening = false;
+let recognition;
+let userLocated = false;
+function animate() {
+  requestAnimationFrame(animate);
+  if (!drag) {
+    earth.rotation.y += idleRoll;
+  }
+  // pilot pulse to make it alive
+  if (window._pilot) {
+    const t = Date.now() / 600;
+    const s = 1 + Math.sin(t) * 0.12;
+    window._pilot.scale.set(s, s, s);
+
+    // Advanced thruster animation (gaming engine glow)
+    if (window._pilot.userData.thrusters) {
+      const thrustScale = 0.7 + Math.sin(t * 2) * 0.4;
+      window._pilot.userData.thrusters.forEach(t => {
+        t.scale.set(1, thrustScale, 1);
+        t.material.opacity = 0.5 + Math.sin(t * 3) * 0.3;
+      });
+    }
+
+    // Occasional thruster particle bursts (when pilot active)
+    if (Date.now() % 380 < 30 && window._pilot) {
+      AIGraphics.spawnEffect(window._pilot.position, 0xff5500, 5, 18);
+    }
+  }
+
+  // ΑΣΤΡΑΝΟΒ AI Graphics Engine tick
+  AIGraphics.update();
+  updateOrbital();
+
+  renderer.render(scene, camera);
+}
+animate();
+
+// Demo auto show after permissions
+setTimeout(() => {
+  // auto demo if needed (globe focused)
+}, 25000);
+
+// Domain guard
+const host = location.hostname || '';
+const isOfficial = host === 'astranov.eu' || host === 'grok.astranov.eu' || host.endsWith('.astranov.eu');
+const isLocal = host === '' || host === 'localhost' || host === '127.0.0.1' || location.protocol === 'file:';
+if (host && !isOfficial && !isLocal) {
+  document.body.innerHTML = '<div style="color:#444;padding:40px;text-align:center;font-family:sans-serif">Διαθέσιμο μόνο σε εξουσιοδοτημένους τομείς Astranov</div>';
+}
+
+// No panel restore needed - pure globe mode
+// me already set as Αξάς above
+</script>
+</body>
+</html>
