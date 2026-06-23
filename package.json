@@ -1,0 +1,8 @@
+{
+  "name": "astranov-globe",
+  "version": "1.0.0",
+  "scripts": {
+    "build": "echo 'static no build needed'",
+    "vercel-build": "echo 'static no build needed'"
+  }
+}
