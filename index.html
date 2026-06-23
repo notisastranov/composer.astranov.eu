@@ -44,13 +44,18 @@ for (let i=0; i<12000; i++) {
 }
 const sgeo = new THREE.BufferGeometry();
 sgeo.setAttribute('position', new THREE.Float32BufferAttribute(starPos,3));
-scene.add(new THREE.Points(sgeo, new THREE.PointsMaterial({color:0x99aabb, size:0.6})));
+scene.add(new THREE.Points(sgeo, new THREE.PointsMaterial({color:0xcccccc, size:2, sizeAttenuation:false})));
 
 // Earth
-const earth = new THREE.Mesh(
-  new THREE.SphereGeometry(1,64,64),
-  new THREE.MeshPhongMaterial({map: new THREE.TextureLoader().load('https://cdn.jsdelivr.net/gh/mrdoob/three.js@r128/examples/textures/planets/earth_atmos_2048.jpg'), shininess:5, color:0x2a4a66})
+const earthMat = new THREE.MeshPhongMaterial({ shininess: 8, color: 0x4488cc, emissive: 0x112244 });
+const earthTexUrl = 'https://cdn.jsdelivr.net/gh/mrdoob/three.js@r128/examples/textures/planets/earth_atmos_2048.jpg';
+new THREE.TextureLoader().load(
+  earthTexUrl,
+  (tex) => { earthMat.map = tex; earthMat.needsUpdate = true; },
+  undefined,
+  () => { console.log('Earth texture failed, using fallback color'); }
 );
+const earth = new THREE.Mesh( new THREE.SphereGeometry(1,64,64), earthMat );
 earth.rotation.y = 0.82;
 scene.add(earth);
 
