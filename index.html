@@ -43,6 +43,16 @@ try {
   throw e;
 }
 
+// Hoisted top-level mutable state (must be declared BEFORE any top-level calls like initVoice/initUser)
+let drag = false, px = 0, py = 0;
+let dragging = false;
+let idleRoll = 0.00035;
+let cityLevel = false;
+let voiceEnabled = true;
+let isListening = false;
+let recognition;
+let userLocated = false;
+
 const scene = new THREE.Scene();
 scene.background = new THREE.Color(0x000000);
 
@@ -100,8 +110,6 @@ function latLngToPos(lat, lng, r = 1) {
 }
 
 // Simple interaction (drag + zoom + inertia basics)
-let drag = false, px = 0, py = 0;
-let dragging = false;
 container.addEventListener('mousedown', e => { 
   drag = true; 
   px = e.clientX; 
@@ -1142,12 +1150,6 @@ function showPilotTelemachos() {
   console.log('%c[Πιλότος ΤΗΛΕΜΑΧΟΣ] Αναλαμβάνω την παράδοση με drone! Pitogyra + μπίρες + τσιγάρα on the way. Aksako <3', 'color:#00ddff');
 }
 
-let idleRoll = 0.00035;
-let cityLevel = false;
-let voiceEnabled = true;
-let isListening = false;
-let recognition;
-let userLocated = false;
 function animate() {
   requestAnimationFrame(animate);
   if (!drag) {
