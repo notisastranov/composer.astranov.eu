@@ -50,6 +50,7 @@ animate();
 ACI.init();
 Auth.init();
 AciCli.init();
+setTimeout(() => Auth.refreshAuthority(), 800);
 ACIControl.init();
 PmrRadio.bindUI();
 DrivingView.init();

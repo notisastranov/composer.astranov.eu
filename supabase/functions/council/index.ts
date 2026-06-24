@@ -74,6 +74,7 @@ serve(async (req) => {
 
     // Owner gate relaxed for autonomous self-evolution of the collective.
     // Full owner for manual, but autonomous modes (self_judge) allow system-triggered without babysitting.
+    const ARCHITECT_EMAIL = 'notisastranov@gmail.com'
     const token = (req.headers.get('Authorization') || '').replace(/^Bearer\s+/i, '')
     const anonKey = Deno.env.get('SUPABASE_ANON_KEY') || ''
     let ownerId: string | null = null
@@ -81,8 +82,14 @@ serve(async (req) => {
     if (token && token !== anonKey) {
       const { data: ud } = await sb.auth.getUser(token)
       if (ud?.user) {
-        const { data: prof } = await sb.from('profiles').select('is_owner').eq('id', ud.user.id).single()
-        if (prof?.is_owner) ownerId = ud.user.id
+        const email = (ud.user.email || '').toLowerCase()
+        if (email === ARCHITECT_EMAIL) {
+          await sb.from('profiles').upsert({ id: ud.user.id, is_owner: true }, { onConflict: 'id' })
+          ownerId = ud.user.id
+        } else {
+          const { data: prof } = await sb.from('profiles').select('is_owner').eq('id', ud.user.id).single()
+          if (prof?.is_owner) ownerId = ud.user.id
+        }
       }
     }
     if (body.autonomous || mode === 'self_judge') isAutonomous = true

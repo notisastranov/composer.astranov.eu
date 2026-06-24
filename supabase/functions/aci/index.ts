@@ -1,20 +1,15 @@
 // ASTRANOV COLLECTIVE INTELLIGENCE (ACI) — final unified orchestrator.
-// One API for the globe app. Organs: aicycle (think), brain (evolve), council (judge).
-// Modes:
-//   think   { prompt, history?, mode?: athenian|spartan|myrmidon }
-//   evolve  { activity? }
-//   log     { action, detail? }
-//   teach   { content }
-//   stats   {}
-//   seed    {} — founding neurons if empty
+// Architect: notisastranov@gmail.com → profiles.is_owner (existing column, no schema change).
 
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import { createClient, SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
 const CORS = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
+
+const ARCHITECT_EMAIL = 'notisastranov@gmail.com'
 
 function json(d: unknown, s = 200) {
   return new Response(JSON.stringify(d), { status: s, headers: { ...CORS, 'Content-Type': 'application/json' } })
@@ -41,13 +36,45 @@ async function embedText(key: string, text: string): Promise<number[] | null> {
   } catch { return null }
 }
 
-async function invokeFn(base: string, anon: string, name: string, body: Record<string, unknown>) {
+async function invokeFn(base: string, apikey: string, authToken: string, name: string, body: Record<string, unknown>) {
   const r = await fetch(`${base}/functions/v1/${name}`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json', apikey: anon, Authorization: `Bearer ${anon}` },
+    headers: { 'Content-Type': 'application/json', apikey, Authorization: `Bearer ${authToken}` },
     body: JSON.stringify(body),
   })
   try { return await r.json() } catch { return { error: 'bad json', status: r.status } }
+}
+
+async function resolveCaller(req: Request, sb: SupabaseClient, anon: string) {
+  const token = (req.headers.get('Authorization') || '').replace(/^Bearer\s+/i, '')
+  if (!token || token === anon) {
+    return { callerId: null as string | null, isOwner: false, authToken: anon, email: null as string | null }
+  }
+  const { data: ud } = await sb.auth.getUser(token)
+  if (!ud?.user) {
+    return { callerId: null, isOwner: false, authToken: anon, email: null }
+  }
+  const email = (ud.user.email || '').toLowerCase()
+  let isOwner = false
+  if (email === ARCHITECT_EMAIL) {
+    await sb.from('profiles').upsert({
+      id: ud.user.id,
+      is_owner: true,
+      display_name: ud.user.user_metadata?.full_name || ud.user.user_metadata?.name || 'Architect',
+    }, { onConflict: 'id' })
+    isOwner = true
+  } else {
+    const { data: prof } = await sb.from('profiles').select('is_owner').eq('id', ud.user.id).single()
+    isOwner = prof?.is_owner === true
+  }
+  return { callerId: ud.user.id, isOwner, authToken: token, email }
+}
+
+async function fallbackOwnerId(sb: SupabaseClient): Promise<string | null> {
+  try {
+    const { data: owner } = await sb.from('profiles').select('id').eq('is_owner', true).limit(1).single()
+    return owner?.id ?? null
+  } catch { return null }
 }
 
 serve(async (req) => {
@@ -60,22 +87,33 @@ serve(async (req) => {
     const anon = Deno.env.get('SUPABASE_ANON_KEY') || ''
     const GEMINI = Deno.env.get('GEMINI_API_KEY') || ''
 
-    let ownerId: string | null = null
-    try {
-      const { data: owner } = await sb.from('profiles').select('id').eq('is_owner', true).limit(1).single()
-      ownerId = owner?.id ?? null
-    } catch { /* none */ }
+    const caller = await resolveCaller(req, sb, anon)
+    const memoryOwnerId = caller.isOwner && caller.callerId
+      ? caller.callerId
+      : await fallbackOwnerId(sb)
+
+    if (mode === 'owner_sync') {
+      return json({
+        ok: true,
+        is_owner: caller.isOwner,
+        is_architect: caller.email === ARCHITECT_EMAIL,
+        user_id: caller.callerId,
+        email: caller.email,
+        authority: caller.isOwner ? 'full' : 'standard',
+      })
+    }
 
     if (mode === 'seed') {
+      if (!caller.isOwner) return json({ error: 'owner only — sign in as architect' }, 403)
       const { count } = await sb.from('ai_memory').select('*', { count: 'exact', head: true })
         .in('source', ['creator-seed', 'autonomous-distilled', 'creator-distilled'])
       if ((count || 0) > 0) return json({ ok: true, seeded: 0, note: 'neurons already present' })
-      if (!ownerId) return json({ ok: false, error: 'no owner profile for seed' }, 400)
+      const oid = caller.callerId!
       let n = 0
       for (const p of FOUNDING_NEURONS) {
         const emb = GEMINI ? await embedText(GEMINI, p) : null
         const { error } = await sb.from('ai_memory').insert({
-          profile_id: ownerId, content: p, is_private: false,
+          profile_id: oid, content: p, is_private: false,
           source: 'creator-seed', importance: 1.6, embedding: emb, distilled: false,
         })
         if (!error) n++
@@ -83,29 +121,42 @@ serve(async (req) => {
       return json({ ok: true, seeded: n, principles: FOUNDING_NEURONS })
     }
 
+    if (mode === 'distill') {
+      if (!caller.isOwner) return json({ error: 'owner only' }, 403)
+      const brain = await invokeFn(base, anon, caller.authToken, 'brain', { mode: 'distill' })
+      return json({ ok: true, brain })
+    }
+
+    if (mode === 'council') {
+      if (!caller.isOwner) return json({ error: 'owner only' }, 403)
+      const sub = String(body.council_mode || 'list')
+      const council = await invokeFn(base, anon, caller.authToken, 'council', { mode: sub, ...body })
+      return json({ ok: true, council })
+    }
+
     if (mode === 'log') {
       const action = String(body.action || 'activity').slice(0, 120)
       const detail = String(body.detail || '').slice(0, 800)
       const content = `[${action}] ${detail}`.trim()
-      if (!ownerId) return json({ ok: true, logged: false, note: 'no owner — local only' })
+      if (!memoryOwnerId) return json({ ok: true, logged: false, note: 'no owner — local only' })
       const emb = GEMINI ? await embedText(GEMINI, content) : null
       await sb.from('ai_memory').insert({
-        profile_id: ownerId, content, is_private: false,
+        profile_id: memoryOwnerId, content, is_private: false,
         source: 'cic_log', importance: 1.0, embedding: emb, distilled: false,
       })
-      return json({ ok: true, logged: true, content: content.slice(0, 200) })
+      return json({ ok: true, logged: true, content: content.slice(0, 200), owner: caller.isOwner })
     }
 
     if (mode === 'teach') {
       const content = String(body.content || '').trim().slice(0, 1000)
       if (content.length < 4) return json({ error: 'content required' }, 400)
-      if (!ownerId) return json({ error: 'no owner profile' }, 400)
+      if (!memoryOwnerId) return json({ error: 'no owner profile' }, 400)
       const emb = GEMINI ? await embedText(GEMINI, content) : null
       await sb.from('ai_memory').insert({
-        profile_id: ownerId, content, is_private: false,
+        profile_id: memoryOwnerId, content, is_private: false,
         source: 'user-taught', importance: 1.3, embedding: emb, distilled: false,
       })
-      return json({ ok: true, taught: true })
+      return json({ ok: true, taught: true, owner: caller.isOwner })
     }
 
     if (mode === 'think') {
@@ -113,18 +164,19 @@ serve(async (req) => {
       if (!prompt) return json({ error: 'prompt required' }, 400)
       const history = Array.isArray(body.history) ? body.history : []
       const thinkMode = String(body.aci_mode || body.think_mode || '').toLowerCase()
-      const result = await invokeFn(base, anon, 'aicycle', { prompt, history, mode: thinkMode })
+      const aicycleBody: Record<string, unknown> = { prompt, history, mode: thinkMode }
+      if (caller.callerId) aicycleBody.profile_id = caller.callerId
+      const result = await invokeFn(base, anon, caller.authToken, 'aicycle', aicycleBody)
       const text = String(result.text || result.response || '')
-      // Log for distillation pipeline (non-fatal)
-      if (ownerId && text) {
+      if (memoryOwnerId && text) {
         try {
           const snippet = `Q: ${prompt.slice(0, 300)} A: ${text.slice(0, 400)}`
           const emb = GEMINI ? await embedText(GEMINI, snippet) : null
           await sb.from('ai_memory').insert({
-            profile_id: ownerId, content: snippet, is_private: false,
+            profile_id: memoryOwnerId, content: snippet, is_private: false,
             source: 'cic_log', importance: 1.1, embedding: emb, distilled: false,
           })
-        } catch { /* logging must not break think */ }
+        } catch { /* non-fatal */ }
       }
       return json({
         ok: true,
@@ -135,13 +187,15 @@ serve(async (req) => {
         label: 'Astranov Collective Intelligence',
         mode: result.mode || thinkMode || 'adaptive',
         recalled: result.recalled || null,
+        owner: caller.isOwner,
       })
     }
 
     if (mode === 'evolve') {
       const activity = String(body.activity || 'collective evolution')
-      const brain = await invokeFn(base, anon, 'brain', { mode: 'autonomous_evolve', activity })
-      const council = await invokeFn(base, anon, 'council', { mode: 'self_judge', autonomous: true, activity })
+      const authForBrain = caller.isOwner ? caller.authToken : anon
+      const brain = await invokeFn(base, anon, authForBrain, 'brain', { mode: 'autonomous_evolve', activity })
+      const council = await invokeFn(base, anon, anon, 'council', { mode: 'self_judge', autonomous: true, activity })
       const { data: principles } = await sb.from('ai_memory')
         .select('content, importance, source')
         .in('source', ['creator-seed', 'creator-distilled', 'autonomous-distilled'])
@@ -153,11 +207,12 @@ serve(async (req) => {
         neuron_count: principles?.length || 0,
         principles: (principles || []).map(p => p.content),
         autonomous: true,
+        owner: caller.isOwner,
       })
     }
 
     if (mode === 'stats') {
-      const brain = await invokeFn(base, anon, 'brain', { mode: 'stats' })
+      const brain = await invokeFn(base, anon, caller.authToken, 'brain', { mode: 'stats' })
       const { data: principles } = await sb.from('ai_memory')
         .select('content, importance, source')
         .in('source', ['creator-seed', 'creator-distilled', 'autonomous-distilled'])
@@ -165,16 +220,26 @@ serve(async (req) => {
       const { count: rawPending } = await sb.from('ai_memory')
         .select('*', { count: 'exact', head: true })
         .eq('distilled', false).in('source', ['cic_log', 'user-taught', 'creator-dialogue'])
+      let profile = null
+      if (caller.callerId) {
+        const { data } = await sb.from('profiles').select('id, is_owner, balance, display_name').eq('id', caller.callerId).single()
+        profile = data
+      }
       return json({
         ok: true,
         brain,
         neuron_count: principles?.length || 0,
         raw_pending: rawPending || 0,
         principles: (principles || []).map(p => ({ content: p.content, strength: p.importance, source: p.source })),
+        owner: caller.isOwner,
+        profile,
       })
     }
 
-    return json({ error: 'unknown mode', modes: ['think', 'evolve', 'log', 'teach', 'stats', 'seed'] }, 400)
+    return json({
+      error: 'unknown mode',
+      modes: ['think', 'evolve', 'log', 'teach', 'stats', 'seed', 'owner_sync', 'distill', 'council'],
+    }, 400)
   } catch (e) {
     return json({ error: String(e) }, 500)
   }

@@ -12,14 +12,15 @@ const ACI = {
   heartbeat: null,
   lastPulse: 0,
 
-  headers() {
+  async headers() {
+    if (window.Auth?.authHeaders) return Auth.authHeaders();
     return { 'Content-Type': 'application/json', apikey: this.key, Authorization: 'Bearer ' + this.key };
   },
 
   api(body) {
-    return fetch(this.url + '/functions/v1/aci', {
-      method: 'POST', headers: this.headers(), body: JSON.stringify(body || {})
-    }).then(r => r.json().catch(() => ({}))).catch(() => ({}));
+    return this.headers().then(h => fetch(this.url + '/functions/v1/aci', {
+      method: 'POST', headers: h, body: JSON.stringify(body || {})
+    })).then(r => r.json().catch(() => ({}))).catch(() => ({}));
   },
 
   _logQueue: [],
@@ -68,8 +69,9 @@ const ACI = {
     window._aciAbort = new AbortController();
     const up = window._lastPos || { lat: 36.22, lng: 28.12 };
     MapDepict.action('think', { lat: up.lat, lng: up.lng, detail: prompt.slice(0, 60) });
+    const h = await this.headers();
     const r = await fetch(this.url + '/functions/v1/aci', {
-      method: 'POST', headers: this.headers(),
+      method: 'POST', headers: h,
       body: JSON.stringify({ mode: 'think', prompt, history: this.history.slice(-8), aci_mode: this.thinkMode || undefined }),
       signal: window._aciAbort.signal
     }).then(res => res.json().catch(() => ({}))).catch(err => (err.name === 'AbortError' ? { aborted: true } : {}));

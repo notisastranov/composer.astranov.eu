@@ -43,7 +43,12 @@ const AciCli = {
     if (!this._welcomed) {
       this._welcomed = true;
       this.show();
-      this.print('Collective CLI unlocked — you + ACI continue development here.');
+      if (Auth.isOwner) {
+        this.print('OWNER AUTHORITY — notisastranov@gmail.com · full collective control');
+        this.print('seed · distill · council · evolve · think');
+      } else {
+        this.print('Collective CLI — standard access. Architect email gets full authority.');
+      }
       this.print('Type help · ` toggles · exit closes');
     }
   },
@@ -156,9 +161,16 @@ const AciCli = {
         this.print('think <prompt>  — ask collective AI');
         this.print('evolve [reason]  — autonomous evolution');
         this.print('teach <text>     — store memory / neuron');
-        this.print('stats            — neuron & memory stats');
+        this.print('stats | owner    — memory / authority status');
         this.print('mode <athenian|spartan|myrmidon>');
         this.print('vendors | order | vhf | drive | news');
+        if (Auth?.isOwner) {
+          this.print('--- OWNER (notisastranov@gmail.com) ---');
+          this.print('seed             — founding neurons');
+          this.print('distill          — brain distillation');
+          this.print('council list     — council cases');
+          this.print('council convene <title> | <desc>');
+        }
         this.print('clear | exit | logout');
         this.print('…or any free text → think');
         return;
@@ -191,9 +203,35 @@ const AciCli = {
         this.print('remembered · neuron spawned', 'ok');
         return;
       }
-      if (cmd === 'stats') {
-        const r = await this.api({ mode: 'stats' });
-        this.print(JSON.stringify(r, null, 0).slice(0, 500), 'out');
+      if (cmd === 'stats' || cmd === 'owner') {
+        const r = await this.api({ mode: cmd === 'owner' ? 'owner_sync' : 'stats' });
+        this.print(JSON.stringify(r, null, 0).slice(0, 600), 'out');
+        if (r.is_owner) Auth.isOwner = true;
+        return;
+      }
+      if (cmd === 'seed') {
+        if (!Auth?.isOwner) { this.print('owner only — login as notisastranov@gmail.com', 'err'); return; }
+        const r = await this.api({ mode: 'seed' });
+        this.print(JSON.stringify(r).slice(0, 400), 'out');
+        await ACI.init();
+        return;
+      }
+      if (cmd === 'distill') {
+        if (!Auth?.isOwner) { this.print('owner only', 'err'); return; }
+        this.print('distilling…', 'dim');
+        const r = await this.api({ mode: 'distill' });
+        this.print(JSON.stringify(r).slice(0, 500), 'out');
+        return;
+      }
+      if (cmd === 'council') {
+        if (!Auth?.isOwner) { this.print('owner only', 'err'); return; }
+        const sub = (parts[1] || 'list').toLowerCase();
+        const title = parts[2] || '';
+        const desc = parts.slice(3).join(' ') || rest.replace(/^convene\s*/i, '');
+        const body = { mode: 'council', council_mode: sub };
+        if (sub === 'convene') { body.title = title || 'CLI case'; body.description = desc || title; }
+        const r = await this.api(body);
+        this.print(JSON.stringify(r).slice(0, 600), 'out');
         return;
       }
       if (cmd === 'mode') {

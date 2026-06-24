@@ -487,9 +487,13 @@ function userIntervene() {
 window.userIntervene = userIntervene;
 
 // === GOOGLE AUTH (Supabase) ===
+// Architect: notisastranov@gmail.com → profiles.is_owner (existing DB column)
 const Auth = {
   client: null,
   user: null,
+  isOwner: false,
+  isArchitect: false,
+  OWNER_EMAIL: 'notisastranov@gmail.com',
 
   init() {
     if (typeof supabase === 'undefined') {
@@ -502,13 +506,72 @@ const Auth = {
     this.client.auth.onAuthStateChange((_ev, session) => {
       this.user = session?.user || null;
       this.applyUser();
+      this.refreshAuthority();
     });
     this.client.auth.getSession().then(({ data }) => {
       this.user = data?.session?.user || null;
       this.applyUser();
+      this.refreshAuthority();
     });
     const btn = document.getElementById('aci-login');
     if (btn) btn.onclick = () => this.user ? this.signOut() : this.signInGoogle();
+  },
+
+  async authHeaders() {
+    const h = { 'Content-Type': 'application/json', apikey: SB_KEY };
+    if (this.client) {
+      const { data } = await this.client.auth.getSession();
+      const t = data?.session?.access_token;
+      h.Authorization = t ? 'Bearer ' + t : 'Bearer ' + SB_KEY;
+    } else {
+      h.Authorization = 'Bearer ' + SB_KEY;
+    }
+    return h;
+  },
+
+  async refreshAuthority() {
+    if (!this.user) {
+      this.isOwner = false;
+      this.isArchitect = false;
+      this.updateOwnerUI();
+      return;
+    }
+    const email = (this.user.email || '').toLowerCase();
+    this.isArchitect = email === this.OWNER_EMAIL;
+    try {
+      const r = await fetch(ACI.url + '/functions/v1/aci', {
+        method: 'POST',
+        headers: await this.authHeaders(),
+        body: JSON.stringify({ mode: 'owner_sync' })
+      }).then(res => res.json());
+      this.isOwner = !!(r.is_owner || r.is_architect);
+      if (this.isOwner) {
+        window._aciOwner = true;
+        ACI?.feed('owner-sync', email);
+      }
+    } catch (_) {
+      if (this.client) {
+        const { data: prof } = await this.client.from('profiles').select('is_owner').eq('id', this.user.id).single();
+        this.isOwner = prof?.is_owner === true || this.isArchitect;
+      }
+    }
+    this.updateOwnerUI();
+    if (window.AciCli) AciCli.onAuthChange();
+  },
+
+  updateOwnerUI() {
+    const chip = document.getElementById('user-chip');
+    const cliHdr = document.querySelector('#aci-cli-header span');
+    if (this.isOwner && chip) {
+      chip.textContent = (this.user?.user_metadata?.full_name || this.user?.email?.split('@')[0] || 'Owner') + ' · OWNER';
+      chip.style.color = '#8f8';
+    }
+    if (cliHdr && this.isOwner) cliHdr.textContent = 'Astranov Collective CLI · FULL AUTHORITY';
+    const prompt = document.getElementById('aci-cli-prompt');
+    if (prompt && this.isOwner) {
+      const name = this.user?.email?.split('@')[0] || 'owner';
+      prompt.textContent = name + '@owner $';
+    }
   },
 
   async signInGoogle() {
@@ -525,7 +588,11 @@ const Auth = {
     if (!this.client) return;
     await this.client.auth.signOut();
     this.user = null;
+    this.isOwner = false;
+    this.isArchitect = false;
+    window._aciOwner = false;
     this.applyUser();
+    this.updateOwnerUI();
     speak('Αποσυνδέθηκες.', () => {});
   },
 
@@ -548,8 +615,13 @@ const Auth = {
           btn.textContent = name.charAt(0).toUpperCase();
         }
       }
-      if (chip) chip.textContent = name;
-      if (typeof me !== 'undefined' && me) { me.name = name; me.id = this.user.id; me.email = this.user.email; }
+      if (chip && !this.isOwner) chip.textContent = name;
+      if (typeof me !== 'undefined' && me) {
+        me.name = name;
+        me.id = this.user.id;
+        me.email = this.user.email;
+        me.isOwner = this.isOwner;
+      }
       ACI?.feed('login', name);
       if (window.AciCli) AciCli.onAuthChange();
     } else {
@@ -561,14 +633,6 @@ const Auth = {
       if (chip) chip.textContent = '';
       if (window.AciCli) AciCli.onAuthChange();
     }
-  },
-
-  headers() {
-    if (!this.client) return {};
-    return this.client.auth.getSession().then(({ data }) => {
-      const t = data?.session?.access_token;
-      return t ? { Authorization: 'Bearer ' + t } : {};
-    });
   }
 };
 window.Auth = Auth;
@@ -618,7 +682,12 @@ const AciCli = {
     if (!this._welcomed) {
       this._welcomed = true;
       this.show();
-      this.print('Collective CLI unlocked — you + ACI continue development here.');
+      if (Auth.isOwner) {
+        this.print('OWNER AUTHORITY — notisastranov@gmail.com · full collective control');
+        this.print('seed · distill · council · evolve · think');
+      } else {
+        this.print('Collective CLI — standard access. Architect email gets full authority.');
+      }
       this.print('Type help · ` toggles · exit closes');
     }
   },
@@ -731,9 +800,16 @@ const AciCli = {
         this.print('think <prompt>  — ask collective AI');
         this.print('evolve [reason]  — autonomous evolution');
         this.print('teach <text>     — store memory / neuron');
-        this.print('stats            — neuron & memory stats');
+        this.print('stats | owner    — memory / authority status');
         this.print('mode <athenian|spartan|myrmidon>');
         this.print('vendors | order | vhf | drive | news');
+        if (Auth?.isOwner) {
+          this.print('--- OWNER (notisastranov@gmail.com) ---');
+          this.print('seed             — founding neurons');
+          this.print('distill          — brain distillation');
+          this.print('council list     — council cases');
+          this.print('council convene <title> | <desc>');
+        }
         this.print('clear | exit | logout');
         this.print('…or any free text → think');
         return;
@@ -766,9 +842,35 @@ const AciCli = {
         this.print('remembered · neuron spawned', 'ok');
         return;
       }
-      if (cmd === 'stats') {
-        const r = await this.api({ mode: 'stats' });
-        this.print(JSON.stringify(r, null, 0).slice(0, 500), 'out');
+      if (cmd === 'stats' || cmd === 'owner') {
+        const r = await this.api({ mode: cmd === 'owner' ? 'owner_sync' : 'stats' });
+        this.print(JSON.stringify(r, null, 0).slice(0, 600), 'out');
+        if (r.is_owner) Auth.isOwner = true;
+        return;
+      }
+      if (cmd === 'seed') {
+        if (!Auth?.isOwner) { this.print('owner only — login as notisastranov@gmail.com', 'err'); return; }
+        const r = await this.api({ mode: 'seed' });
+        this.print(JSON.stringify(r).slice(0, 400), 'out');
+        await ACI.init();
+        return;
+      }
+      if (cmd === 'distill') {
+        if (!Auth?.isOwner) { this.print('owner only', 'err'); return; }
+        this.print('distilling…', 'dim');
+        const r = await this.api({ mode: 'distill' });
+        this.print(JSON.stringify(r).slice(0, 500), 'out');
+        return;
+      }
+      if (cmd === 'council') {
+        if (!Auth?.isOwner) { this.print('owner only', 'err'); return; }
+        const sub = (parts[1] || 'list').toLowerCase();
+        const title = parts[2] || '';
+        const desc = parts.slice(3).join(' ') || rest.replace(/^convene\s*/i, '');
+        const body = { mode: 'council', council_mode: sub };
+        if (sub === 'convene') { body.title = title || 'CLI case'; body.description = desc || title; }
+        const r = await this.api(body);
+        this.print(JSON.stringify(r).slice(0, 600), 'out');
         return;
       }
       if (cmd === 'mode') {
@@ -811,14 +913,15 @@ const ACI = {
   heartbeat: null,
   lastPulse: 0,
 
-  headers() {
+  async headers() {
+    if (window.Auth?.authHeaders) return Auth.authHeaders();
     return { 'Content-Type': 'application/json', apikey: this.key, Authorization: 'Bearer ' + this.key };
   },
 
   api(body) {
-    return fetch(this.url + '/functions/v1/aci', {
-      method: 'POST', headers: this.headers(), body: JSON.stringify(body || {})
-    }).then(r => r.json().catch(() => ({}))).catch(() => ({}));
+    return this.headers().then(h => fetch(this.url + '/functions/v1/aci', {
+      method: 'POST', headers: h, body: JSON.stringify(body || {})
+    })).then(r => r.json().catch(() => ({}))).catch(() => ({}));
   },
 
   _logQueue: [],
@@ -867,8 +970,9 @@ const ACI = {
     window._aciAbort = new AbortController();
     const up = window._lastPos || { lat: 36.22, lng: 28.12 };
     MapDepict.action('think', { lat: up.lat, lng: up.lng, detail: prompt.slice(0, 60) });
+    const h = await this.headers();
     const r = await fetch(this.url + '/functions/v1/aci', {
-      method: 'POST', headers: this.headers(),
+      method: 'POST', headers: h,
       body: JSON.stringify({ mode: 'think', prompt, history: this.history.slice(-8), aci_mode: this.thinkMode || undefined }),
       signal: window._aciAbort.signal
     }).then(res => res.json().catch(() => ({}))).catch(err => (err.name === 'AbortError' ? { aborted: true } : {}));
@@ -2792,6 +2896,7 @@ animate();
 ACI.init();
 Auth.init();
 AciCli.init();
+setTimeout(() => Auth.refreshAuthority(), 800);
 ACIControl.init();
 PmrRadio.bindUI();
 DrivingView.init();
