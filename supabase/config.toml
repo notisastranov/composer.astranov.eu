@@ -26,3 +26,6 @@ verify_jwt = false
 
 [functions.council]
 verify_jwt = false
+
+[functions.aci]
+verify_jwt = false

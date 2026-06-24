@@ -66,7 +66,7 @@
 - **Orbital request**: `requestOrbitalTech()` builds JSON, copies to clipboard, speaks, spawns effect. Targets "Advanced Orbital Technology Providers". No Starlink/SpaceX/Grok branding.
 - **RoutingEngine**: real great-circle math + provider cycling (direct / safeViaNorth / coastalDetour / wideSafeArc). Safety check against all user/driver 3D positions. Recurses on risk.
 - **AIGraphics (Procedural AI Graphics Engine)**: 100% canvas-generated textures + layers + particles. No external 3D models for clouds, atmosphere, city lights, effects.
-- **Collective AI Brain Neurons (autonomous self-evolving)**: Supabase brain + aicycle + council + ai-router. Frontend `ACI` module calls real endpoints (`autonomous_evolve`, `self_judge`), perpetual loop (5min activity / 15min heartbeat), neurons visualized on globe. No human babysitting.
+- **Astranov Collective Intelligence (ACI) — FINAL**: Single orchestrator `/functions/v1/aci` with modes `think|evolve|log|teach|stats|seed`. Organs: `aicycle` (RAG memory + three modes), `brain` (autonomous_evolve + cic_logs bridge), `council` (self_judge). Frontend `ACI` module: voice chat, teach/remember, evolve, globe neurons + camera heartbeat ring. 15min autonomous heartbeat. No human babysitting.
   - Neurons = evolving principles in ai_memory (with strength/importance, embeddings).
   - Autonomous modes: 'autonomous_evolve' in brain (distills + strengthens neurons from raw activity/logs without owner babysitting).
   - Council has 'self_judge' / autonomous for self-reflection and verdicts on evolution (reduces hallucination by collective grounding).
@@ -130,7 +130,21 @@ After every meaningful change to the app:
 - Cat (Astri) or other non-specified creatures unless explicitly added later.
 - Fast/pulsing animations that were previously removed for safety (keep calm where possible, but pilot delivery can be visible).
 
-## 12. Current Implementation Snapshot (as of latest recycle)
+## 12. ACI Final Architecture (2026-06-24)
+
+```
+Globe (index.html ACI module)
+  → /aci think     → aicycle (memory RAG, athenian|spartan|myrmidon)
+  → /aci teach     → ai_memory (user-taught neurons)
+  → /aci log       → ai_memory (cic_log source for distillation)
+  → /aci evolve    → brain autonomous_evolve + council self_judge
+  → /aci seed      → founding neurons (creator-seed)
+  → /aci stats     → neuron principles + pending raw count
+```
+
+Founding neurons (seeded once): ground in memory, nature collective, GLOBAL→NATIONAL→PERSONAL, anti-hallucination, autonomous self-evolve.
+
+## 13. Current Implementation Snapshot (as of latest recycle)
 
 - File: astranov-grok.html (pure globe, Three.js r128) — source of truth. Displays title as "Astranov" (English letters only).
 - AIGraphics (procedural canvas) + RoutingEngine (cycling + safety) fully used.
@@ -143,7 +157,7 @@ After every meaningful change to the app:
 - Default start: completely silent, user drags/zooms/clicks globe immediately. on-demand location/voice.
 - All Greek transliteration for the app name (Αστρανόβ etc.) removed from title, logs, request JSON, error messages. "Astranov" always in English letters. "have fun"/"satellite tech"/simulate removed. Only "Astranov" + orbital / real.
 
-## 13. Repo (central only — no Grok repo continuation)
+## 14. Repo (central only — no Grok repo continuation)
 
 - **Single source of truth:** [notisastranov/astranov.eu](https://github.com/notisastranov/astranov.eu)
 - **Local work path:** `C:\Users\Astranov\Documents\GitHub\Astranov`

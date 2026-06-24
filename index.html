@@ -4,7 +4,7 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>Astranov</title>
-<meta name="compliance-check" content="astranov-collective-intelligence-unified-2026-06-24">
+<meta name="compliance-check" content="aci-final-2026-06-24">
 <meta name="aci-session" content="Astranov Collective Intelligence">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <style>
@@ -118,84 +118,140 @@ function latLngToPos(lat, lng, r = 1) {
   };
 }
 
-// === ASTRANOV COLLECTIVE INTELLIGENCE (ACI) — unified session, real backend ===
-// Sessions merged: git-init, AI presence, ground-up rebuild, session management.
-// Self-evolving autonomous neurons: brain + council + aicycle (no human babysitting).
+// === ASTRANOV COLLECTIVE INTELLIGENCE (ACI) — FINAL ===
+// Synthesized from all AI specs: pure globe + three modes + council + self-evolving neurons.
+// Single API: /functions/v1/aci (think | evolve | log | teach | stats | seed)
 const ACI = {
   name: 'Astranov Collective Intelligence',
   url: 'https://lkoatrkhuigdolnjsbie.supabase.co',
   key: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imxrb2F0cmtodWlnZG9sbmpzYmllIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg4ODIwOTIsImV4cCI6MjA5NDQ1ODA5Mn0.qf6Kg93YLJ0coTdVQa4baU0ppOdFY5WkmVzMvEV6ejI',
   neurons: [],
-  activity: [],
+  history: [],
+  thinkMode: '',
   evolving: false,
-  lastEvolve: 0,
+  heartbeat: null,
+  lastPulse: 0,
 
   headers() {
     return { 'Content-Type': 'application/json', apikey: this.key, Authorization: 'Bearer ' + this.key };
   },
 
-  call(fn, body) {
-    return fetch(this.url + '/functions/v1/' + fn, {
+  api(body) {
+    return fetch(this.url + '/functions/v1/aci', {
       method: 'POST', headers: this.headers(), body: JSON.stringify(body || {})
     }).then(r => r.json().catch(() => ({}))).catch(() => ({}));
   },
 
   feed(action, detail) {
-    this.activity.push({ ts: Date.now(), action, detail: detail || '' });
-    if (this.activity.length > 60) this.activity.shift();
+    this.api({ mode: 'log', action, detail: detail || '' });
   },
 
-  spawnNeuron(lat, lng, strength) {
+  spawnNeuron(lat, lng, strength, principle) {
     const pos = latLngToPos(lat, lng, 1.035);
     const n = new THREE.Mesh(
       new THREE.SphereGeometry(0.018, 6, 6),
       new THREE.MeshBasicMaterial({ color: 0x66ff99, transparent: true, opacity: 0.85 })
     );
     n.position.set(pos.x, pos.y, pos.z);
-    n.userData = { strength: strength || 1, id: 'neuron-' + Date.now() + Math.random() };
+    n.userData = { strength: strength || 1, id: 'neuron-' + Date.now() + Math.random(), principle: principle || '' };
     earth.add(n);
     this.neurons.push(n);
     if (window.AIGraphics) AIGraphics.spawnEffect(n.position, 0x00ffaa, 10, 20);
     return n;
   },
 
+  syncNeuronsFromPrinciples(principles) {
+    if (!Array.isArray(principles) || !principles.length) return;
+    const seeds = [
+      { lat: 36.22, lng: 28.12 }, { lat: 40, lng: 20 }, { lat: -15, lng: 45 },
+      { lat: 55, lng: -30 }, { lat: 10, lng: -75 }, { lat: -35, lng: 140 }
+    ];
+    principles.slice(0, seeds.length).forEach((p, i) => {
+      const s = seeds[i];
+      const str = typeof p === 'string' ? 1.2 : (p.strength || p.importance || 1.2);
+      const text = typeof p === 'string' ? p : (p.content || '');
+      this.spawnNeuron(s.lat, s.lng, str, text);
+    });
+  },
+
+  async think(prompt) {
+    const r = await this.api({
+      mode: 'think', prompt,
+      history: this.history.slice(-8),
+      aci_mode: this.thinkMode || undefined
+    });
+    const text = r.text || r.response || 'Astranov is gathering itself.';
+    this.history.push({ role: 'user', content: prompt });
+    this.history.push({ role: 'assistant', content: text });
+    if (this.history.length > 20) this.history = this.history.slice(-20);
+    this.feed('think', prompt.slice(0, 80));
+    this.pulse(1.4);
+    return text;
+  },
+
+  async teach(content) {
+    await this.api({ mode: 'teach', content });
+    this.feed('teach', content.slice(0, 120));
+    this.spawnNeuron(36.2 + (Math.random() - 0.5) * 4, 28.1 + (Math.random() - 0.5) * 4, 1.4, content);
+    return true;
+  },
+
   async evolve(reason) {
     if (this.evolving) return null;
     this.evolving = true;
-    const activity = reason || this.activity.slice(-8).map(a => a.action + (a.detail ? ':' + a.detail : '')).join('; ');
     try {
-      const brain = await this.call('brain', { mode: 'autonomous_evolve', activity });
-      const births = Math.max(1, Math.min(4, Number(brain.new_neurons) || 1));
+      const r = await this.api({ mode: 'evolve', activity: reason || 'user-triggered' });
+      const births = Math.max(1, Math.min(4, Number(r.brain && r.brain.new_neurons) || 1));
       for (let i = 0; i < births; i++) {
         this.spawnNeuron((Math.random() - 0.5) * 80, (Math.random() - 0.5) * 160, 1.1 + Math.random() * 0.4);
       }
-      const council = await this.call('council', { mode: 'self_judge', autonomous: true, activity });
+      if (r.principles && r.principles.length) this.syncNeuronsFromPrinciples(r.principles);
       if (window.AIGraphics) AIGraphics.spawnEffect(new THREE.Vector3(0, 1.2, 0), 0x00ff88, 35, 45);
       const avg = this.neurons.length ? this.neurons.reduce((s, n) => s + (n.userData.strength || 1), 0) / this.neurons.length : 1;
       idleRoll = 0.00035 * (0.5 + avg * 0.35);
-      this.lastEvolve = Date.now();
-      this.activity = [];
-      console.log('%c[ACI] Astranov Collective Intelligence evolved', 'color:#00ff88', { brain, council, reason: activity });
-      return { brain, council };
-    } catch (e) {
-      console.warn('[ACI] evolve failed', e);
-      return null;
-    } finally {
-      this.evolving = false;
+      this.pulse(2.0);
+      console.log('%c[ACI FINAL] evolved', 'color:#00ff88', r);
+      return r;
+    } finally { this.evolving = false; }
+  },
+
+  async init() {
+    await this.api({ mode: 'seed' });
+    const stats = await this.api({ mode: 'stats' });
+    if (stats.principles && stats.principles.length) {
+      this.syncNeuronsFromPrinciples(stats.principles.map(p => p.content || p));
+    } else {
+      [{ lat: 36.22, lng: 28.12 }, { lat: 40, lng: 20 }, { lat: -15, lng: 45 }, { lat: 55, lng: -30 }]
+        .forEach(s => this.spawnNeuron(s.lat, s.lng, 1.2));
     }
-  },
-
-  async chat(prompt) {
-    this.feed('chat', prompt.slice(0, 120));
-    return this.call('aicycle', { prompt, mode: 'athenian' });
-  },
-
-  startPerpetualLoop() {
-    [{ lat: 36.22, lng: 28.12 }, { lat: 40, lng: 20 }, { lat: -15, lng: 45 }, { lat: 55, lng: -30 }].forEach(s => this.spawnNeuron(s.lat, s.lng, 1.2));
-    setInterval(() => { if (this.activity.length >= 2) this.evolve('activity-batch'); }, 5 * 60 * 1000);
+    this.attachHeartbeat();
     setInterval(() => { this.evolve('heartbeat'); }, 15 * 60 * 1000);
-    setTimeout(() => this.evolve('boot-seed'), 8000);
-    console.log('%c[ACI] Perpetual autonomous loop started — Astranov Collective Intelligence', 'color:#00ddff');
+    setTimeout(() => this.evolve('boot'), 12000);
+    console.log('%c[ACI FINAL] Astranov Collective Intelligence online', 'color:#00ddff', stats);
+  },
+
+  attachHeartbeat() {
+    const ring = new THREE.Mesh(
+      new THREE.TorusGeometry(0.09, 0.008, 8, 48),
+      new THREE.MeshBasicMaterial({ color: 0xaa66ff, transparent: true, opacity: 0.75 })
+    );
+    ring.position.set(0.75, -0.55, -1.2);
+    camera.add(ring);
+    this.heartbeat = ring;
+  },
+
+  pulse(scale) {
+    this.lastPulse = Date.now();
+    if (this.heartbeat) this.heartbeat.scale.set(scale, scale, scale);
+  },
+
+  tick() {
+    if (!this.heartbeat) return;
+    const t = Date.now() / 500;
+    const base = 0.85 + Math.sin(t) * 0.12;
+    const boost = (Date.now() - this.lastPulse < 2000) ? 0.25 : 0;
+    this.heartbeat.scale.set(base + boost, base + boost, base + boost);
+    this.heartbeat.material.opacity = 0.55 + Math.sin(t * 1.3) * 0.2 + boost;
   }
 };
 window.AstranovCollectiveIntelligence = ACI;
@@ -970,13 +1026,30 @@ function handleVoiceCommand(event) {
   } else if (transcript.includes('request') || transcript.includes('technology') || transcript.includes('tech')) {
     requestOrbitalTech();
     speak('Request prepared.', () => provokeAnswer());
+  } else if (transcript.includes('athenian') || transcript.includes('αθηναϊκ')) {
+    ACI.thinkMode = 'athenian';
+    speak('Athenian mode. Creativity and strategy.', () => provokeAnswer());
+  } else if (transcript.includes('spartan') || transcript.includes('σπαρτιατ')) {
+    ACI.thinkMode = 'spartan';
+    speak('Spartan mode. Terse and decisive.', () => provokeAnswer());
+  } else if (transcript.includes('myrmidon') || transcript.includes('μυρμιδόν')) {
+    ACI.thinkMode = 'myrmidon';
+    speak('Myrmidon mode. Collective force.', () => provokeAnswer());
+  } else if (transcript.match(/^(remember|θυμήσου|να θυμάσαι)/)) {
+    const content = transcript.replace(/^(remember|θυμήσου|να θυμάσαι)[:,]?\s*/i, '').trim();
+    ACI.teach(content || transcript).then(() => {
+      speak('Remembered. Neuron strengthened.', () => provokeAnswer());
+    });
   } else if (transcript.includes('evolve') || transcript.includes('collective') || transcript.includes('brain') || transcript.includes('neuron') || transcript.includes('self evolve')) {
-    ACI.feed('voice-evolve', transcript);
     ACI.evolve('voice-command').then(() => {
-      speak('Collective neurons evolving autonomously. No babysitting. Astranov Collective Intelligence now.', () => provokeAnswer());
+      speak('Collective intelligence evolved. Council judged. Neurons updated.', () => provokeAnswer());
+    });
+  } else if (transcript.length > 3) {
+    ACI.think(transcript).then(text => {
+      speak(text.slice(0, 280), () => provokeAnswer());
     });
   } else {
-    speak('Δεν κατάλαβα. Πες login, work, explore, video call, tech request, mute, evolve collective, ή sleep.', () => startListeningForOptions());
+    speak('Πες κάτι στο Astranov Collective Intelligence, ή: work, explore, evolve, remember, athenian, spartan.', () => startListeningForOptions());
   }
 }
 
@@ -992,8 +1065,8 @@ function provokeAnswer() {
 function startVoiceOptions() {
   if (!voiceEnabled) return;
   const txt = cityLevel 
-    ? 'City level. Options: login, work, explore, video call via Orbital, request Orbital Provider tech, evolve collective brain neurons, mute, sleep. Tell me.'
-    : 'Options: login, work, explore, video call via Orbital, request Orbital Provider tech, evolve collective brain neurons, mute, sleep. Tell me what you want Αξάς.';
+    ? 'City level. Speak to Astranov Collective Intelligence: ask anything, remember, evolve, athenian, spartan, myrmidon, work, explore, video, mute, sleep.'
+    : 'Speak to Astranov Collective Intelligence Αξάς. Ask anything, teach me to remember, evolve collective, or choose a mode.';
   speak(txt, () => {
     startListeningForOptions();
   });
@@ -1262,8 +1335,8 @@ function animate() {
   AIGraphics.update();
   updateOrbital();
 
-  // Collective intelligence neurons pulse on globe
   if (window.AstranovCollectiveIntelligence) {
+    ACI.tick();
     ACI.neurons.forEach(n => {
       if (!n.userData) return;
       const t = Date.now() / 700;
@@ -1275,7 +1348,7 @@ function animate() {
   renderer.render(scene, camera);
 }
 animate();
-ACI.startPerpetualLoop();
+ACI.init();
 
 // Demo auto show after permissions
 setTimeout(() => {
@@ -1284,7 +1357,7 @@ setTimeout(() => {
 
 // Domain guard
 const host = location.hostname || '';
-const isOfficial = host === 'astranov.eu' || host === 'grok.astranov.eu' || host.endsWith('.astranov.eu');
+const isOfficial = host === 'astranov.eu' || host.endsWith('.astranov.eu');
 const isLocal = host === '' || host === 'localhost' || host === '127.0.0.1' || location.protocol === 'file:';
 if (host && !isOfficial && !isLocal) {
   document.body.innerHTML = '<div style="color:#444;padding:40px;text-align:center;font-family:sans-serif">Available only on authorized Astranov domains</div>';

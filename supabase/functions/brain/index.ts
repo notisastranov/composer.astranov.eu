@@ -78,31 +78,59 @@ serve(async (req) => {
         if (prof?.is_owner) ownerId = ud.user.id
       }
     }
-    const isAutoMode = (mode === 'autonomous_evolve' || mode === 'self_reflect')
+    const isAutoMode = (mode === 'autonomous_evolve' || mode === 'self_reflect' || mode === 'stats')
     if (!ownerId && !isAutoMode) return json({ error: 'owner only' }, 403)
 
     const GEMINI = Deno.env.get('GEMINI_API_KEY') || ''
 
     if (mode === 'stats') {
-      const { data: stats } = await sb.rpc('brain_stats')
+      let stats: unknown[] = []
+      try {
+        const { data } = await sb.rpc('brain_stats')
+        stats = data || []
+      } catch { stats = [] }
       const { count: logs } = await sb.from('cic_logs').select('*', { count: 'exact', head: true })
-      return json({ memory: stats || [], corpus_rows: logs || 0 })
+      const { count: neurons } = await sb.from('ai_memory')
+        .select('*', { count: 'exact', head: true })
+        .in('source', ['creator-seed', 'creator-distilled', 'autonomous-distilled'])
+      return json({ memory: stats, corpus_rows: logs || 0, neuron_count: neurons || 0 })
     }
 
     if (mode === 'distill' || mode === 'autonomous_evolve') {
       // Autonomous mode: runs without full owner gate for system-triggered evolution (self-improving neurons).
       // Pull raw + recent logs for collective self-evolution. No human babysitting.
       const isAutonomous = mode === 'autonomous_evolve'
-      const { data: raw } = await sb.from('ai_memory')
+      let raw: { id: string; content: string; profile_id: string }[] = []
+      const { data: memRaw } = await sb.from('ai_memory')
         .select('id, content, profile_id')
         .in('source', ['creator-dialogue', 'user-taught', 'cic_log'])
         .eq('is_private', false).eq('distilled', false)
         .order('created_at', { ascending: true }).limit(80)
+      raw = memRaw || []
+
+      // Also pull recent cic_logs exchanges when memory raw is thin (closes aicycle → brain gap).
+      if (raw.length < 2) {
+        const { data: logs } = await sb.from('cic_logs')
+          .select('id, query, response, created_at')
+          .not('response', 'is', null)
+          .order('created_at', { ascending: false }).limit(40)
+        for (const l of (logs || [])) {
+          if (!l.query || !l.response) continue
+          const content = `Q: ${String(l.query).slice(0, 400)} A: ${String(l.response).slice(0, 600)}`
+          const emb = GEMINI ? await embedText(GEMINI, content) : null
+          const { data: ins } = await sb.from('ai_memory').insert({
+            profile_id: ownerId || (await sb.from('profiles').select('id').eq('is_owner', true).limit(1).single()).data?.id,
+            content, is_private: false, source: 'cic_log', importance: 1.0, embedding: emb, distilled: false,
+          }).select('id, content, profile_id').single()
+          if (ins) raw.push(ins)
+        }
+      }
+
       if (!raw || raw.length < 2) return json({ ok: true, distilled: 0, note: isAutonomous ? 'autonomous: not enough new material, neurons stable' : 'not enough new material yet' })
 
       // Existing principles (neurons) to evolve/strengthen.
       const { data: existing } = await sb.from('ai_memory')
-        .select('id, content, importance').in('source', ['creator-seed', 'creator-distilled'])
+        .select('id, content, importance').in('source', ['creator-seed', 'creator-distilled', 'autonomous-distilled'])
         .limit(50)
 
       const sys = `You are the autonomous memory consolidator + neuron evolver for ASTRANOV COLLECTIVE INTELLIGENCE (no human babysitting, self-improving only from real data).
