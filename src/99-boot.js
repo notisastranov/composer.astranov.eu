@@ -50,7 +50,7 @@ animate();
 ACI.init();
 Auth.init();
 ACIControl.init();
-SatRadio.bindUI();
+PmrRadio.bindUI();
 DrivingView.init();
 CosmicZoom.init();
 Commerce.loadVendors();

@@ -272,7 +272,7 @@ window.MapDepict = MapDepict;
 
 function userIntervene() {
   Voice.stop();
-  if (window.SatRadio) SatRadio.hide();
+  if (window.PmrRadio) PmrRadio.hide();
   if (window.DrivingView) DrivingView.deactivate();
   MapDepict.cancelAll();
   if (window._aciAbort) { try { window._aciAbort.abort(); } catch (_) {} }

@@ -1,4 +1,4 @@
-// ── COMMS: phone + EU PMR VHF + triband SAT radio ──
+// ── COMMS: phone + EU PMR (real audio, no simulation) ──
 const Comms = {
   vhfActive: false,
   pmr: { channel: 11, freqMHz: 446.13125, label: 'EU PMR 11' },
@@ -14,19 +14,10 @@ const Comms = {
     } else speak('Λάθος αριθμός.');
   },
 
-  async startVHF() {
+  startVHF() {
     if (this.vhfActive) return;
     this.vhfActive = true;
-    SatRadio.show();
-    const orig = handleVoiceCommand;
-    recognition.onresult = (ev) => {
-      isListening = false;
-      const msg = (ev.results[0][0].transcript || '').trim();
-      if (!msg) return;
-      SatRadio.transmit(msg);
-      this.vhfActive = false;
-      recognition.onresult = orig;
-    };
+    PmrRadio.show();
   },
 
   startTelecomms() {

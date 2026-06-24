@@ -4,7 +4,7 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>Astranov</title>
-<meta name="compliance-check" content="streets-batch-2026-06-24-pmr-drive-auth">
+<meta name="compliance-check" content="pmr-real-audio-no-sim-2026-06-24">
 <meta name="aci-session" content="Astranov Collective Intelligence">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
@@ -17,12 +17,24 @@
   #drive-guide { position:fixed; top:36px; left:10px; right:10px; z-index:42; font:12px/1.35 system-ui; color:#7df; background:rgba(0,20,40,0.75); border:1px solid rgba(68,170,255,0.35); border-radius:12px; padding:8px 12px; display:none; pointer-events:none; }
   #drive-guide.open { display:block; }
   #aci-hud { position:fixed; left:0; right:0; bottom:0; z-index:50; pointer-events:none; }
-  #sat-radio { display:none; margin:0 8px 6px; padding:10px 12px; background:rgba(8,12,8,0.9); border:1px solid rgba(255,220,80,0.4); border-radius:16px; pointer-events:auto; font:11px/1.4 system-ui; color:#dda; }
+  #sat-radio { display:none; margin:0 8px 6px; padding:10px 12px; background:rgba(8,12,8,0.92); border:1px solid rgba(255,220,80,0.45); border-radius:16px; pointer-events:auto; font:11px/1.45 system-ui; color:#dda; }
   #sat-radio.open { display:block; }
   #sat-radio .sr-row { display:flex; justify-content:space-between; align-items:center; gap:8px; margin-bottom:6px; }
   #sat-radio .sr-freq { color:#ff8; font-weight:600; }
-  #sr-ptt { flex:1; padding:10px; background:rgba(180,40,20,0.5); border:2px solid #f84; border-radius:12px; color:#fff; font-weight:700; cursor:pointer; touch-action:none; }
-  #sr-ptt.active { background:rgba(255,60,20,0.8); }
+  #sat-radio .sr-honest { color:#9cb; font-size:10px; margin-bottom:8px; line-height:1.4; }
+  .sr-step { display:flex; gap:8px; align-items:flex-start; margin:6px 0; padding:6px 8px; border-radius:8px; background:rgba(0,0,0,0.25); }
+  .sr-step .sr-n { font-weight:700; color:#fc8; min-width:14px; }
+  .sr-step-msg { flex:1; }
+  .sr-active { border:1px solid rgba(255,200,80,0.4); }
+  .sr-done { border:1px solid rgba(80,255,120,0.35); }
+  .sr-blocked { border:1px solid rgba(255,80,80,0.45); color:#faa; }
+  #sr-vu-wrap { height:8px; background:rgba(0,0,0,0.4); border-radius:4px; margin:8px 0; overflow:hidden; }
+  #sr-vu { height:100%; width:0%; background:linear-gradient(90deg,#484,#8f8); transition:width 0.05s; }
+  #sr-status { font-size:10px; color:#8df; margin:4px 0 8px; min-height:28px; }
+  #sr-actions { display:flex; gap:6px; margin-bottom:8px; flex-wrap:wrap; }
+  #sr-mic-btn, #sr-join-btn { padding:8px 12px; border-radius:10px; border:1px solid rgba(0,200,255,0.4); background:rgba(0,80,120,0.4); color:#cef; cursor:pointer; font-size:11px; }
+  #sr-ptt { width:100%; padding:12px; background:rgba(180,40,20,0.5); border:2px solid #f84; border-radius:12px; color:#fff; font-weight:700; cursor:pointer; touch-action:none; }
+  #sr-ptt.active { background:rgba(255,60,20,0.85); }
   #sr-close { background:transparent; border:1px solid #666; color:#aaa; border-radius:8px; padding:4px 10px; cursor:pointer; }
   #aci-bar { display:flex; gap:6px; padding:8px 10px; margin:0 8px 8px; background:rgba(0,8,18,0.82); border:1px solid rgba(0,180,255,0.35); border-radius:24px; pointer-events:auto; backdrop-filter:blur(12px); align-items:center; }
   #aci-input { flex:1; min-width:0; background:rgba(0,20,40,0.6); border:1px solid rgba(100,200,255,0.25); color:#e8f4ff; border-radius:16px; padding:8px 12px; font:14px system-ui; outline:none; }
@@ -45,10 +57,18 @@
     <div id="map-action"></div>
     <div id="aci-reply"></div>
     <div id="sat-radio">
-      <div class="sr-row"><span class="sr-ch">EU PMR 11</span><span class="sr-freq">446.13125 MHz</span><button id="sr-close" type="button">✕</button></div>
-      <div class="sr-sim">Virtual Global SIM</div>
-      <div class="sr-bands" style="opacity:0.8;margin-bottom:8px">UHF · VHF · SAT triband</div>
-      <button id="sr-ptt" type="button">PTT · HOLD TO TRANSMIT</button>
+      <div class="sr-row"><span class="sr-ch">EU PMR Ch 11</span><span class="sr-freq">446.13125 MHz</span><span>peers: <b id="sr-peers">0</b></span><button id="sr-close" type="button">✕</button></div>
+      <div class="sr-honest">RF: tune YOUR PMR446 handheld to Ch 11 (446.13125 MHz) — browser cannot transmit on 446 MHz. In-app: real mic + WebRTC voice to other Astranov users on this channel.</div>
+      <div class="sr-step sr-active" id="sr-step-1"><span class="sr-n">1</span><span class="sr-step-msg">Enable Mic</span></div>
+      <div class="sr-step" id="sr-step-2"><span class="sr-n">2</span><span class="sr-step-msg">Join Channel (WebRTC)</span></div>
+      <div class="sr-step" id="sr-step-3"><span class="sr-n">3</span><span class="sr-step-msg">Hold PTT — VU meter must move when you speak</span></div>
+      <div id="sr-actions">
+        <button id="sr-mic-btn" type="button">① Enable Mic</button>
+        <button id="sr-join-btn" type="button">② Join Channel</button>
+      </div>
+      <div id="sr-vu-wrap"><div id="sr-vu"></div></div>
+      <div id="sr-status">Tap 📻 then follow steps 1 → 2 → 3</div>
+      <button id="sr-ptt" type="button">③ HOLD PTT — REAL TRANSMIT</button>
     </div>
     <div id="aci-bar">
       <button id="aci-login" title="Sign in with Google" type="button">G</button>
@@ -57,7 +77,7 @@
       <input id="aci-input" placeholder="Ask Astranov — order, VHF PMR, drive, login…" />
       <button id="aci-send" title="Send" type="button">→</button>
       <button id="aci-order" title="Order pitogyra" type="button">🥙</button>
-      <button id="aci-vhf" title="EU PMR 11 triband SAT radio" type="button">📻</button>
+      <button id="aci-vhf" title="EU PMR Ch11 — real mic + WebRTC (see steps)" type="button">📻</button>
       <button id="aci-call" title="Phone call" type="button">📞</button>
     </div>
   </div>
@@ -426,7 +446,7 @@ window.MapDepict = MapDepict;
 
 function userIntervene() {
   Voice.stop();
-  if (window.SatRadio) SatRadio.hide();
+  if (window.PmrRadio) PmrRadio.hide();
   if (window.DrivingView) DrivingView.deactivate();
   MapDepict.cancelAll();
   if (window._aciAbort) { try { window._aciAbort.abort(); } catch (_) {} }
@@ -813,7 +833,7 @@ const Commerce = {
   }
 };
 
-// ── COMMS: phone + EU PMR VHF + triband SAT radio ──
+// ── COMMS: phone + EU PMR (real audio, no simulation) ──
 const Comms = {
   vhfActive: false,
   pmr: { channel: 11, freqMHz: 446.13125, label: 'EU PMR 11' },
@@ -829,19 +849,10 @@ const Comms = {
     } else speak('Λάθος αριθμός.');
   },
 
-  async startVHF() {
+  startVHF() {
     if (this.vhfActive) return;
     this.vhfActive = true;
-    SatRadio.show();
-    const orig = handleVoiceCommand;
-    recognition.onresult = (ev) => {
-      isListening = false;
-      const msg = (ev.results[0][0].transcript || '').trim();
-      if (!msg) return;
-      SatRadio.transmit(msg);
-      this.vhfActive = false;
-      recognition.onresult = orig;
-    };
+    PmrRadio.show();
   },
 
   startTelecomms() {
@@ -875,109 +886,258 @@ const NewsFeed = {
   }
 };
 
-// === SAT RADIO HANDHELD — EU PMR triband global SIM ===
-const SatRadio = {
+// === PMR RADIO — REAL AUDIO ONLY (no simulation) ===
+// Browser cannot transmit 446.13125 MHz RF. Real: mic PTT + WebRTC voice mesh.
+// Physical PMR446 Ch11: tune YOUR handheld — app shows exact frequency.
+const PmrRadio = {
   open: false,
-  mesh: null,
-  pttActive: false,
-  config: {
-    pmrChannel: 11,
-    pmrFreqMHz: 446.13125,
-    pmrLabel: 'EU PMR 11',
-    bands: ['UHF 403–470 MHz', 'VHF 156 MHz marine', 'SAT L-band global'],
-    sim: 'Virtual Global SIM · roaming',
-    callsign: 'ASTRANOV-AXAS'
-  },
+  channel: 11,
+  freqMHz: 446.13125,
+  callsign: 'ASTRANOV-AXAS',
+  peerId: null,
+  micStream: null,
+  audioCtx: null,
+  micGain: null,
+  analyser: null,
+  pttDown: false,
+  pc: null,
+  remoteAudio: null,
+  rtChannel: null,
+  peerCount: 0,
+  micReady: false,
+  channelLive: false,
+  vuAnim: null,
 
-  show() {
+  async show() {
     this.open = true;
     const panel = document.getElementById('sat-radio');
-    if (panel) {
-      panel.classList.add('open');
-      panel.querySelector('.sr-freq').textContent = this.config.pmrFreqMHz + ' MHz';
-      panel.querySelector('.sr-ch').textContent = this.config.pmrLabel;
-      panel.querySelector('.sr-sim').textContent = this.config.sim;
-      panel.querySelector('.sr-bands').textContent = this.config.bands.join(' · ');
-    }
-    this.spawnHandheld();
+    if (panel) panel.classList.add('open');
+    this.setFreqUI();
+    this.setStep(1, 'active', 'Tap Enable Mic — browser will ask permission');
     const up = window._lastPos || { lat: 36.22, lng: 28.12 };
-    MapDepict.action('vhf', { lat: up.lat, lng: up.lng, detail: this.config.pmrLabel + ' ' + this.config.pmrFreqMHz });
-    ACIControl.reply('Triband SAT radio · ' + this.config.pmrLabel + ' · ' + this.config.pmrFreqMHz + ' MHz — PTT to transmit');
-    speak('Triband satellite radio ready. EU PMR channel eleven, four four six megahertz. PTT όταν είσαι έτοιμος.', () => {
-      if (recognition) { isListening = true; try { recognition.start(); } catch { isListening = false; } }
-    });
+    MapDepict.action('vhf', { lat: up.lat, lng: up.lng, detail: 'EU PMR 11 · setup' });
+    ACIControl.reply('PMR Ch11 446.13125 MHz — follow the 3 steps below. No simulation.');
   },
 
   hide() {
     this.open = false;
-    this.pttActive = false;
+    this.pttDown = false;
     document.getElementById('sat-radio')?.classList.remove('open');
-    if (this.mesh?.parent) this.mesh.parent.remove(this.mesh);
-    this.mesh = null;
+    if (this.vuAnim) cancelAnimationFrame(this.vuAnim);
+    this.teardown();
     if (Comms) Comms.vhfActive = false;
   },
 
-  spawnHandheld() {
-    if (this.mesh?.parent) this.mesh.parent.remove(this.mesh);
-    const up = window._lastPos || { lat: 36.22, lng: 28.12 };
-    const p = latLngToPos(up.lat + 0.06, up.lng + 0.04, 1.048);
-    const g = new THREE.Group();
-    const body = new THREE.Mesh(
-      new THREE.BoxGeometry(0.045, 0.07, 0.018),
-      new THREE.MeshBasicMaterial({ color: 0x223344 })
-    );
-    g.add(body);
-    const screen = new THREE.Mesh(
-      new THREE.PlaneGeometry(0.032, 0.022),
-      new THREE.MeshBasicMaterial({ color: 0x00ccaa })
-    );
-    screen.position.set(0, 0.008, 0.01);
-    g.add(screen);
-    const ant = new THREE.Mesh(
-      new THREE.CylinderGeometry(0.003, 0.003, 0.055, 6),
-      new THREE.MeshBasicMaterial({ color: 0x888899 })
-    );
-    ant.position.set(0, 0.05, 0);
-    g.add(ant);
-    const satLed = new THREE.Mesh(
-      new THREE.SphereGeometry(0.005, 6, 6),
-      new THREE.MeshBasicMaterial({ color: 0x00ff88 })
-    );
-    satLed.position.set(0.02, 0.03, 0.012);
-    g.add(satLed);
-    g.position.set(p.x, p.y, p.z);
-    g.lookAt(0, 0, 0);
-    globePivot.add(g);
-    this.mesh = g;
-    AIGraphics?.spawnEffect(g.position, 0xffdd44, 20, 45);
+  setFreqUI() {
+    const ch = document.querySelector('.sr-ch');
+    const fq = document.querySelector('.sr-freq');
+    if (ch) ch.textContent = 'EU PMR Ch ' + this.channel;
+    if (fq) fq.textContent = this.freqMHz + ' MHz';
   },
 
-  formatTx(msg) {
-    return '[' + this.config.callsign + '] [' + this.config.pmrLabel + ' ' + this.config.pmrFreqMHz + ' MHz] [TRIBAND SAT SIM] ' + msg;
+  setStep(n, state, msg) {
+    const el = document.getElementById('sr-step-' + n);
+    if (!el) return;
+    el.className = 'sr-step sr-' + state;
+    el.querySelector('.sr-step-msg').textContent = msg;
   },
 
-  transmit(msg) {
-    const tx = this.formatTx(msg);
-    ACIControl.reply(tx.slice(0, 220));
-    try { navigator.clipboard.writeText(tx); } catch (_) {}
-    ACI?.feed('vhf-tx', tx.slice(0, 120));
-    if (this.mesh) AIGraphics?.spawnEffect(this.mesh.position, 0xffdd44, 12, 30);
-    speak('PMR eleven transmitted. ' + msg.slice(0, 100), () => {});
-    return tx;
+  setStatus(line) {
+    const el = document.getElementById('sr-status');
+    if (el) el.textContent = line;
+    ACIControl?.reply(line.slice(0, 220));
+  },
+
+  async enableMic() {
+    this.setStep(1, 'active', 'Requesting microphone…');
+    try {
+      this.teardownMic();
+      this.micStream = await navigator.mediaDevices.getUserMedia({
+        audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true },
+        video: false
+      });
+      this.micStream.getAudioTracks().forEach(t => { t.enabled = false; });
+      this.audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      const src = this.audioCtx.createMediaStreamSource(this.micStream);
+      this.analyser = this.audioCtx.createAnalyser();
+      this.analyser.fftSize = 256;
+      this.micGain = this.audioCtx.createGain();
+      this.micGain.gain.value = 0;
+      src.connect(this.analyser);
+      src.connect(this.micGain);
+      this.micReady = true;
+      this.setStep(1, 'done', 'Microphone ON — hold PTT to test level meter');
+      this.setStep(2, 'active', 'Tap Join Channel for live WebRTC voice');
+      this.startVuMeter();
+      this.setStatus('Mic ready. Hold PTT — meter must move when you speak.');
+    } catch (err) {
+      this.setStep(1, 'blocked', 'Mic blocked: ' + (err.message || 'denied') + ' — allow mic in browser settings');
+      this.setStatus('Cannot continue without microphone permission.');
+    }
+  },
+
+  startVuMeter() {
+    const bar = document.getElementById('sr-vu');
+    if (!bar || !this.analyser) return;
+    const data = new Uint8Array(this.analyser.frequencyBinCount);
+    const tick = () => {
+      if (!this.open) return;
+      this.analyser.getByteFrequencyData(data);
+      let sum = 0;
+      for (let i = 0; i < data.length; i++) sum += data[i];
+      const level = Math.min(100, Math.round((sum / data.length) * 1.2));
+      bar.style.width = level + '%';
+      bar.style.opacity = this.pttDown ? '1' : '0.5';
+      this.vuAnim = requestAnimationFrame(tick);
+    };
+    tick();
+  },
+
+  async joinChannel() {
+    if (!this.micReady) {
+      this.setStatus('Step 1 first: Enable Mic.');
+      return;
+    }
+    this.setStep(2, 'active', 'Joining voice channel pmr-ch11…');
+    const sb = typeof supabase !== 'undefined' ? supabase.createClient(SB_URL, SB_KEY) : null;
+    if (!sb) {
+      this.setStep(2, 'blocked', 'Supabase unavailable — cannot open live voice channel');
+      return;
+    }
+    this.peerId = 'pmr-' + Date.now() + '-' + Math.random().toString(36).slice(2, 7);
+    const chName = 'pmr-voice-ch11-44613125';
+    this.rtChannel = sb.channel(chName, { config: { broadcast: { ack: true, self: false } } });
+    this.rtChannel.on('broadcast', { event: 'sig' }, ({ payload }) => this.onSignal(payload));
+    await this.rtChannel.subscribe((status) => {
+      if (status === 'SUBSCRIBED') {
+        this.channelLive = true;
+        this.setStep(2, 'done', 'Channel LIVE — open astranov.eu on another device & join too');
+        this.setStep(3, 'active', 'Hold PTT: real voice TX · release: RX listen');
+        this.setStatus('Channel live. Peers: 0. Hold PTT and speak — VU meter must peak.');
+        this.setupPeer();
+        this.rtChannel.send({ type: 'broadcast', event: 'sig', payload: { type: 'hello', from: this.peerId } });
+      }
+    });
+  },
+
+  setupPeer() {
+    if (this.pc) { this.pc.close(); this.pc = null; }
+    this.pc = new RTCPeerConnection({
+      iceServers: [{ urls: 'stun:stun.l.google.com:19302' }, { urls: 'stun:stun1.l.google.com:19302' }]
+    });
+    this.pc.ontrack = (ev) => {
+      if (!this.remoteAudio) {
+        this.remoteAudio = document.createElement('audio');
+        this.remoteAudio.autoplay = true;
+        this.remoteAudio.id = 'pmr-remote-audio';
+        document.body.appendChild(this.remoteAudio);
+      }
+      this.remoteAudio.srcObject = ev.streams[0];
+      this.setStatus('RX: receiving real audio from peer');
+      MapDepict.action('vhf', { detail: 'RX peer audio' });
+    };
+    this.pc.onicecandidate = (ev) => {
+      if (ev.candidate) this.broadcast({ type: 'ice', from: this.peerId, candidate: ev.candidate });
+    };
+    this.pc.oniceconnectionstatechange = () => {
+      const s = this.pc?.iceConnectionState;
+      if (s === 'connected') this.setStatus('WebRTC connected — real two-way voice active');
+      if (s === 'failed' || s === 'disconnected') this.setStatus('WebRTC ' + s + ' — tap Join Channel again');
+    };
+    if (this.micStream) {
+      this.micStream.getTracks().forEach(t => this.pc.addTrack(t, this.micStream));
+    }
+  },
+
+  broadcast(payload) {
+    this.rtChannel?.send({ type: 'broadcast', event: 'sig', payload });
+  },
+
+  async onSignal(payload) {
+    if (!payload || payload.from === this.peerId) return;
+    if (payload.type === 'hello') {
+      this.peerCount++;
+      document.getElementById('sr-peers').textContent = String(this.peerCount);
+      if (this.pc.signalingState === 'stable') {
+        const offer = await this.pc.createOffer();
+        await this.pc.setLocalDescription(offer);
+        this.broadcast({ type: 'offer', from: this.peerId, sdp: offer });
+      }
+    }
+    if (payload.type === 'offer' && payload.sdp) {
+      await this.pc.setRemoteDescription(new RTCSessionDescription(payload.sdp));
+      const answer = await this.pc.createAnswer();
+      await this.pc.setLocalDescription(answer);
+      this.broadcast({ type: 'answer', from: this.peerId, sdp: answer });
+    }
+    if (payload.type === 'answer' && payload.sdp) {
+      await this.pc.setRemoteDescription(new RTCSessionDescription(payload.sdp));
+    }
+    if (payload.type === 'ice' && payload.candidate) {
+      try {
+        await this.pc.addIceCandidate(new RTCIceCandidate(payload.candidate));
+      } catch (_) {}
+    }
+  },
+
+  pttPress() {
+    if (!this.micReady) {
+      this.setStatus('Enable Mic first (step 1).');
+      return;
+    }
+    this.pttDown = true;
+    this.micStream?.getAudioTracks().forEach(t => { t.enabled = true; });
+    if (this.micGain) this.micGain.gain.value = 1;
+    document.getElementById('sr-ptt')?.classList.add('active');
+    this.setStatus(this.channelLive ? 'TX LIVE — mic open on WebRTC channel' : 'TX local test — VU must move; step 2 for peers');
+    MapDepict.action('vhf', { detail: 'PTT TX live' });
+  },
+
+  pttRelease() {
+    this.pttDown = false;
+    this.micStream?.getAudioTracks().forEach(t => { t.enabled = false; });
+    if (this.micGain) this.micGain.gain.value = 0;
+    document.getElementById('sr-ptt')?.classList.remove('active');
+    this.setStatus(this.channelLive ? 'RX — mic muted, listening for peers' : 'Standby — mic muted');
+  },
+
+  teardownMic() {
+    if (this.micStream) {
+      this.micStream.getTracks().forEach(t => t.stop());
+      this.micStream = null;
+    }
+    if (this.audioCtx) { this.audioCtx.close().catch(() => {}); this.audioCtx = null; }
+    this.micReady = false;
+  },
+
+  teardown() {
+    this.teardownMic();
+    if (this.pc) { this.pc.close(); this.pc = null; }
+    if (this.rtChannel) { this.rtChannel.unsubscribe(); this.rtChannel = null; }
+    if (this.remoteAudio) { this.remoteAudio.remove(); this.remoteAudio = null; }
+    this.channelLive = false;
+    this.peerCount = 0;
   },
 
   bindUI() {
+    document.getElementById('sr-mic-btn')?.addEventListener('click', () => this.enableMic());
+    document.getElementById('sr-join-btn')?.addEventListener('click', () => this.joinChannel());
     const ptt = document.getElementById('sr-ptt');
-    const close = document.getElementById('sr-close');
     if (ptt) {
-      ptt.onmousedown = ptt.ontouchstart = (e) => { e.preventDefault(); this.pttActive = true; ptt.classList.add('active'); };
-      const up = () => { this.pttActive = false; ptt.classList.remove('active'); };
-      ptt.onmouseup = ptt.onmouseleave = ptt.ontouchend = up;
+      const down = (e) => { e.preventDefault(); this.pttPress(); };
+      const up = () => this.pttRelease();
+      ptt.addEventListener('mousedown', down);
+      ptt.addEventListener('touchstart', down, { passive: false });
+      ptt.addEventListener('mouseup', up);
+      ptt.addEventListener('mouseleave', up);
+      ptt.addEventListener('touchend', up);
     }
-    if (close) close.onclick = () => { this.hide(); if (recognition) recognition.onresult = handleVoiceCommand; };
+    document.getElementById('sr-close')?.addEventListener('click', () => this.hide());
   }
 };
-window.SatRadio = SatRadio;
+
+window.PmrRadio = PmrRadio;
+window.SatRadio = PmrRadio;
 
 // ── COSMIC ZOOM: Earth → satellites → solar system → galaxy ──
 const CosmicZoom = {
@@ -2380,7 +2540,7 @@ animate();
 ACI.init();
 Auth.init();
 ACIControl.init();
-SatRadio.bindUI();
+PmrRadio.bindUI();
 DrivingView.init();
 CosmicZoom.init();
 Commerce.loadVendors();

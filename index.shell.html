@@ -4,7 +4,7 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>Astranov</title>
-<meta name="compliance-check" content="streets-batch-2026-06-24-pmr-drive-auth">
+<meta name="compliance-check" content="pmr-real-audio-no-sim-2026-06-24">
 <meta name="aci-session" content="Astranov Collective Intelligence">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
@@ -17,12 +17,24 @@
   #drive-guide { position:fixed; top:36px; left:10px; right:10px; z-index:42; font:12px/1.35 system-ui; color:#7df; background:rgba(0,20,40,0.75); border:1px solid rgba(68,170,255,0.35); border-radius:12px; padding:8px 12px; display:none; pointer-events:none; }
   #drive-guide.open { display:block; }
   #aci-hud { position:fixed; left:0; right:0; bottom:0; z-index:50; pointer-events:none; }
-  #sat-radio { display:none; margin:0 8px 6px; padding:10px 12px; background:rgba(8,12,8,0.9); border:1px solid rgba(255,220,80,0.4); border-radius:16px; pointer-events:auto; font:11px/1.4 system-ui; color:#dda; }
+  #sat-radio { display:none; margin:0 8px 6px; padding:10px 12px; background:rgba(8,12,8,0.92); border:1px solid rgba(255,220,80,0.45); border-radius:16px; pointer-events:auto; font:11px/1.45 system-ui; color:#dda; }
   #sat-radio.open { display:block; }
   #sat-radio .sr-row { display:flex; justify-content:space-between; align-items:center; gap:8px; margin-bottom:6px; }
   #sat-radio .sr-freq { color:#ff8; font-weight:600; }
-  #sr-ptt { flex:1; padding:10px; background:rgba(180,40,20,0.5); border:2px solid #f84; border-radius:12px; color:#fff; font-weight:700; cursor:pointer; touch-action:none; }
-  #sr-ptt.active { background:rgba(255,60,20,0.8); }
+  #sat-radio .sr-honest { color:#9cb; font-size:10px; margin-bottom:8px; line-height:1.4; }
+  .sr-step { display:flex; gap:8px; align-items:flex-start; margin:6px 0; padding:6px 8px; border-radius:8px; background:rgba(0,0,0,0.25); }
+  .sr-step .sr-n { font-weight:700; color:#fc8; min-width:14px; }
+  .sr-step-msg { flex:1; }
+  .sr-active { border:1px solid rgba(255,200,80,0.4); }
+  .sr-done { border:1px solid rgba(80,255,120,0.35); }
+  .sr-blocked { border:1px solid rgba(255,80,80,0.45); color:#faa; }
+  #sr-vu-wrap { height:8px; background:rgba(0,0,0,0.4); border-radius:4px; margin:8px 0; overflow:hidden; }
+  #sr-vu { height:100%; width:0%; background:linear-gradient(90deg,#484,#8f8); transition:width 0.05s; }
+  #sr-status { font-size:10px; color:#8df; margin:4px 0 8px; min-height:28px; }
+  #sr-actions { display:flex; gap:6px; margin-bottom:8px; flex-wrap:wrap; }
+  #sr-mic-btn, #sr-join-btn { padding:8px 12px; border-radius:10px; border:1px solid rgba(0,200,255,0.4); background:rgba(0,80,120,0.4); color:#cef; cursor:pointer; font-size:11px; }
+  #sr-ptt { width:100%; padding:12px; background:rgba(180,40,20,0.5); border:2px solid #f84; border-radius:12px; color:#fff; font-weight:700; cursor:pointer; touch-action:none; }
+  #sr-ptt.active { background:rgba(255,60,20,0.85); }
   #sr-close { background:transparent; border:1px solid #666; color:#aaa; border-radius:8px; padding:4px 10px; cursor:pointer; }
   #aci-bar { display:flex; gap:6px; padding:8px 10px; margin:0 8px 8px; background:rgba(0,8,18,0.82); border:1px solid rgba(0,180,255,0.35); border-radius:24px; pointer-events:auto; backdrop-filter:blur(12px); align-items:center; }
   #aci-input { flex:1; min-width:0; background:rgba(0,20,40,0.6); border:1px solid rgba(100,200,255,0.25); color:#e8f4ff; border-radius:16px; padding:8px 12px; font:14px system-ui; outline:none; }
@@ -45,10 +57,18 @@
     <div id="map-action"></div>
     <div id="aci-reply"></div>
     <div id="sat-radio">
-      <div class="sr-row"><span class="sr-ch">EU PMR 11</span><span class="sr-freq">446.13125 MHz</span><button id="sr-close" type="button">✕</button></div>
-      <div class="sr-sim">Virtual Global SIM</div>
-      <div class="sr-bands" style="opacity:0.8;margin-bottom:8px">UHF · VHF · SAT triband</div>
-      <button id="sr-ptt" type="button">PTT · HOLD TO TRANSMIT</button>
+      <div class="sr-row"><span class="sr-ch">EU PMR Ch 11</span><span class="sr-freq">446.13125 MHz</span><span>peers: <b id="sr-peers">0</b></span><button id="sr-close" type="button">✕</button></div>
+      <div class="sr-honest">RF: tune YOUR PMR446 handheld to Ch 11 (446.13125 MHz) — browser cannot transmit on 446 MHz. In-app: real mic + WebRTC voice to other Astranov users on this channel.</div>
+      <div class="sr-step sr-active" id="sr-step-1"><span class="sr-n">1</span><span class="sr-step-msg">Enable Mic</span></div>
+      <div class="sr-step" id="sr-step-2"><span class="sr-n">2</span><span class="sr-step-msg">Join Channel (WebRTC)</span></div>
+      <div class="sr-step" id="sr-step-3"><span class="sr-n">3</span><span class="sr-step-msg">Hold PTT — VU meter must move when you speak</span></div>
+      <div id="sr-actions">
+        <button id="sr-mic-btn" type="button">① Enable Mic</button>
+        <button id="sr-join-btn" type="button">② Join Channel</button>
+      </div>
+      <div id="sr-vu-wrap"><div id="sr-vu"></div></div>
+      <div id="sr-status">Tap 📻 then follow steps 1 → 2 → 3</div>
+      <button id="sr-ptt" type="button">③ HOLD PTT — REAL TRANSMIT</button>
     </div>
     <div id="aci-bar">
       <button id="aci-login" title="Sign in with Google" type="button">G</button>
@@ -57,7 +77,7 @@
       <input id="aci-input" placeholder="Ask Astranov — order, VHF PMR, drive, login…" />
       <button id="aci-send" title="Send" type="button">→</button>
       <button id="aci-order" title="Order pitogyra" type="button">🥙</button>
-      <button id="aci-vhf" title="EU PMR 11 triband SAT radio" type="button">📻</button>
+      <button id="aci-vhf" title="EU PMR Ch11 — real mic + WebRTC (see steps)" type="button">📻</button>
       <button id="aci-call" title="Phone call" type="button">📞</button>
     </div>
   </div>
