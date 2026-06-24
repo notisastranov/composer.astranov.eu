@@ -1,4 +1,4 @@
-project_id = "kzlabcrlrpbnfiiyrjvl"
+project_id = "lkoatrkhuigdolnjsbie"
 
 [functions.ai-router]
 verify_jwt = false
@@ -16,4 +16,13 @@ verify_jwt = false
 verify_jwt = false
 
 [functions.order-intake]
+verify_jwt = false
+
+[functions.brain]
+verify_jwt = false
+
+[functions.aicycle]
+verify_jwt = false
+
+[functions.council]
 verify_jwt = false

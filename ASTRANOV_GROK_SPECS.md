@@ -2,7 +2,8 @@
 
 **Purpose of this document:** Single source of truth. Recycled from all chat history into pure, actionable requirements. No fluff, no history of arguments. Update this sheet when vision changes. Future work recycles from here.
 
-**Date recycled:** 2026-06-23 (multiple iterations until compliant)
+**Date recycled:** 2026-06-24 (unified all sessions into Astranov Collective Intelligence)
+**Unified session:** Astranov Collective Intelligence (merges: git-init, AI presence verification, ground-up globe rebuild, session management)
 **Primary source file:** astranov-grok.html (internal filename; app displays as "Astranov")
 **Deployed as:** index.html in repos
 
@@ -65,7 +66,7 @@
 - **Orbital request**: `requestOrbitalTech()` builds JSON, copies to clipboard, speaks, spawns effect. Targets "Advanced Orbital Technology Providers". No Starlink/SpaceX/Grok branding.
 - **RoutingEngine**: real great-circle math + provider cycling (direct / safeViaNorth / coastalDetour / wideSafeArc). Safety check against all user/driver 3D positions. Recurses on risk.
 - **AIGraphics (Procedural AI Graphics Engine)**: 100% canvas-generated textures + layers + particles. No external 3D models for clouds, atmosphere, city lights, effects.
-- **Collective AI Brain Neurons (autonomous self-evolving)**: Supabase brain + aicycle + council + ai-router evolved for collective autonomous intelligence.
+- **Collective AI Brain Neurons (autonomous self-evolving)**: Supabase brain + aicycle + council + ai-router. Frontend `ACI` module calls real endpoints (`autonomous_evolve`, `self_judge`), perpetual loop (5min activity / 15min heartbeat), neurons visualized on globe. No human babysitting.
   - Neurons = evolving principles in ai_memory (with strength/importance, embeddings).
   - Autonomous modes: 'autonomous_evolve' in brain (distills + strengthens neurons from raw activity/logs without owner babysitting).
   - Council has 'self_judge' / autonomous for self-reflection and verdicts on evolution (reduces hallucination by collective grounding).
