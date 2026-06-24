@@ -33,7 +33,7 @@ const Commerce = {
     const names = this.vendors.map(v => v.name).join(', ');
     const msg = 'Καταστήματα στον χάρτη: ' + names;
     ACIControl.reply(msg);
-    speak(msg.slice(0, 200));
+    if (Voice.shouldSpeak(msg)) speak(msg.slice(0, 160));
   },
   async orderPitogyra() {
     requestLocationIfNeeded(async () => {

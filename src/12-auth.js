@@ -69,6 +69,10 @@ const Auth = {
     }
     this.updateOwnerUI();
     if (window.AciCli) AciCli.onAuthChange();
+    if (this.isOwner && window.AciConnect && !window._aciAutoOpen) {
+      window._aciAutoOpen = true;
+      setTimeout(() => AciConnect.open(), 600);
+    }
   },
 
   updateOwnerUI() {

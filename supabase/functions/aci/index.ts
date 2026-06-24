@@ -103,6 +103,49 @@ serve(async (req) => {
       })
     }
 
+    if (mode === 'connect') {
+      if (!caller.callerId) return json({ error: 'login required — sign in with Google first' }, 401)
+      const steps: string[] = [`jwt: ${caller.email}`, `owner: ${caller.isOwner}`]
+      const greetPrompt = caller.isOwner
+        ? 'Αρχιτέκτονας Notis Astranov συνδέθηκε από το δρόμο. Επιβεβαίωσε ότι είσαι το Astranov Collective Intelligence έτοιμο για deployment. Μία σύντομη πρόταση χαιρετισμού.'
+        : 'User connected to Astranov globe. One short welcome sentence.'
+      const ping = await invokeFn(base, anon, caller.authToken, 'aicycle', {
+        prompt: greetPrompt,
+        profile_id: caller.callerId,
+        mode: 'spartan',
+      })
+      const greeting = String(ping.text || ping.response || 'Το Astranov Collective Intelligence είναι εδώ.')
+      steps.push('aicycle: ok')
+      if (caller.isOwner) {
+        await sb.from('ai_memory').insert({
+          profile_id: caller.callerId, content: `[architect-connect] ${new Date().toISOString()} streets session`,
+          is_private: false, source: 'cic_log', importance: 1.2, distilled: false,
+        }).catch(() => {})
+      }
+      return json({
+        ok: true,
+        connected: true,
+        session_id: caller.callerId,
+        owner: caller.isOwner,
+        deploy_ready: caller.isOwner,
+        greeting: greeting.slice(0, 500),
+        steps,
+      })
+    }
+
+    if (mode === 'deploy') {
+      if (!caller.isOwner) return json({ error: 'architect owner only' }, 403)
+      const task = String(body.task || 'continue deployment').slice(0, 800)
+      const deployPrompt = `DEPLOY SESSION for architect Notis Astranov (notisastranov@gmail.com). Task from streets CLI: ${task}. Reply with concrete next steps for delivery DNA, globe, routing, PMR comms. Spartan mode — actionable, no simulation. Same language as task.`
+      const result = await invokeFn(base, anon, caller.authToken, 'aicycle', {
+        prompt: deployPrompt,
+        profile_id: caller.callerId,
+        mode: 'spartan',
+      })
+      const plan = String(result.text || result.response || '')
+      return json({ ok: true, plan, text: plan, response: plan, session_id: body.session_id || caller.callerId })
+    }
+
     if (mode === 'seed') {
       if (!caller.isOwner) return json({ error: 'owner only — sign in as architect' }, 403)
       const { count } = await sb.from('ai_memory').select('*', { count: 'exact', head: true })
@@ -238,7 +281,7 @@ serve(async (req) => {
 
     return json({
       error: 'unknown mode',
-      modes: ['think', 'evolve', 'log', 'teach', 'stats', 'seed', 'owner_sync', 'distill', 'council'],
+      modes: ['think', 'evolve', 'log', 'teach', 'stats', 'seed', 'owner_sync', 'connect', 'deploy', 'distill', 'council'],
     }, 400)
   } catch (e) {
     return json({ error: String(e) }, 500)

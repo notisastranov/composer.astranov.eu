@@ -153,7 +153,7 @@ function handleVoiceCommand(event) {
 }
 
 function provokeAnswer() {
-  if (!voiceEnabled || isListening) return;
+  if (!voiceEnabled || isListening || window.AciCli?.open) return;
   setTimeout(() => {
     speak('Τι θες να κάνουμε τώρα Αξάς;', () => {
       startListeningForOptions();

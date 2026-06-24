@@ -186,6 +186,8 @@ const ACIControl = {
     ACIControl.reply('…');
     if (/^(stop|σταμάτα|σταματα|pause|διακοπή)/.test(low)) { userIntervene(); return; }
     if (/^(cli|terminal|console)$/.test(low)) { AciCli.toggle(); return; }
+    if (/^(connect|open|link)$/.test(low)) { AciConnect.open(); return; }
+    if (/^deploy/.test(low)) { AciConnect.deploy(text.replace(/^deploy\s*/i, '')); return; }
     if (/^(login|sign in|google|σύνδεση)/.test(low)) { Auth.signInGoogle(); return; }
     if (/^(logout|sign out|αποσύνδεση)/.test(low)) { Auth.signOut(); return; }
     if (/telecom|sat radio|satellite radio|ασύρματος/.test(low)) { Comms.startTelecomms(); return; }
@@ -210,6 +212,6 @@ const ACIControl = {
     const ans = await ACI.think(text);
     if (!ans) return;
     ACIControl.reply(ans);
-    speak(ans.slice(0, 260), () => {});
+    if (Voice.shouldSpeak(ans)) speak(ans.slice(0, 200), () => {});
   }
 };

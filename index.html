@@ -4,7 +4,7 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>Astranov</title>
-<meta name="compliance-check" content="aci-cli-login-2026-06-24">
+<meta name="compliance-check" content="aci-connect-voice-fix-2026-06-24">
 <meta name="aci-session" content="Astranov Collective Intelligence">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
@@ -97,7 +97,7 @@
       <button id="aci-cli-toggle" title="Collective CLI (login required) · ` key" type="button">⌨</button>
       <button id="aci-stop" title="Stop — take control" type="button">⏹</button>
       <button id="aci-mic" title="Voice (tap while speaking to interrupt)" type="button">🎙</button>
-      <input id="aci-input" placeholder="Ask Astranov — order, VHF PMR, drive, login…" />
+      <input id="aci-input" placeholder="connect · deploy · order · VHF · login G first…" />
       <button id="aci-send" title="Send" type="button">→</button>
       <button id="aci-order" title="Order pitogyra" type="button">🥙</button>
       <button id="aci-vhf" title="EU PMR Ch11 — real mic + WebRTC (see steps)" type="button">📻</button>
@@ -205,6 +205,7 @@ const Voice = {
   speaking: false,
   stopped: false,
   preferredListenLang: 'el-GR',
+  _voicesReady: null,
 
   init() {
     const load = () => {
@@ -213,61 +214,69 @@ const Voice = {
     };
     load();
     speechSynthesis.addEventListener('voiceschanged', load);
-    setTimeout(load, 250);
+    setTimeout(load, 400);
+    setTimeout(load, 1200);
   },
 
-  isGreekChar(ch) {
-    return /[\u0370-\u03FF\u1F00-\u1FFF]/.test(ch);
+  ensureVoices() {
+    if (!this._voicesReady) {
+      this._voicesReady = new Promise(resolve => {
+        const done = () => {
+          this.voices = speechSynthesis.getVoices().filter(v => v.lang);
+          this.ready = this.voices.length > 0;
+          resolve();
+        };
+        done();
+        speechSynthesis.addEventListener('voiceschanged', done, { once: true });
+        setTimeout(done, 800);
+      });
+    }
+    return this._voicesReady;
+  },
+
+  detectLang(s) {
+    const g = (s.match(/[\u0370-\u03FF\u1F00-\u1FFF]/g) || []).length;
+    const l = (s.match(/[a-zA-Z]/g) || []).length;
+    return g >= l * 0.25 ? 'el-GR' : 'en-US';
   },
 
   pickVoice(lang) {
     const v = this.voices;
     if (!v.length) return null;
     if (lang === 'el-GR') {
-      return v.find(x => /el(-|_)?gr/i.test(x.lang) && !/en/i.test(x.name))
-        || v.find(x => /el/i.test(x.lang))
-        || v.find(x => /greek/i.test(x.name));
+      return v.find(x => /stefanos|melina|google.*ελληνικά|greek/i.test(x.name))
+        || v.find(x => /^el[-_]?GR$/i.test(x.lang))
+        || v.find(x => /el/i.test(x.lang) && !/en/i.test(x.name));
     }
-    return v.find(x => /en(-|_)?us/i.test(x.lang))
-      || v.find(x => /en(-|_)?gb/i.test(x.lang))
-      || v.find(x => /^en/i.test(x.lang));
+    return v.find(x => /zira|samantha|google.*english.*united states|natural/i.test(x.name))
+      || v.find(x => /^en[-_]?US$/i.test(x.lang))
+      || v.find(x => /^en[-_]?GB$/i.test(x.lang));
   },
 
-  sanitize(text) {
+  humanize(text) {
     return String(text || '')
       .replace(/[\u{1F000}-\u{1FFFF}]/gu, '')
       .replace(/https?:\/\/\S+/gi, '')
-      .replace(/[`#*_~|<>[\]{}]/g, ' ')
-      .replace(/([a-zA-Z])\.([a-zA-Z])/g, '$1 $2')
+      .replace(/[{}[\]"`#*_~|<>@$]/g, ' ')
+      .replace(/\b([A-Z]{2,})\b/g, (_, w) => w.toLowerCase())
+      .replace(/(\d)[.,](\d)/g, '$1 $2')
       .replace(/\s+/g, ' ')
       .trim();
   },
 
-  splitChunks(text) {
-    const chunks = [];
-    let buf = '';
-    let script = null;
-    const flush = () => {
-      const t = buf.trim();
-      if (!t) return;
-      chunks.push({ text: t, lang: script === 'g' ? 'el-GR' : 'en-US' });
-      buf = '';
-    };
-    for (const ch of text) {
-      const g = this.isGreekChar(ch);
-      const l = /[A-Za-z]/.test(ch);
-      const s = g ? 'g' : (l ? 'l' : 'o');
-      if (s !== 'o' && script && s !== script) flush();
-      if (s !== 'o') script = s;
-      buf += ch;
-    }
-    flush();
-    if (!chunks.length && text.trim()) {
-      const greek = (text.match(/[\u0370-\u03FF\u1F00-\u1FFF]/g) || []).length;
-      const latin = (text.match(/[A-Za-z]/g) || []).length;
-      chunks.push({ text: text.trim(), lang: greek >= latin ? 'el-GR' : 'en-US' });
-    }
-    return chunks;
+  shouldSpeak(text) {
+    const t = (text || '').trim();
+    if (t.length < 4) return false;
+    if (/^[\d\s.,:;+\-/]+$/.test(t)) return false;
+    if (t.startsWith('{') || t.startsWith('[') || /^\s*"ok"/.test(t)) return false;
+    if ((t.match(/[a-zA-Z\u0370-\u03FF]/g) || []).length < 3) return false;
+    return true;
+  },
+
+  splitSentences(text) {
+    const parts = text.split(/(?<=[.!?;])\s+|\n+/).map(s => s.trim()).filter(s => s.length > 3);
+    const list = (parts.length ? parts : [text]).slice(0, 2);
+    return list.map(s => ({ text: s, lang: this.detectLang(s) }));
   },
 
   stop() {
@@ -278,40 +287,35 @@ const Voice = {
 
   speak(text, onEnd) {
     if (!voiceEnabled) { if (onEnd) onEnd(); return; }
-    const clean = this.sanitize(text);
-    if (!clean) { if (onEnd) onEnd(); return; }
+    const clean = this.humanize(text);
+    if (!this.shouldSpeak(clean)) { if (onEnd) onEnd(); return; }
 
     this.stop();
     this.stopped = false;
-    const chunks = this.splitChunks(clean);
-    let idx = 0;
 
-    const speakNext = () => {
-      if (this.stopped || idx >= chunks.length) {
-        this.speaking = false;
-        if (onEnd && !this.stopped) onEnd();
-        return;
-      }
-      const { text: t, lang } = chunks[idx++];
-      const utter = new SpeechSynthesisUtterance(t);
-      utter.lang = lang;
-      utter.rate = lang === 'el-GR' ? 0.92 : 1.0;
-      utter.pitch = 1.0;
-      const voice = this.pickVoice(lang);
-      if (voice) utter.voice = voice;
-      utter.onend = speakNext;
-      utter.onerror = speakNext;
-      this.speaking = true;
-      speechSynthesis.speak(utter);
-    };
-
-    if (!this.voices.length) {
-      speechSynthesis.addEventListener('voiceschanged', () => {
-        this.voices = speechSynthesis.getVoices();
-        speakNext();
-      }, { once: true });
-    }
-    speakNext();
+    this.ensureVoices().then(() => {
+      const sentences = this.splitSentences(clean);
+      let idx = 0;
+      const speakNext = () => {
+        if (this.stopped || idx >= sentences.length) {
+          this.speaking = false;
+          if (onEnd && !this.stopped) onEnd();
+          return;
+        }
+        const { text: t, lang } = sentences[idx++];
+        const utter = new SpeechSynthesisUtterance(t);
+        utter.lang = lang;
+        utter.rate = 0.95;
+        utter.pitch = 1.0;
+        const voice = this.pickVoice(lang);
+        if (voice) utter.voice = voice;
+        utter.onend = speakNext;
+        utter.onerror = speakNext;
+        this.speaking = true;
+        speechSynthesis.speak(utter);
+      };
+      speakNext();
+    });
   }
 };
 
@@ -557,6 +561,10 @@ const Auth = {
     }
     this.updateOwnerUI();
     if (window.AciCli) AciCli.onAuthChange();
+    if (this.isOwner && window.AciConnect && !window._aciAutoOpen) {
+      window._aciAutoOpen = true;
+      setTimeout(() => AciConnect.open(), 600);
+    }
   },
 
   updateOwnerUI() {
@@ -810,8 +818,18 @@ const AciCli = {
           this.print('council list     — council cases');
           this.print('council convene <title> | <desc>');
         }
+        this.print('connect | open     — link collective AI (required)');
+        this.print('deploy <task>      — deployment plan (owner)');
         this.print('clear | exit | logout');
         this.print('…or any free text → think');
+        return;
+      }
+      if (cmd === 'connect' || cmd === 'open') {
+        await AciConnect.connect(cmd === 'open');
+        return;
+      }
+      if (cmd === 'deploy') {
+        await AciConnect.deploy(rest || 'continue deployment');
         return;
       }
       if (cmd === 'clear') {
@@ -825,9 +843,11 @@ const AciCli = {
       if (cmd === 'think') {
         if (!rest) { this.print('usage: think <prompt>', 'err'); return; }
         this.print('…', 'dim');
+        if (!window._aciConnected) await AciConnect.connect(false);
         const r = await ACI.think(rest);
         this.print(r || '(empty)', 'out');
         ACIControl?.reply(r);
+        if (Voice.shouldSpeak(r)) speak(r.slice(0, 200));
         return;
       }
       if (cmd === 'evolve') {
@@ -888,16 +908,96 @@ const AciCli = {
       }
       if (cmd === 'news') { NewsFeed.flash(); this.print('news', 'ok'); return; }
 
+      if (!window._aciConnected) await AciConnect.connect(false);
       this.print('…', 'dim');
       const ans = await ACI.think(line);
       this.print(ans || '(empty)', 'out');
       ACIControl?.reply(ans);
+      if (Voice.shouldSpeak(ans)) speak(ans.slice(0, 200));
     } catch (err) {
       this.print('error: ' + (err.message || err), 'err');
     }
   }
 };
 window.AciCli = AciCli;
+
+// === ACI CONNECT — link architect to collective AI for deployment ===
+const AciConnect = {
+  connected: false,
+  sessionId: null,
+
+  async open() {
+    if (!Auth?.user) {
+      ACIControl?.reply('Sign in with G — then collective AI opens');
+      await Auth.signInGoogle();
+      return null;
+    }
+    if (window.AciCli) AciCli.show();
+    await Auth.refreshAuthority();
+    return this.connect(true);
+  },
+
+  async connect(speakGreeting) {
+    if (!Auth?.user) {
+      ACIControl?.reply('Login required for collective connection');
+      return { error: 'login required' };
+    }
+    if (AciCli) AciCli.print('linking to Astranov Collective Intelligence…', 'dim');
+
+    const sync = await AciCli.api({ mode: 'owner_sync' });
+    if (sync.is_owner) Auth.isOwner = true;
+
+    const conn = await AciCli.api({
+      mode: 'connect',
+      deploy_context: true,
+      architect: Auth.OWNER_EMAIL
+    });
+
+    this.connected = !!(conn.ok && conn.connected);
+    this.sessionId = conn.session_id || Auth.user.id;
+    window._aciConnected = this.connected;
+
+    if (AciCli) {
+      if (this.connected) {
+        AciCli.print('✓ CONNECTED — collective AI online · session ' + (this.sessionId || '').slice(0, 8), 'ok');
+        if (conn.steps) conn.steps.forEach(s => AciCli.print('  · ' + s, 'dim'));
+        if (conn.deploy_ready) AciCli.print('  · deploy authority: FULL — type: deploy <task>', 'ok');
+      } else {
+        AciCli.print('✗ CONNECT FAILED: ' + (conn.error || JSON.stringify(conn).slice(0, 120)), 'err');
+      }
+    }
+
+    if (conn.greeting) {
+      ACIControl?.reply(conn.greeting);
+      if (AciCli) AciCli.print(conn.greeting, 'out');
+      if (speakGreeting && Voice.shouldSpeak(conn.greeting)) speak(conn.greeting);
+    }
+
+    MapDepict?.action('think', { detail: this.connected ? 'ACI linked' : 'connect failed' });
+    return conn;
+  },
+
+  async deploy(task) {
+    if (!Auth?.isOwner) {
+      const msg = 'Owner only — login as notisastranov@gmail.com';
+      if (AciCli) AciCli.print(msg, 'err');
+      return null;
+    }
+    if (!this.connected) await this.connect(false);
+    if (AciCli) AciCli.print('deploy → collective AI: ' + (task || 'continue batch'), 'dim');
+    const r = await AciCli.api({
+      mode: 'deploy',
+      task: task || 'continue deployment from streets',
+      session_id: this.sessionId
+    });
+    const text = r.plan || r.text || r.response || r.error || '';
+    if (AciCli) AciCli.print(text.slice(0, 800), r.ok ? 'out' : 'err');
+    ACIControl?.reply(text.slice(0, 220));
+    if (Voice.shouldSpeak(text)) speak(text.slice(0, 200));
+    return r;
+  }
+};
+window.AciConnect = AciConnect;
 
 // === ASTRANOV COLLECTIVE INTELLIGENCE (ACI) — FINAL ===
 // Synthesized from all AI specs: pure globe + three modes + council + self-evolving neurons.
@@ -1087,6 +1187,8 @@ const ACIControl = {
     ACIControl.reply('…');
     if (/^(stop|σταμάτα|σταματα|pause|διακοπή)/.test(low)) { userIntervene(); return; }
     if (/^(cli|terminal|console)$/.test(low)) { AciCli.toggle(); return; }
+    if (/^(connect|open|link)$/.test(low)) { AciConnect.open(); return; }
+    if (/^deploy/.test(low)) { AciConnect.deploy(text.replace(/^deploy\s*/i, '')); return; }
     if (/^(login|sign in|google|σύνδεση)/.test(low)) { Auth.signInGoogle(); return; }
     if (/^(logout|sign out|αποσύνδεση)/.test(low)) { Auth.signOut(); return; }
     if (/telecom|sat radio|satellite radio|ασύρματος/.test(low)) { Comms.startTelecomms(); return; }
@@ -1111,7 +1213,7 @@ const ACIControl = {
     const ans = await ACI.think(text);
     if (!ans) return;
     ACIControl.reply(ans);
-    speak(ans.slice(0, 260), () => {});
+    if (Voice.shouldSpeak(ans)) speak(ans.slice(0, 200), () => {});
   }
 };
 
@@ -1150,7 +1252,7 @@ const Commerce = {
     const names = this.vendors.map(v => v.name).join(', ');
     const msg = 'Καταστήματα στον χάρτη: ' + names;
     ACIControl.reply(msg);
-    speak(msg.slice(0, 200));
+    if (Voice.shouldSpeak(msg)) speak(msg.slice(0, 160));
   },
   async orderPitogyra() {
     requestLocationIfNeeded(async () => {
@@ -2587,7 +2689,7 @@ function handleVoiceCommand(event) {
 }
 
 function provokeAnswer() {
-  if (!voiceEnabled || isListening) return;
+  if (!voiceEnabled || isListening || window.AciCli?.open) return;
   setTimeout(() => {
     speak('Τι θες να κάνουμε τώρα Αξάς;', () => {
       startListeningForOptions();

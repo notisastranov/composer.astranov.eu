@@ -8,6 +8,7 @@ const Voice = {
   speaking: false,
   stopped: false,
   preferredListenLang: 'el-GR',
+  _voicesReady: null,
 
   init() {
     const load = () => {
@@ -16,61 +17,69 @@ const Voice = {
     };
     load();
     speechSynthesis.addEventListener('voiceschanged', load);
-    setTimeout(load, 250);
+    setTimeout(load, 400);
+    setTimeout(load, 1200);
   },
 
-  isGreekChar(ch) {
-    return /[\u0370-\u03FF\u1F00-\u1FFF]/.test(ch);
+  ensureVoices() {
+    if (!this._voicesReady) {
+      this._voicesReady = new Promise(resolve => {
+        const done = () => {
+          this.voices = speechSynthesis.getVoices().filter(v => v.lang);
+          this.ready = this.voices.length > 0;
+          resolve();
+        };
+        done();
+        speechSynthesis.addEventListener('voiceschanged', done, { once: true });
+        setTimeout(done, 800);
+      });
+    }
+    return this._voicesReady;
+  },
+
+  detectLang(s) {
+    const g = (s.match(/[\u0370-\u03FF\u1F00-\u1FFF]/g) || []).length;
+    const l = (s.match(/[a-zA-Z]/g) || []).length;
+    return g >= l * 0.25 ? 'el-GR' : 'en-US';
   },
 
   pickVoice(lang) {
     const v = this.voices;
     if (!v.length) return null;
     if (lang === 'el-GR') {
-      return v.find(x => /el(-|_)?gr/i.test(x.lang) && !/en/i.test(x.name))
-        || v.find(x => /el/i.test(x.lang))
-        || v.find(x => /greek/i.test(x.name));
+      return v.find(x => /stefanos|melina|google.*ελληνικά|greek/i.test(x.name))
+        || v.find(x => /^el[-_]?GR$/i.test(x.lang))
+        || v.find(x => /el/i.test(x.lang) && !/en/i.test(x.name));
     }
-    return v.find(x => /en(-|_)?us/i.test(x.lang))
-      || v.find(x => /en(-|_)?gb/i.test(x.lang))
-      || v.find(x => /^en/i.test(x.lang));
+    return v.find(x => /zira|samantha|google.*english.*united states|natural/i.test(x.name))
+      || v.find(x => /^en[-_]?US$/i.test(x.lang))
+      || v.find(x => /^en[-_]?GB$/i.test(x.lang));
   },
 
-  sanitize(text) {
+  humanize(text) {
     return String(text || '')
       .replace(/[\u{1F000}-\u{1FFFF}]/gu, '')
       .replace(/https?:\/\/\S+/gi, '')
-      .replace(/[`#*_~|<>[\]{}]/g, ' ')
-      .replace(/([a-zA-Z])\.([a-zA-Z])/g, '$1 $2')
+      .replace(/[{}[\]"`#*_~|<>@$]/g, ' ')
+      .replace(/\b([A-Z]{2,})\b/g, (_, w) => w.toLowerCase())
+      .replace(/(\d)[.,](\d)/g, '$1 $2')
       .replace(/\s+/g, ' ')
       .trim();
   },
 
-  splitChunks(text) {
-    const chunks = [];
-    let buf = '';
-    let script = null;
-    const flush = () => {
-      const t = buf.trim();
-      if (!t) return;
-      chunks.push({ text: t, lang: script === 'g' ? 'el-GR' : 'en-US' });
-      buf = '';
-    };
-    for (const ch of text) {
-      const g = this.isGreekChar(ch);
-      const l = /[A-Za-z]/.test(ch);
-      const s = g ? 'g' : (l ? 'l' : 'o');
-      if (s !== 'o' && script && s !== script) flush();
-      if (s !== 'o') script = s;
-      buf += ch;
-    }
-    flush();
-    if (!chunks.length && text.trim()) {
-      const greek = (text.match(/[\u0370-\u03FF\u1F00-\u1FFF]/g) || []).length;
-      const latin = (text.match(/[A-Za-z]/g) || []).length;
-      chunks.push({ text: text.trim(), lang: greek >= latin ? 'el-GR' : 'en-US' });
-    }
-    return chunks;
+  shouldSpeak(text) {
+    const t = (text || '').trim();
+    if (t.length < 4) return false;
+    if (/^[\d\s.,:;+\-/]+$/.test(t)) return false;
+    if (t.startsWith('{') || t.startsWith('[') || /^\s*"ok"/.test(t)) return false;
+    if ((t.match(/[a-zA-Z\u0370-\u03FF]/g) || []).length < 3) return false;
+    return true;
+  },
+
+  splitSentences(text) {
+    const parts = text.split(/(?<=[.!?;])\s+|\n+/).map(s => s.trim()).filter(s => s.length > 3);
+    const list = (parts.length ? parts : [text]).slice(0, 2);
+    return list.map(s => ({ text: s, lang: this.detectLang(s) }));
   },
 
   stop() {
@@ -81,40 +90,35 @@ const Voice = {
 
   speak(text, onEnd) {
     if (!voiceEnabled) { if (onEnd) onEnd(); return; }
-    const clean = this.sanitize(text);
-    if (!clean) { if (onEnd) onEnd(); return; }
+    const clean = this.humanize(text);
+    if (!this.shouldSpeak(clean)) { if (onEnd) onEnd(); return; }
 
     this.stop();
     this.stopped = false;
-    const chunks = this.splitChunks(clean);
-    let idx = 0;
 
-    const speakNext = () => {
-      if (this.stopped || idx >= chunks.length) {
-        this.speaking = false;
-        if (onEnd && !this.stopped) onEnd();
-        return;
-      }
-      const { text: t, lang } = chunks[idx++];
-      const utter = new SpeechSynthesisUtterance(t);
-      utter.lang = lang;
-      utter.rate = lang === 'el-GR' ? 0.92 : 1.0;
-      utter.pitch = 1.0;
-      const voice = this.pickVoice(lang);
-      if (voice) utter.voice = voice;
-      utter.onend = speakNext;
-      utter.onerror = speakNext;
-      this.speaking = true;
-      speechSynthesis.speak(utter);
-    };
-
-    if (!this.voices.length) {
-      speechSynthesis.addEventListener('voiceschanged', () => {
-        this.voices = speechSynthesis.getVoices();
-        speakNext();
-      }, { once: true });
-    }
-    speakNext();
+    this.ensureVoices().then(() => {
+      const sentences = this.splitSentences(clean);
+      let idx = 0;
+      const speakNext = () => {
+        if (this.stopped || idx >= sentences.length) {
+          this.speaking = false;
+          if (onEnd && !this.stopped) onEnd();
+          return;
+        }
+        const { text: t, lang } = sentences[idx++];
+        const utter = new SpeechSynthesisUtterance(t);
+        utter.lang = lang;
+        utter.rate = 0.95;
+        utter.pitch = 1.0;
+        const voice = this.pickVoice(lang);
+        if (voice) utter.voice = voice;
+        utter.onend = speakNext;
+        utter.onerror = speakNext;
+        this.speaking = true;
+        speechSynthesis.speak(utter);
+      };
+      speakNext();
+    });
   }
 };
 

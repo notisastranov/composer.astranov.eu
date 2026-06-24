@@ -171,8 +171,18 @@ const AciCli = {
           this.print('council list     — council cases');
           this.print('council convene <title> | <desc>');
         }
+        this.print('connect | open     — link collective AI (required)');
+        this.print('deploy <task>      — deployment plan (owner)');
         this.print('clear | exit | logout');
         this.print('…or any free text → think');
+        return;
+      }
+      if (cmd === 'connect' || cmd === 'open') {
+        await AciConnect.connect(cmd === 'open');
+        return;
+      }
+      if (cmd === 'deploy') {
+        await AciConnect.deploy(rest || 'continue deployment');
         return;
       }
       if (cmd === 'clear') {
@@ -186,9 +196,11 @@ const AciCli = {
       if (cmd === 'think') {
         if (!rest) { this.print('usage: think <prompt>', 'err'); return; }
         this.print('…', 'dim');
+        if (!window._aciConnected) await AciConnect.connect(false);
         const r = await ACI.think(rest);
         this.print(r || '(empty)', 'out');
         ACIControl?.reply(r);
+        if (Voice.shouldSpeak(r)) speak(r.slice(0, 200));
         return;
       }
       if (cmd === 'evolve') {
@@ -249,10 +261,12 @@ const AciCli = {
       }
       if (cmd === 'news') { NewsFeed.flash(); this.print('news', 'ok'); return; }
 
+      if (!window._aciConnected) await AciConnect.connect(false);
       this.print('…', 'dim');
       const ans = await ACI.think(line);
       this.print(ans || '(empty)', 'out');
       ACIControl?.reply(ans);
+      if (Voice.shouldSpeak(ans)) speak(ans.slice(0, 200));
     } catch (err) {
       this.print('error: ' + (err.message || err), 'err');
     }
