@@ -4,7 +4,7 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>Astranov</title>
-<meta name="compliance-check" content="pmr-real-audio-no-sim-2026-06-24">
+<meta name="compliance-check" content="aci-cli-login-2026-06-24">
 <meta name="aci-session" content="Astranov Collective Intelligence">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
@@ -45,6 +45,20 @@
   #aci-reply { margin:0 12px 4px; padding:6px 12px; font:12px/1.4 system-ui; color:#9fd; max-height:48px; overflow:hidden; opacity:0.9; pointer-events:none; }
   #news-ticker { margin:8px 8px 0; padding:6px 12px; background:rgba(10,0,20,0.75); border:1px solid rgba(180,100,255,0.3); border-radius:14px; font:11px system-ui; color:#ddaaff; white-space:nowrap; overflow:hidden; pointer-events:auto; }
   #zoom-label { position:fixed; top:10px; left:10px; z-index:40; font:11px system-ui; color:rgba(150,220,255,0.7); pointer-events:none; }
+  #aci-cli { display:none; margin:0 8px 6px; max-height:42vh; background:rgba(0,4,12,0.94); border:1px solid rgba(0,255,160,0.35); border-radius:14px; pointer-events:auto; font:12px/1.4 ui-monospace,monospace; overflow:hidden; flex-direction:column; }
+  #aci-cli.visible { display:flex; }
+  #aci-cli-header { display:flex; justify-content:space-between; align-items:center; padding:6px 10px; background:rgba(0,40,30,0.5); color:#6fc; font:11px system-ui; border-bottom:1px solid rgba(0,255,160,0.2); }
+  #aci-cli-close { background:transparent; border:none; color:#8aa; cursor:pointer; font-size:14px; }
+  #aci-cli-out { flex:1; overflow-y:auto; padding:8px 10px; min-height:80px; max-height:28vh; color:#9fd; }
+  #aci-cli-out .cli-cmd { color:#6df; }
+  #aci-cli-out .cli-out { color:#cfa; white-space:pre-wrap; }
+  #aci-cli-out .cli-ok { color:#8f8; }
+  #aci-cli-out .cli-err { color:#f88; }
+  #aci-cli-out .cli-dim { color:#567; }
+  #aci-cli-input-row { display:flex; align-items:center; gap:6px; padding:8px 10px; border-top:1px solid rgba(0,255,160,0.15); }
+  #aci-cli-prompt { color:#6fc; flex-shrink:0; font-size:11px; }
+  #aci-cli-in { flex:1; background:transparent; border:none; color:#e8f4ff; font:inherit; outline:none; min-width:0; }
+  #aci-cli-toggle { display:none; background:rgba(0,60,40,0.5); border:1px solid rgba(0,255,160,0.4); color:#6fc; border-radius:50%; width:38px; height:38px; cursor:pointer; font-size:15px; flex-shrink:0; align-items:center; justify-content:center; }
 </style>
 </head>
 <body>
@@ -56,6 +70,14 @@
     <div id="news-ticker">Astranov Collective Intelligence — loading news…</div>
     <div id="map-action"></div>
     <div id="aci-reply"></div>
+    <div id="aci-cli">
+      <div id="aci-cli-header"><span>Astranov Collective CLI · login only</span><button id="aci-cli-close" type="button" title="Close">▁</button></div>
+      <div id="aci-cli-out"></div>
+      <div id="aci-cli-input-row">
+        <span id="aci-cli-prompt">collective $</span>
+        <input id="aci-cli-in" type="text" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="help" />
+      </div>
+    </div>
     <div id="sat-radio">
       <div class="sr-row"><span class="sr-ch">EU PMR Ch 11</span><span class="sr-freq">446.13125 MHz</span><span>peers: <b id="sr-peers">0</b></span><button id="sr-close" type="button">✕</button></div>
       <div class="sr-honest">RF: tune YOUR PMR446 handheld to Ch 11 (446.13125 MHz) — browser cannot transmit on 446 MHz. In-app: real mic + WebRTC voice to other Astranov users on this channel.</div>
@@ -72,6 +94,7 @@
     </div>
     <div id="aci-bar">
       <button id="aci-login" title="Sign in with Google" type="button">G</button>
+      <button id="aci-cli-toggle" title="Collective CLI (login required) · ` key" type="button">⌨</button>
       <button id="aci-stop" title="Stop — take control" type="button">⏹</button>
       <button id="aci-mic" title="Voice (tap while speaking to interrupt)" type="button">🎙</button>
       <input id="aci-input" placeholder="Ask Astranov — order, VHF PMR, drive, login…" />

@@ -49,6 +49,7 @@ function animate() {
 animate();
 ACI.init();
 Auth.init();
+AciCli.init();
 ACIControl.init();
 PmrRadio.bindUI();
 DrivingView.init();

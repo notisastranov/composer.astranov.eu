@@ -76,6 +76,8 @@ function handleVoiceCommand(event) {
     if (recognition) recognition.lang = 'el-GR';
     MapDepict.action('mode', { detail: 'Greek listen' });
     speak('Ελληνικά mode. Greklish works too — μίλα όπως θες.', () => provokeAnswer());
+  } else if (transcript.includes('cli') || transcript.includes('terminal') || transcript.includes('κονσόλα')) {
+    AciCli.toggle();
   } else if (transcript.includes('logout') || transcript.includes('αποσύνδεση') || transcript.includes('sign out')) {
     Auth.signOut();
   } else if (transcript.includes('login') || transcript.includes('σύνδεση') || transcript.includes('google')) {

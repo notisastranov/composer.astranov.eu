@@ -63,6 +63,7 @@ const Auth = {
       if (chip) chip.textContent = name;
       if (typeof me !== 'undefined' && me) { me.name = name; me.id = this.user.id; me.email = this.user.email; }
       ACI?.feed('login', name);
+      if (window.AciCli) AciCli.onAuthChange();
     } else {
       if (btn) {
         btn.title = 'Sign in with Google';
@@ -70,6 +71,7 @@ const Auth = {
         btn.style.backgroundImage = '';
       }
       if (chip) chip.textContent = '';
+      if (window.AciCli) AciCli.onAuthChange();
     }
   },
 

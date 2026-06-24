@@ -4,7 +4,7 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>Astranov</title>
-<meta name="compliance-check" content="pmr-real-audio-no-sim-2026-06-24">
+<meta name="compliance-check" content="aci-cli-login-2026-06-24">
 <meta name="aci-session" content="Astranov Collective Intelligence">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
@@ -45,6 +45,20 @@
   #aci-reply { margin:0 12px 4px; padding:6px 12px; font:12px/1.4 system-ui; color:#9fd; max-height:48px; overflow:hidden; opacity:0.9; pointer-events:none; }
   #news-ticker { margin:8px 8px 0; padding:6px 12px; background:rgba(10,0,20,0.75); border:1px solid rgba(180,100,255,0.3); border-radius:14px; font:11px system-ui; color:#ddaaff; white-space:nowrap; overflow:hidden; pointer-events:auto; }
   #zoom-label { position:fixed; top:10px; left:10px; z-index:40; font:11px system-ui; color:rgba(150,220,255,0.7); pointer-events:none; }
+  #aci-cli { display:none; margin:0 8px 6px; max-height:42vh; background:rgba(0,4,12,0.94); border:1px solid rgba(0,255,160,0.35); border-radius:14px; pointer-events:auto; font:12px/1.4 ui-monospace,monospace; overflow:hidden; flex-direction:column; }
+  #aci-cli.visible { display:flex; }
+  #aci-cli-header { display:flex; justify-content:space-between; align-items:center; padding:6px 10px; background:rgba(0,40,30,0.5); color:#6fc; font:11px system-ui; border-bottom:1px solid rgba(0,255,160,0.2); }
+  #aci-cli-close { background:transparent; border:none; color:#8aa; cursor:pointer; font-size:14px; }
+  #aci-cli-out { flex:1; overflow-y:auto; padding:8px 10px; min-height:80px; max-height:28vh; color:#9fd; }
+  #aci-cli-out .cli-cmd { color:#6df; }
+  #aci-cli-out .cli-out { color:#cfa; white-space:pre-wrap; }
+  #aci-cli-out .cli-ok { color:#8f8; }
+  #aci-cli-out .cli-err { color:#f88; }
+  #aci-cli-out .cli-dim { color:#567; }
+  #aci-cli-input-row { display:flex; align-items:center; gap:6px; padding:8px 10px; border-top:1px solid rgba(0,255,160,0.15); }
+  #aci-cli-prompt { color:#6fc; flex-shrink:0; font-size:11px; }
+  #aci-cli-in { flex:1; background:transparent; border:none; color:#e8f4ff; font:inherit; outline:none; min-width:0; }
+  #aci-cli-toggle { display:none; background:rgba(0,60,40,0.5); border:1px solid rgba(0,255,160,0.4); color:#6fc; border-radius:50%; width:38px; height:38px; cursor:pointer; font-size:15px; flex-shrink:0; align-items:center; justify-content:center; }
 </style>
 </head>
 <body>
@@ -56,6 +70,14 @@
     <div id="news-ticker">Astranov Collective Intelligence — loading news…</div>
     <div id="map-action"></div>
     <div id="aci-reply"></div>
+    <div id="aci-cli">
+      <div id="aci-cli-header"><span>Astranov Collective CLI · login only</span><button id="aci-cli-close" type="button" title="Close">▁</button></div>
+      <div id="aci-cli-out"></div>
+      <div id="aci-cli-input-row">
+        <span id="aci-cli-prompt">collective $</span>
+        <input id="aci-cli-in" type="text" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="help" />
+      </div>
+    </div>
     <div id="sat-radio">
       <div class="sr-row"><span class="sr-ch">EU PMR Ch 11</span><span class="sr-freq">446.13125 MHz</span><span>peers: <b id="sr-peers">0</b></span><button id="sr-close" type="button">✕</button></div>
       <div class="sr-honest">RF: tune YOUR PMR446 handheld to Ch 11 (446.13125 MHz) — browser cannot transmit on 446 MHz. In-app: real mic + WebRTC voice to other Astranov users on this channel.</div>
@@ -72,6 +94,7 @@
     </div>
     <div id="aci-bar">
       <button id="aci-login" title="Sign in with Google" type="button">G</button>
+      <button id="aci-cli-toggle" title="Collective CLI (login required) · ` key" type="button">⌨</button>
       <button id="aci-stop" title="Stop — take control" type="button">⏹</button>
       <button id="aci-mic" title="Voice (tap while speaking to interrupt)" type="button">🎙</button>
       <input id="aci-input" placeholder="Ask Astranov — order, VHF PMR, drive, login…" />
@@ -528,6 +551,7 @@ const Auth = {
       if (chip) chip.textContent = name;
       if (typeof me !== 'undefined' && me) { me.name = name; me.id = this.user.id; me.email = this.user.email; }
       ACI?.feed('login', name);
+      if (window.AciCli) AciCli.onAuthChange();
     } else {
       if (btn) {
         btn.title = 'Sign in with Google';
@@ -535,6 +559,7 @@ const Auth = {
         btn.style.backgroundImage = '';
       }
       if (chip) chip.textContent = '';
+      if (window.AciCli) AciCli.onAuthChange();
     }
   },
 
@@ -547,6 +572,230 @@ const Auth = {
   }
 };
 window.Auth = Auth;
+
+// === ACI CLI — Collective dev terminal (login required) ===
+const AciCli = {
+  open: false,
+  history: [],
+  histIdx: -1,
+  buffer: '',
+
+  init() {
+    const input = document.getElementById('aci-cli-in');
+    const toggle = document.getElementById('aci-cli-toggle');
+    const close = document.getElementById('aci-cli-close');
+    if (toggle) toggle.onclick = () => this.toggle();
+    if (close) close.onclick = () => this.hide();
+    if (input) {
+      input.addEventListener('keydown', e => this.onKey(e));
+      input.addEventListener('input', () => { this.buffer = input.value; });
+    }
+    window.addEventListener('keydown', e => {
+      if (!Auth?.user) return;
+      if (e.key === '`' && !e.ctrlKey && !e.metaKey && document.activeElement?.id !== 'aci-input') {
+        e.preventDefault();
+        this.toggle();
+      }
+    });
+    this.onAuthChange();
+  },
+
+  onAuthChange() {
+    const panel = document.getElementById('aci-cli');
+    const toggle = document.getElementById('aci-cli-toggle');
+    const logged = !!(Auth && Auth.user);
+    if (toggle) toggle.style.display = logged ? 'inline-flex' : 'none';
+    if (!logged) {
+      this._welcomed = false;
+      this.hide();
+      if (panel) panel.classList.remove('visible');
+      return;
+    }
+    const name = Auth.user.user_metadata?.full_name || Auth.user.email?.split('@')[0] || 'dev';
+    const prompt = document.getElementById('aci-cli-prompt');
+    if (prompt) prompt.textContent = name + '@collective $';
+    this.loadHistory();
+    if (!this._welcomed) {
+      this._welcomed = true;
+      this.show();
+      this.print('Collective CLI unlocked — you + ACI continue development here.');
+      this.print('Type help · ` toggles · exit closes');
+    }
+  },
+
+  loadHistory() {
+    try {
+      const key = 'aci-cli-' + (Auth.user?.id || 'anon');
+      this.history = JSON.parse(localStorage.getItem(key) || '[]');
+    } catch { this.history = []; }
+  },
+
+  saveHistory() {
+    try {
+      const key = 'aci-cli-' + (Auth.user?.id || 'anon');
+      localStorage.setItem(key, JSON.stringify(this.history.slice(-80)));
+    } catch (_) {}
+  },
+
+  toggle() {
+    if (!Auth?.user) {
+      ACIControl?.reply('Sign in with G to unlock Collective CLI');
+      Auth?.signInGoogle();
+      return;
+    }
+    this.open ? this.hide() : this.show();
+  },
+
+  show() {
+    if (!Auth?.user) return;
+    this.open = true;
+    if (!document.getElementById('aci-cli-out')?.childElementCount) {
+      this.print('Astranov Collective CLI — authenticated dev shell');
+    }
+    const panel = document.getElementById('aci-cli');
+    if (panel) panel.classList.add('visible');
+    document.getElementById('aci-cli-in')?.focus();
+    MapDepict?.action('think', { detail: 'CLI open' });
+  },
+
+  hide() {
+    this.open = false;
+    document.getElementById('aci-cli')?.classList.remove('visible');
+  },
+
+  print(text, cls) {
+    const out = document.getElementById('aci-cli-out');
+    if (!out) return;
+    const line = document.createElement('div');
+    line.className = 'cli-line' + (cls ? ' cli-' + cls : '');
+    line.textContent = text;
+    out.appendChild(line);
+    out.scrollTop = out.scrollHeight;
+  },
+
+  async api(body) {
+    const headers = { 'Content-Type': 'application/json', apikey: SB_KEY };
+    if (Auth?.client) {
+      const { data } = await Auth.client.auth.getSession();
+      const token = data?.session?.access_token;
+      if (token) headers.Authorization = 'Bearer ' + token;
+      else headers.Authorization = 'Bearer ' + SB_KEY;
+    } else {
+      headers.Authorization = 'Bearer ' + SB_KEY;
+    }
+    const r = await fetch(SB_URL + '/functions/v1/aci', {
+      method: 'POST', headers,
+      body: JSON.stringify({ ...body, cli_user: Auth?.user?.id, cli_email: Auth?.user?.email })
+    });
+    return r.json().catch(() => ({ error: 'bad response' }));
+  },
+
+  onKey(e) {
+    const input = document.getElementById('aci-cli-in');
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      const line = (input?.value || '').trim();
+      if (!line) return;
+      input.value = '';
+      this.buffer = '';
+      this.run(line);
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      if (this.history.length) {
+        this.histIdx = Math.max(0, this.histIdx < 0 ? this.history.length - 1 : this.histIdx - 1);
+        input.value = this.history[this.histIdx];
+      }
+    } else if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      if (this.histIdx >= 0) {
+        this.histIdx++;
+        input.value = this.histIdx < this.history.length ? this.history[this.histIdx] : '';
+      }
+    } else if (e.key === 'Escape') {
+      this.hide();
+    }
+  },
+
+  async run(line) {
+    this.history.push(line);
+    this.histIdx = -1;
+    this.saveHistory();
+    this.print((document.getElementById('aci-cli-prompt')?.textContent || '$') + ' ' + line, 'cmd');
+
+    const parts = line.match(/(?:[^\s"]+|"[^"]*")+/g) || [];
+    const cmd = (parts[0] || '').toLowerCase().replace(/^"|"$/g, '');
+    const rest = parts.slice(1).map(p => p.replace(/^"|"$/g, '')).join(' ');
+
+    try {
+      if (cmd === 'help' || cmd === '?') {
+        this.print('think <prompt>  — ask collective AI');
+        this.print('evolve [reason]  — autonomous evolution');
+        this.print('teach <text>     — store memory / neuron');
+        this.print('stats            — neuron & memory stats');
+        this.print('mode <athenian|spartan|myrmidon>');
+        this.print('vendors | order | vhf | drive | news');
+        this.print('clear | exit | logout');
+        this.print('…or any free text → think');
+        return;
+      }
+      if (cmd === 'clear') {
+        const out = document.getElementById('aci-cli-out');
+        if (out) out.innerHTML = '';
+        return;
+      }
+      if (cmd === 'exit' || cmd === 'close') { this.hide(); return; }
+      if (cmd === 'logout') { await Auth.signOut(); this.print('signed out', 'ok'); return; }
+
+      if (cmd === 'think') {
+        if (!rest) { this.print('usage: think <prompt>', 'err'); return; }
+        this.print('…', 'dim');
+        const r = await ACI.think(rest);
+        this.print(r || '(empty)', 'out');
+        ACIControl?.reply(r);
+        return;
+      }
+      if (cmd === 'evolve') {
+        this.print('evolving…', 'dim');
+        const r = await ACI.evolve(rest || 'cli');
+        this.print(JSON.stringify(r || { ok: true }).slice(0, 400), 'out');
+        return;
+      }
+      if (cmd === 'teach') {
+        if (!rest) { this.print('usage: teach <content>', 'err'); return; }
+        await ACI.teach(rest);
+        this.print('remembered · neuron spawned', 'ok');
+        return;
+      }
+      if (cmd === 'stats') {
+        const r = await this.api({ mode: 'stats' });
+        this.print(JSON.stringify(r, null, 0).slice(0, 500), 'out');
+        return;
+      }
+      if (cmd === 'mode') {
+        ACI.thinkMode = rest || '';
+        this.print('mode: ' + (ACI.thinkMode || 'default'), 'ok');
+        return;
+      }
+      if (cmd === 'vendors') { await Commerce.loadVendors(); Commerce.announceVendors(); this.print('vendors on globe', 'ok'); return; }
+      if (cmd === 'order') { await Commerce.orderPitogyra(); this.print('order placed', 'ok'); return; }
+      if (cmd === 'vhf') { Comms.startVHF(); this.print('PMR panel open', 'ok'); return; }
+      if (cmd === 'drive') {
+        DrivingView?.activate?.();
+        this.print('driving view (needs GPS speed)', 'ok');
+        return;
+      }
+      if (cmd === 'news') { NewsFeed.flash(); this.print('news', 'ok'); return; }
+
+      this.print('…', 'dim');
+      const ans = await ACI.think(line);
+      this.print(ans || '(empty)', 'out');
+      ACIControl?.reply(ans);
+    } catch (err) {
+      this.print('error: ' + (err.message || err), 'err');
+    }
+  }
+};
+window.AciCli = AciCli;
 
 // === ASTRANOV COLLECTIVE INTELLIGENCE (ACI) — FINAL ===
 // Synthesized from all AI specs: pure globe + three modes + council + self-evolving neurons.
@@ -733,6 +982,7 @@ const ACIControl = {
     const low = text.toLowerCase();
     ACIControl.reply('…');
     if (/^(stop|σταμάτα|σταματα|pause|διακοπή)/.test(low)) { userIntervene(); return; }
+    if (/^(cli|terminal|console)$/.test(low)) { AciCli.toggle(); return; }
     if (/^(login|sign in|google|σύνδεση)/.test(low)) { Auth.signInGoogle(); return; }
     if (/^(logout|sign out|αποσύνδεση)/.test(low)) { Auth.signOut(); return; }
     if (/telecom|sat radio|satellite radio|ασύρματος/.test(low)) { Comms.startTelecomms(); return; }
@@ -2156,6 +2406,8 @@ function handleVoiceCommand(event) {
     if (recognition) recognition.lang = 'el-GR';
     MapDepict.action('mode', { detail: 'Greek listen' });
     speak('Ελληνικά mode. Greklish works too — μίλα όπως θες.', () => provokeAnswer());
+  } else if (transcript.includes('cli') || transcript.includes('terminal') || transcript.includes('κονσόλα')) {
+    AciCli.toggle();
   } else if (transcript.includes('logout') || transcript.includes('αποσύνδεση') || transcript.includes('sign out')) {
     Auth.signOut();
   } else if (transcript.includes('login') || transcript.includes('σύνδεση') || transcript.includes('google')) {
@@ -2539,6 +2791,7 @@ function animate() {
 animate();
 ACI.init();
 Auth.init();
+AciCli.init();
 ACIControl.init();
 PmrRadio.bindUI();
 DrivingView.init();

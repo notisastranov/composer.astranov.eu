@@ -183,6 +183,7 @@ const ACIControl = {
     const low = text.toLowerCase();
     ACIControl.reply('…');
     if (/^(stop|σταμάτα|σταματα|pause|διακοπή)/.test(low)) { userIntervene(); return; }
+    if (/^(cli|terminal|console)$/.test(low)) { AciCli.toggle(); return; }
     if (/^(login|sign in|google|σύνδεση)/.test(low)) { Auth.signInGoogle(); return; }
     if (/^(logout|sign out|αποσύνδεση)/.test(low)) { Auth.signOut(); return; }
     if (/telecom|sat radio|satellite radio|ασύρματος/.test(low)) { Comms.startTelecomms(); return; }

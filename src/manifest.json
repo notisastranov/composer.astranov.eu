@@ -5,6 +5,7 @@
     { "file": "00-globe.js", "marker": null },
     { "file": "05-speak-map.js", "marker": "// === VOICE + MAP DEPICT ===" },
     { "file": "12-auth.js", "marker": "// === GOOGLE AUTH (Supabase) ===" },
+    { "file": "14-aci-cli.js", "marker": "// === ACI CLI" },
     { "file": "20-aci.js", "marker": "// === ASTRANOV COLLECTIVE INTELLIGENCE (ACI)" },
     { "file": "30-commerce.js", "marker": "// ── COMMERCE:" },
     { "file": "40-comms-news.js", "marker": "// ── COMMS:" },
