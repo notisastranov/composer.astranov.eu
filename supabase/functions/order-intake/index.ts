@@ -158,6 +158,7 @@ serve(async (req) => {
       multi_role: true,
     }), { headers: cors })
   } catch (e) {
-    return new Response(JSON.stringify({ ok: false, error: String(e) }), { status: 500, headers: cors })
+    const err = e && typeof e === 'object' && 'message' in e ? String((e as { message?: string }).message) : String(e)
+    return new Response(JSON.stringify({ ok: false, error: err }), { status: 500, headers: cors })
   }
 })
