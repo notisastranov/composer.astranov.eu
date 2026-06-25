@@ -54,6 +54,7 @@
   #zoom-label { position:fixed; top:10px; left:10px; z-index:40; font:11px system-ui; color:rgba(150,220,255,0.7); pointer-events:none; }
   #globe-deck { display:flex; flex-direction:column; margin:0 8px 6px; max-height:40px; background:rgba(0,4,12,0.94); border:1px solid rgba(0,255,160,0.35); border-radius:14px; pointer-events:auto; font:12px/1.4 ui-monospace,monospace; overflow:hidden; transition:max-height 0.22s ease; }
   #globe-deck.expanded { max-height:min(56vh,520px); }
+  #globe-deck.deck-ping { border-color:rgba(0,255,200,0.85); box-shadow:0 0 12px rgba(0,255,160,0.35); }
   #globe-deck-header { display:flex; align-items:center; gap:8px; padding:8px 10px; background:rgba(0,40,30,0.5); color:#6fc; font:11px system-ui; touch-action:pan-y; cursor:pointer; flex-shrink:0; user-select:none; min-height:24px; }
   #globe-deck.expanded #globe-deck-header { border-bottom:1px solid rgba(0,255,160,0.2); }
   #globe-deck-title { flex:0 1 auto; max-width:42%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-weight:600; }
@@ -920,6 +921,7 @@ const GlobeDeck = {
   activeTask: null,
   _touchY: 0,
   _touchT: 0,
+  _collapseTimer: null,
 
   init() {
     const hdr = document.getElementById('globe-deck-header');
@@ -967,8 +969,10 @@ const GlobeDeck = {
   log(text, cls) {
     const out = this.logEl();
     if (!out) return;
-    const line = document.createElement('div');
     const kind = cls || 'out';
+    const show = kind !== 'dim' && kind !== 'map';
+    if (show) this.expand();
+    const line = document.createElement('div');
     line.className = 'deck-line deck-' + kind;
     line.textContent = text;
     out.appendChild(line);
@@ -976,6 +980,22 @@ const GlobeDeck = {
     out.scrollTop = out.scrollHeight;
     if (kind === 'map' || kind === 'reply') this.setPreview(text);
     else if (!this.expanded) this.setPreview(text);
+    if (show) this.ping();
+  },
+
+  onUserMessage(title) {
+    if (this._collapseTimer) { clearTimeout(this._collapseTimer); this._collapseTimer = null; }
+    this.expand(title || 'Collective — listening');
+    this.ping();
+  },
+
+  ping() {
+    const d = this.deck();
+    if (!d) return;
+    d.classList.remove('deck-ping');
+    void d.offsetWidth;
+    d.classList.add('deck-ping');
+    setTimeout(() => d.classList.remove('deck-ping'), 1200);
   },
 
   clearLog() {
@@ -1047,8 +1067,9 @@ const GlobeDeck = {
 
   completeTask(task) {
     const keep = ['coders', 'radio', 'batch', 'commerce'];
-    if (this.activeTask && keep.includes(this.activeTask) && task === 'cli') return;
+    if (this.activeTask && keep.includes(this.activeTask)) return;
     if (this.activeTask && this.activeTask !== task && task !== 'cli') return;
+    if (this._collapseTimer) { clearTimeout(this._collapseTimer); this._collapseTimer = null; }
     this.hideStage();
     this.collapse();
     this.activeTask = null;
@@ -1065,9 +1086,12 @@ const GlobeDeck = {
   },
 
   finishCliIfOneShot(cmd) {
-    if (this.isOneShotCmd(cmd)) {
-      setTimeout(() => this.completeTask('cli'), 400);
-    }
+    if (!this.isOneShotCmd(cmd)) return;
+    if (this._collapseTimer) clearTimeout(this._collapseTimer);
+    this._collapseTimer = setTimeout(() => {
+      this._collapseTimer = null;
+      this.completeTask('cli');
+    }, 4500);
   },
 };
 window.GlobeDeck = GlobeDeck;
@@ -1227,6 +1251,7 @@ const AciCli = {
   },
 
   async run(line) {
+    GlobeDeck?.onUserMessage('CLI — ' + line.slice(0, 40));
     this.history.push(line);
     this.histIdx = -1;
     this.saveHistory();
@@ -1652,7 +1677,10 @@ const AciCoders = {
         this._recordReply(id, r.text);
       }
     }
-    if (r.text && !r.pending) ACIControl?.reply('Composer #' + id + ': ' + r.text.slice(0, 160));
+    if (r.text && !r.pending) {
+      GlobeDeck?.expand('Coders — Composer reply');
+      ACIControl?.reply('Composer #' + id + ': ' + r.text.slice(0, 160));
+    }
     return r;
   },
 
@@ -1741,13 +1769,16 @@ const AciCoders = {
 
   async chat(message) {
     if (!Auth?.user) {
-      ACIControl?.reply('Login required');
+      GlobeDeck?.onUserMessage('Sign in for Coders');
+      ACIControl?.reply('Sign in with G first — then Coders can reach you');
       Auth?.signInGoogle();
       return { error: 'login required' };
     }
     const m = String(message || '').trim();
     if (m.length < 1) return { error: 'empty' };
 
+    GlobeDeck?.onUserMessage('Coders team');
+    if (GlobeDeck) GlobeDeck.activeTask = 'coders';
     this.teamActive = true;
     this.armed = true;
     this.updateHud();
@@ -2135,8 +2166,10 @@ const ACIControl = {
   },
   reply(text) {
     const msg = (text || '').slice(0, 280);
+    if (!msg) return;
+    GlobeDeck?.expand();
     GlobeDeck?.log(msg, 'reply');
-    if (!GlobeDeck?.expanded) GlobeDeck?.setPreview(msg);
+    GlobeDeck?.setPreview(msg);
   },
 
   voiceAck(msg, fromVoice) {
@@ -2146,6 +2179,7 @@ const ACIControl = {
 
   async handle(text, opts = {}) {
     if (!text) return { executed: false };
+    GlobeDeck?.onUserMessage('Collective — ' + text.slice(0, 36));
     const fromVoice = !!opts.fromVoice;
     const low = text.toLowerCase().trim();
     const say = (msg) => this.voiceAck(msg, fromVoice);
@@ -2157,6 +2191,7 @@ const ACIControl = {
     if (/^(cli|terminal|console|κονσόλα)$/.test(low)) { AciCli.toggle(); this.reply('CLI panel'); say('CLI.'); return { executed: true }; }
     if (/^summon\s+coders?\s*/i.test(text) || /^coders\b/i.test(low)) {
       const task = text.replace(/^summon\s+coders?\s*/i, '').replace(/^coders\s*/i, '').trim();
+      if (GlobeDeck) GlobeDeck.activeTask = 'coders';
       if (!task) await AciCoders?.openTeam();
       else await AciCoders?.chat(task);
       return { executed: true, action: 'coders' };

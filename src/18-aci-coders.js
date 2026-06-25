@@ -99,7 +99,10 @@ const AciCoders = {
         this._recordReply(id, r.text);
       }
     }
-    if (r.text && !r.pending) ACIControl?.reply('Composer #' + id + ': ' + r.text.slice(0, 160));
+    if (r.text && !r.pending) {
+      GlobeDeck?.expand('Coders — Composer reply');
+      ACIControl?.reply('Composer #' + id + ': ' + r.text.slice(0, 160));
+    }
     return r;
   },
 
@@ -188,13 +191,16 @@ const AciCoders = {
 
   async chat(message) {
     if (!Auth?.user) {
-      ACIControl?.reply('Login required');
+      GlobeDeck?.onUserMessage('Sign in for Coders');
+      ACIControl?.reply('Sign in with G first — then Coders can reach you');
       Auth?.signInGoogle();
       return { error: 'login required' };
     }
     const m = String(message || '').trim();
     if (m.length < 1) return { error: 'empty' };
 
+    GlobeDeck?.onUserMessage('Coders team');
+    if (GlobeDeck) GlobeDeck.activeTask = 'coders';
     this.teamActive = true;
     this.armed = true;
     this.updateHud();

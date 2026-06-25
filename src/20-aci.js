@@ -182,8 +182,10 @@ const ACIControl = {
   },
   reply(text) {
     const msg = (text || '').slice(0, 280);
+    if (!msg) return;
+    GlobeDeck?.expand();
     GlobeDeck?.log(msg, 'reply');
-    if (!GlobeDeck?.expanded) GlobeDeck?.setPreview(msg);
+    GlobeDeck?.setPreview(msg);
   },
 
   voiceAck(msg, fromVoice) {
@@ -193,6 +195,7 @@ const ACIControl = {
 
   async handle(text, opts = {}) {
     if (!text) return { executed: false };
+    GlobeDeck?.onUserMessage('Collective — ' + text.slice(0, 36));
     const fromVoice = !!opts.fromVoice;
     const low = text.toLowerCase().trim();
     const say = (msg) => this.voiceAck(msg, fromVoice);
@@ -204,6 +207,7 @@ const ACIControl = {
     if (/^(cli|terminal|console|κονσόλα)$/.test(low)) { AciCli.toggle(); this.reply('CLI panel'); say('CLI.'); return { executed: true }; }
     if (/^summon\s+coders?\s*/i.test(text) || /^coders\b/i.test(low)) {
       const task = text.replace(/^summon\s+coders?\s*/i, '').replace(/^coders\s*/i, '').trim();
+      if (GlobeDeck) GlobeDeck.activeTask = 'coders';
       if (!task) await AciCoders?.openTeam();
       else await AciCoders?.chat(task);
       return { executed: true, action: 'coders' };

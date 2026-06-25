@@ -153,6 +153,7 @@ const AciCli = {
   },
 
   async run(line) {
+    GlobeDeck?.onUserMessage('CLI — ' + line.slice(0, 40));
     this.history.push(line);
     this.histIdx = -1;
     this.saveHistory();

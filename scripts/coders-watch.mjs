@@ -25,27 +25,31 @@ if (!key) {
 const interval = Number(process.argv[2]) || 12;
 
 async function tick() {
-  const r = await fetch(SB_URL + '/functions/v1/coders-bridge', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', apikey: key, Authorization: 'Bearer ' + key },
-    body: JSON.stringify({ mode: 'pending', limit: 20 }),
-  });
-  const j = await r.json().catch(() => ({}));
-  const pending = j.pending || [];
-  console.clear();
-  console.log('Astranov Coders Watch — Cursor Composer queue — ' + new Date().toLocaleTimeString());
-  console.log('Project:', SB_URL);
-  if (!pending.length) {
-    console.log('(no open composer summons)');
-    return;
+  try {
+    const r = await fetch(SB_URL + '/functions/v1/coders-bridge', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', apikey: key, Authorization: 'Bearer ' + key },
+      body: JSON.stringify({ mode: 'pending', limit: 20 }),
+    });
+    const j = await r.json().catch(() => ({}));
+    const pending = j.pending || [];
+    console.clear();
+    console.log('Astranov Coders Watch — Cursor Composer queue — ' + new Date().toLocaleTimeString());
+    console.log('Project:', SB_URL);
+    if (!pending.length) {
+      console.log('(no open composer summons)');
+      return;
+    }
+    pending.forEach(p => {
+      const ctx = p.context || {};
+      console.log('\n#' + p.id + ' [' + p.status + '] ' + (ctx.email || p.user_id || ''));
+      console.log('  ' + String(p.question || '').slice(0, 200));
+      console.log('  → answer: node scripts/coders-answer.mjs ' + p.id + ' "your reply"');
+      console.log('  → or continue in Cursor Composer with summon #' + p.id);
+    });
+  } catch (err) {
+    console.log('\n⚠ fetch failed — retrying: ' + (err.cause?.message || err.message || err));
   }
-  pending.forEach(p => {
-    const ctx = p.context || {};
-    console.log('\n#' + p.id + ' [' + p.status + '] ' + (ctx.email || p.user_id || ''));
-    console.log('  ' + String(p.question || '').slice(0, 200));
-    console.log('  → answer: node scripts/coders-answer.mjs ' + p.id + ' "your reply"');
-    console.log('  → or continue in Cursor Composer with summon #' + p.id);
-  });
 }
 
 console.log('Watching every ' + interval + 's. Ctrl+C to stop.');
