@@ -88,8 +88,8 @@ const AciCli = {
       if (Auth.isOwner) {
         this.print('OWNER — seed · distill · council · evolve · deploy');
       }
-      this.print('coders <task> — Grok instant · Composer = Cursor queue');
-      this.print('help · order · drive · think <prompt> · ` toggles');
+      this.print('coders use composer — then type your task (no prefix needed)');
+      this.print('coders <task> · composer <task> · think <prompt> · help');
     }
     const panel = document.getElementById('aci-cli');
     if (panel) panel.classList.add('visible');
@@ -180,10 +180,12 @@ const AciCli = {
           this.print('council list     — council cases');
           this.print('council convene <title> | <desc>');
         }
-        this.print('coders <task>              — summon (grok=instant, composer=Cursor queue)');
-        this.print('coders use grok|composer   — grok=xAI  composer=Cursor Composer');
-        this.print('coders switch | coders list | coders poll <id>');
-        this.print('summon coders <task>       — same');
+        this.print('coders use composer        — switch to Cursor (me)');
+        this.print('coders use grok            — switch to xAI Grok (instant)');
+        this.print('<task>                     — when Composer active, sends to Cursor');
+        this.print('coders <task>              — explicit summon');
+        this.print('composer <task>            — same as coders composer <task>');
+        this.print('coders switch | list | poll <id>');
         this.print('connect | open     — link collective AI');
         this.print('deploy <task>      — deployment plan (owner)');
         this.print('roles              — your hats: client+driver+vendor');
@@ -193,9 +195,15 @@ const AciCli = {
         this.print('…or any free text → think');
         return;
       }
-      if (cmd === 'coders' || (cmd === 'summon' && /^coders?$/i.test(parts[1] || ''))) {
-        const task = cmd === 'coders' ? rest : parts.slice(2).join(' ');
-        await AciCoders?.handleCodersCommand(task);
+      if (cmd === 'coders' || cmd === 'composer' || cmd === 'cursor' ||
+          (cmd === 'summon' && /^coders?$/i.test(parts[1] || ''))) {
+        const task = cmd === 'summon' ? parts.slice(2).join(' ')
+          : (cmd === 'coders' ? rest : rest || '');
+        await AciCoders?.handleCodersCommand(cmd === 'composer' || cmd === 'cursor' ? ('composer ' + task).trim() : task);
+        return;
+      }
+      if (cmd === 'grok') {
+        await AciCoders?.handleCodersCommand(rest ? ('grok ' + rest) : 'grok');
         return;
       }
       if (cmd === 'connect' || cmd === 'open') {
@@ -300,6 +308,10 @@ const AciCli = {
         return;
       }
 
+      if (AciCoders?.engine === 'composer' && line.length >= 3) {
+        await AciCoders.summon(line);
+        return;
+      }
       if (!window._aciConnected) await AciConnect.connect(false);
       this.print('…', 'dim');
       const ans = await ACI.think(line);

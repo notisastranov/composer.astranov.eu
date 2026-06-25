@@ -50,8 +50,8 @@ const AciCoders = {
     this.ready = true;
     if (AciCli) {
       AciCli.print('◇ Astranov Coders bridge ONLINE', 'ok');
-      AciCli.print('  grok → xAI (instant)  ·  composer → Cursor queue (poll)', 'dim');
-      AciCli.print('  coders use grok|composer  ·  coders switch  ·  coders list', 'dim');
+      AciCli.print('  composer = Cursor (me) — coders use composer, then just type task', 'dim');
+      AciCli.print('  grok = xAI instant  ·  coders switch  ·  coders list  ·  coders poll', 'dim');
     }
     this.updateHud();
     window._aciCodersReady = true;
@@ -131,7 +131,10 @@ const AciCoders = {
     if (sub === 'use' && parts[1]) {
       if (this.setEngine(parts[1])) {
         const tag = this.engine === 'composer' ? 'Cursor Composer' : 'Grok/xAI';
-        if (AciCli) AciCli.print('Coders → ' + tag, 'ok');
+        if (AciCli) {
+          AciCli.print('Coders → ' + tag, 'ok');
+          if (this.engine === 'composer') AciCli.print('Now type your task directly (no coders prefix)', 'dim');
+        }
         ACIControl?.reply('Coders: ' + tag);
         return { ok: true, coder_engine: this.engine };
       }
