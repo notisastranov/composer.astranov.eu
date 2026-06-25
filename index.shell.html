@@ -71,6 +71,9 @@
   .vm-qty { display:flex; gap:6px; align-items:center; }
   .vm-qty button { width:28px; height:28px; border-radius:8px; border:1px solid rgba(255,170,60,0.4); background:rgba(80,40,0,0.4); color:#fda; cursor:pointer; font-size:14px; }
   #vm-place { width:calc(100% - 16px); margin:8px; padding:12px; border:none; border-radius:12px; background:rgba(200,100,20,0.55); border:2px solid #fa4; color:#fff; font-weight:700; cursor:pointer; font-size:13px; }
+  #vm-request { width:calc(100% - 16px); margin:8px; padding:12px; border:none; border-radius:12px; background:rgba(80,60,20,0.55); border:2px solid #c84; color:#fda; font-weight:700; cursor:pointer; font-size:13px; }
+  #vm-request:disabled { opacity:0.55; cursor:default; }
+  #vm-empty { padding:12px 8px; color:#fc8; font-size:12px; line-height:1.5; }
   #vm-back { background:transparent; border:none; color:#9cb; cursor:pointer; font-size:11px; padding:4px 0 8px; }
   @media (min-width:720px) { #news-ticker { display:block; } }
 </style>
@@ -108,7 +111,7 @@
     </div>
     <div id="vendor-menu">
       <div id="vm-header"><span id="vm-title">Καταστήματα</span><button id="vm-close" type="button">✕</button></div>
-      <div id="vm-body"><div id="vm-list"></div><div id="vm-detail" style="display:none"><button id="vm-back" type="button">← όλα τα καταστήματα</button><div id="vm-items"></div><button id="vm-place" type="button">Παραγγελία</button></div></div>
+      <div id="vm-body"><div id="vm-list"></div><div id="vm-detail" style="display:none"><button id="vm-back" type="button">← όλα τα καταστήματα</button><div id="vm-empty" style="display:none"></div><div id="vm-items"></div><button id="vm-request" type="button" style="display:none">Ζήτησε μενού από κατάστημα</button><button id="vm-place" type="button">Παραγγελία</button></div></div>
     </div>
     <div id="aci-bar">
       <button id="aci-login" title="Sign in with Google" type="button">G</button>

@@ -84,6 +84,44 @@ serve(async (req) => {
       return new Response(JSON.stringify({ error: 'vendor_id and items required' }), { status: 400, headers: cors })
     }
 
+    const { data: vendor, error: vErr } = await sb.from('vendors')
+      .select('id, name, items, is_active')
+      .eq('id', vendor_id)
+      .single()
+
+    if (vErr || !vendor) {
+      return new Response(JSON.stringify({ error: 'vendor_not_found' }), { status: 404, headers: cors })
+    }
+    if (!vendor.is_active) {
+      return new Response(JSON.stringify({ error: 'vendor_inactive' }), { status: 400, headers: cors })
+    }
+
+    const menuItems = Array.isArray(vendor.items)
+      ? vendor.items.filter((i: { name?: string }) => i && String(i.name || '').trim())
+      : []
+    if (!menuItems.length) {
+      return new Response(JSON.stringify({
+        error: 'vendor_menu_empty',
+        message: 'This vendor has not set a menu yet. Request the menu first.',
+        vendor_name: vendor.name,
+      }), { status: 400, headers: cors })
+    }
+
+    const menuByName = new Map(menuItems.map((i: { name: string; price?: number }) => [
+      String(i.name).trim().toLowerCase(),
+      i,
+    ]))
+    for (const item of items) {
+      const key = String(item?.name || '').trim().toLowerCase()
+      const menuItem = menuByName.get(key)
+      if (!menuItem) {
+        return new Response(JSON.stringify({
+          error: 'invalid_menu_item',
+          message: `Item not on vendor menu: ${item?.name || '?'}`,
+        }), { status: 400, headers: cors })
+      }
+    }
+
     const dLat = typeof delivery_lat === 'number' ? delivery_lat : null
     const dLng = typeof delivery_lng === 'number' ? delivery_lng : null
     const driver = await pickDriver(sb, dLat, dLng, customerId)

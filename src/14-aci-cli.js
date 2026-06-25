@@ -179,7 +179,7 @@ const AciCli = {
         this.print('teach <text>     — store memory / neuron');
         this.print('stats | owner    — memory / authority status');
         this.print('mode <athenian|spartan|myrmidon>');
-        this.print('vendors | order [name] | vhf | drive | news');
+        this.print('vendors | order [name] | vendor menu | vendor requests | vhf | drive | news');
         if (Auth?.isOwner) {
           this.print('--- OWNER (notisastranov@gmail.com) ---');
           this.print('seed             — founding neurons');
@@ -288,7 +288,34 @@ const AciCli = {
       if (cmd === 'vendors') { await Commerce.showPicker(); this.print('vendor picker open — tap globe or list', 'ok'); return; }
       if (cmd === 'order') {
         await Commerce.openOrderFlow(rest);
-        this.print(rest ? 'order · ' + rest : 'pick vendor — menu open', 'ok');
+        this.print(rest ? 'order · ' + rest : 'pick vendor — real menu only', 'ok');
+        return;
+      }
+      if (cmd === 'vendor') {
+        const sub = (parts[1] || '').toLowerCase();
+        if (sub === 'menu') {
+          const r = await Commerce.cliVendorMenu(parts.slice(2));
+          if (r.error) { this.print(r.error, 'err'); return; }
+          if (r.vendors) {
+            r.vendors.forEach(v => this.print(v.name + ' · ' + v.items + ' items · ' + v.id, 'ok'));
+            return;
+          }
+          if (r.menu) {
+            this.print(r.vendor + ' menu:', 'ok');
+            r.menu.forEach(i => this.print('  ' + i.name + ' · ' + i.price + ' AVC', 'dim'));
+            return;
+          }
+          this.print(r.message || JSON.stringify(r), 'ok');
+          return;
+        }
+        if (sub === 'requests') {
+          const r = await Commerce.listMenuRequests();
+          if (r.error) { this.print(r.error, 'err'); return; }
+          if (!r.requests?.length) { this.print('no pending menu requests', 'dim'); return; }
+          r.requests.forEach(req => this.print((req.vendor_name || req.vendor_id) + ' · ' + (req.notes || 'menu needed') + ' · ' + req.id.slice(0, 8), 'ok'));
+          return;
+        }
+        this.print('usage: vendor menu list|add|show|clear | vendor requests', 'err');
         return;
       }
       if (cmd === 'locate' || cmd === 'gps' || cmd === 'me') {
@@ -321,7 +348,7 @@ const AciCli = {
         return;
       }
 
-      if (Auth?.user && line.length >= 1 && !/^(think|order|vendors|help|deploy|connect|logout|clear|exit|close|locate|gps)\b/i.test(line)) {
+      if (Auth?.user && line.length >= 1 && !/^(think|order|vendors|vendor|help|deploy|connect|logout|clear|exit|close|locate|gps)\b/i.test(line)) {
         if (AciCoders?.teamActive || /^(add|fix|build|implement|create|remove|locate|why|try|skip|use)\b/i.test(line)) {
           await AciCoders.chat(line);
           return;

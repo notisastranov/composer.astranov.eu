@@ -18,6 +18,9 @@ verify_jwt = false
 [functions.order-intake]
 verify_jwt = false
 
+[functions.menu-request]
+verify_jwt = false
+
 [functions.brain]
 verify_jwt = false
 

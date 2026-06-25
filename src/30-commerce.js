@@ -1,10 +1,11 @@
-// ── COMMERCE: real vendors, menu, orders (no drone simulation) ──
+// ── COMMERCE: real vendors, real menus only, orders (no fake defaults) ──
 const Commerce = {
   vendors: [],
   markers: [],
   selected: null,
   cart: {},
   _uiReady: false,
+  _menuRequestSent: false,
 
   haversineKm(lat1, lng1, lat2, lng2) {
     const R = 6371;
@@ -19,29 +20,13 @@ const Commerce = {
     return { lat: 36.4239, lng: 28.2245 };
   },
 
-  defaultMenu(vendor) {
-    const cat = String(vendor.category || '').toLowerCase();
-    const name = String(vendor.name || '').toLowerCase();
-    if (/bar|restaurant|fast_food|food|bakery/.test(cat) || /goals|pizza|πιτο|pit/.test(name)) {
-      return [
-        { name: 'Μπύρα', price: 4 },
-        { name: 'Τσιγάρα', price: 5.5 },
-        { name: 'Πιτογύρα', price: 3.5 },
-        { name: 'Νερό', price: 1.5 },
-      ];
-    }
-    if (/supermarket|shop/.test(cat)) {
-      return [{ name: 'Ψωμί', price: 2 }, { name: 'Γάλα', price: 1.8 }, { name: 'Νερό', price: 1 }];
-    }
-    if (/pharmacy/.test(cat)) {
-      return [{ name: 'Παυσίπονο', price: 6 }, { name: 'Βιταμίνες', price: 12 }];
-    }
-    return [{ name: 'Είδος 1', price: 5 }, { name: 'Είδος 2', price: 8 }];
+  menuFor(vendor) {
+    const items = Array.isArray(vendor?.items) ? vendor.items.filter(i => i && i.name) : [];
+    return items;
   },
 
-  menuFor(vendor) {
-    const items = Array.isArray(vendor.items) ? vendor.items.filter(i => i && i.name) : [];
-    return items.length ? items : this.defaultMenu(vendor);
+  hasMenu(vendor) {
+    return this.menuFor(vendor).length > 0;
   },
 
   async loadVendors() {
@@ -55,6 +40,29 @@ const Commerce = {
     this.vendors.sort((a, b) => this.haversineKm(u.lat, u.lng, a.lat, a.lng) - this.haversineKm(u.lat, u.lng, b.lat, b.lng));
     this.showOnGlobe();
     return this.vendors;
+  },
+
+  async myVendors() {
+    if (!Auth?.user) return [];
+    try {
+      const headers = await Auth.authHeaders();
+      const r = await fetch(SB_URL + '/rest/v1/vendors?select=id,name,emoji,items,category&owner_id=eq.' + Auth.user.id, { headers });
+      return r.ok ? await r.json() : [];
+    } catch { return []; }
+  },
+
+  resolveVendorRef(ref) {
+    const q = String(ref || '').trim().toLowerCase();
+    if (!q) return null;
+    return this.vendors.find(v => v.id === ref || v.name.toLowerCase().includes(q)) || null;
+  },
+
+  async resolveOwnedVendor(ref) {
+    const owned = await this.myVendors();
+    if (!owned.length) return null;
+    const q = String(ref || '').trim().toLowerCase();
+    if (!q) return owned[0];
+    return owned.find(v => v.id === ref || v.name.toLowerCase().includes(q)) || owned[0];
   },
 
   flyToVendor(v) {
@@ -88,6 +96,7 @@ const Commerce = {
     document.getElementById('vm-close')?.addEventListener('click', () => this.hideMenu());
     document.getElementById('vm-back')?.addEventListener('click', () => this.showPicker());
     document.getElementById('vm-place')?.addEventListener('click', () => this.placeCart());
+    document.getElementById('vm-request')?.addEventListener('click', () => this.requestMenu());
     if (panel) panel.addEventListener('click', e => e.stopPropagation());
   },
 
@@ -100,6 +109,7 @@ const Commerce = {
     document.getElementById('vendor-menu')?.classList.remove('open');
     this.selected = null;
     this.cart = {};
+    this._menuRequestSent = false;
   },
 
   async showPicker(filter) {
@@ -107,6 +117,7 @@ const Commerce = {
     this.showMenu();
     this.selected = null;
     this.cart = {};
+    this._menuRequestSent = false;
     const list = document.getElementById('vm-list');
     const detail = document.getElementById('vm-detail');
     if (list) list.style.display = 'block';
@@ -126,9 +137,10 @@ const Commerce = {
     const u = this.userLatLng();
     rows.slice(0, 24).forEach(v => {
       const km = this.haversineKm(u.lat, u.lng, v.lat, v.lng).toFixed(1);
+      const hasMenu = this.hasMenu(v);
       const row = document.createElement('div');
       row.className = 'vm-vendor';
-      row.innerHTML = '<span style="font-size:22px">' + (v.emoji || '🏪') + '</span><div><div style="color:#fda;font-weight:600">' + v.name + '</div><div style="color:#9ab;font-size:10px">' + (v.category || 'shop') + ' · ' + km + ' km</div></div>';
+      row.innerHTML = '<span style="font-size:22px">' + (v.emoji || '🏪') + '</span><div><div style="color:#fda;font-weight:600">' + v.name + '</div><div style="color:#9ab;font-size:10px">' + (v.category || 'shop') + ' · ' + km + ' km' + (hasMenu ? '' : ' · <span style="color:#f96">χωρίς μενού</span>') + '</div></div>';
       row.onclick = () => this.openVendor(v);
       list.appendChild(row);
     });
@@ -140,6 +152,7 @@ const Commerce = {
     if (!vendor) return;
     this.selected = vendor;
     this.cart = {};
+    this._menuRequestSent = false;
     this.flyToVendor(vendor);
     this.showMenu();
     const list = document.getElementById('vm-list');
@@ -149,13 +162,40 @@ const Commerce = {
     const title = document.getElementById('vm-title');
     if (title) title.textContent = (vendor.emoji || '🏪') + ' ' + vendor.name;
     this.renderCart();
-    AciCli?.print('vendor: ' + vendor.name + ' — add items, tap Παραγγελία', 'ok');
+    if (this.hasMenu(vendor)) {
+      AciCli?.print('vendor: ' + vendor.name + ' — add items, tap Παραγγελία', 'ok');
+    } else {
+      AciCli?.print('vendor: ' + vendor.name + ' — no menu yet · tap Ζήτησε μενού', 'dim');
+    }
   },
 
   renderCart() {
     const box = document.getElementById('vm-items');
+    const empty = document.getElementById('vm-empty');
+    const placeBtn = document.getElementById('vm-place');
+    const requestBtn = document.getElementById('vm-request');
     if (!box || !this.selected) return;
+
     const menu = this.menuFor(this.selected);
+    if (!menu.length) {
+      box.innerHTML = '';
+      if (empty) {
+        empty.style.display = 'block';
+        empty.innerHTML = '<p>Το κατάστημα δεν έχει ανεβάσει μενού στο Astranov ακόμα.</p><p style="color:#9ab;font-size:11px">Πάτα παρακάτω — θα ειδοποιηθεί ο ιδιοκτήτης να συμπληρώσει τα πραγματικά προϊόντα.</p>';
+      }
+      if (placeBtn) placeBtn.style.display = 'none';
+      if (requestBtn) {
+        requestBtn.style.display = 'block';
+        requestBtn.textContent = this._menuRequestSent ? 'Αίτημα στάλθηκε ✓' : 'Ζήτησε μενού από κατάστημα';
+        requestBtn.disabled = !!this._menuRequestSent;
+      }
+      return;
+    }
+
+    if (empty) empty.style.display = 'none';
+    if (requestBtn) requestBtn.style.display = 'none';
+    if (placeBtn) placeBtn.style.display = 'block';
+
     box.innerHTML = '';
     menu.forEach(item => {
       const key = item.name;
@@ -180,8 +220,7 @@ const Commerce = {
       box.appendChild(row);
     });
     const total = menu.reduce((s, i) => s + (this.cart[i.name] || 0) * (i.price || 0), 0);
-    const btn = document.getElementById('vm-place');
-    if (btn) btn.textContent = total > 0 ? 'Παραγγελία · ' + total.toFixed(1) + ' AVC' : 'Παραγγελία';
+    if (placeBtn) placeBtn.textContent = total > 0 ? 'Παραγγελία · ' + total.toFixed(1) + ' AVC' : 'Παραγγελία';
   },
 
   cartItems() {
@@ -191,10 +230,64 @@ const Commerce = {
       .map(i => ({ name: i.name, qty: this.cart[i.name], price: i.price }));
   },
 
+  async requestMenu() {
+    const vendor = this.selected;
+    if (!vendor) { ACIControl?.reply('Pick a vendor first'); return; }
+    if (this.hasMenu(vendor)) {
+      ACIControl?.reply('Menu already available — add items to order');
+      return;
+    }
+    if (!Auth?.user) {
+      ACIControl?.reply('Sign in to request menu');
+      Auth?.signInGoogle();
+      return;
+    }
+    if (this._menuRequestSent) return;
+
+    const u = this.userLatLng();
+    let errMsg = '';
+    let ok = false;
+    let result = null;
+    try {
+      const headers = await Auth.authHeaders();
+      const r = await fetch(SB_URL + '/functions/v1/menu-request', {
+        method: 'POST', headers,
+        body: JSON.stringify({
+          vendor_id: vendor.id,
+          notes: 'Customer waiting for menu · ' + vendor.name,
+          delivery_lat: u.lat,
+          delivery_lng: u.lng,
+        }),
+      });
+      result = await r.json().catch(() => ({}));
+      ok = r.ok && result.ok;
+      if (!ok) errMsg = result.error || result.message || ('HTTP ' + r.status);
+      else this._menuRequestSent = true;
+    } catch (e) { errMsg = String(e.message || e); }
+
+    const msg = ok
+      ? 'Αίτημα μενού στο ' + vendor.name + (result?.already_pending ? ' (ήδη σε αναμονή)' : ' — ο ιδιοκτήτης ειδοποιήθηκε')
+      : 'Αίτημα απέτυχε: ' + (errMsg || 'server error');
+
+    if (ok) {
+      this.renderCart();
+      MapDepict?.action('order', { lat: u.lat, lng: u.lng, vendorLat: vendor.lat, vendorLng: vendor.lng, detail: 'menu request · ' + vendor.name });
+      FieldBrain?.pulse('commerce', 'menu request · ' + vendor.name, { role: 'client' });
+    }
+
+    ACIControl?.reply(msg);
+    AciCli?.print(msg, ok ? 'ok' : 'err');
+    if (Voice.maySpeak()) speak(msg.slice(0, 120), () => resumeListening());
+  },
+
   async placeCart() {
     const vendor = this.selected;
-    const items = this.cartItems();
     if (!vendor) { ACIControl?.reply('Pick a vendor first'); return; }
+    if (!this.hasMenu(vendor)) {
+      ACIControl?.reply('No menu yet — tap Ζήτησε μενού to notify the vendor');
+      return;
+    }
+    const items = this.cartItems();
     if (!items.length) { ACIControl?.reply('Add at least one item'); return; }
     if (!Auth?.user) {
       ACIControl?.reply('Sign in to place order');
@@ -230,7 +323,10 @@ const Commerce = {
         });
         const j = await r.json().catch(() => ({}));
         if (r.ok) orderResult = j;
-        else errMsg = j.error || j.message || ('HTTP ' + r.status);
+        else {
+          if (j.error === 'vendor_menu_empty') errMsg = 'Το κατάστημα δεν έχει μενού — ζήτησε μενού πρώτα';
+          else errMsg = j.error || j.message || ('HTTP ' + r.status);
+        }
       } catch (e) { errMsg = String(e.message || e); }
 
       const driverObj = orderResult?.driver;
@@ -259,6 +355,93 @@ const Commerce = {
       FieldBrain?.pulse('order', vendor.name + ' → ' + (driver || 'pending'), { role: 'client' });
       if (Voice.maySpeak()) speak(msg.slice(0, 120), () => resumeListening());
     });
+  },
+
+  async updateVendorMenu(vendorId, items) {
+    const headers = await Auth.authHeaders();
+    const r = await fetch(SB_URL + '/rest/v1/vendors?id=eq.' + encodeURIComponent(vendorId), {
+      method: 'PATCH',
+      headers: { ...headers, Prefer: 'return=representation' },
+      body: JSON.stringify({ items, updated_at: new Date().toISOString() }),
+    });
+    if (!r.ok) {
+      const j = await r.json().catch(() => ({}));
+      return { error: j.message || j.error || ('HTTP ' + r.status) };
+    }
+    const rows = await r.json();
+    await this.fulfillMenuRequests(vendorId);
+    await this.loadVendors();
+    if (this.selected?.id === vendorId && rows[0]) this.selected = rows[0];
+    return { ok: true, vendor: rows[0] };
+  },
+
+  async fulfillMenuRequests(vendorId) {
+    try {
+      const headers = await Auth.authHeaders();
+      await fetch(SB_URL + '/rest/v1/vendor_menu_requests?vendor_id=eq.' + encodeURIComponent(vendorId) + '&status=eq.pending', {
+        method: 'PATCH',
+        headers,
+        body: JSON.stringify({ status: 'fulfilled', updated_at: new Date().toISOString() }),
+      });
+    } catch { /* non-fatal */ }
+  },
+
+  async listMenuRequests() {
+    const owned = await this.myVendors();
+    if (!owned.length) return { error: 'no owned vendors' };
+    const ids = owned.map(v => v.id).join(',');
+    try {
+      const headers = await Auth.authHeaders();
+      const r = await fetch(SB_URL + '/rest/v1/vendor_menu_requests?select=id,vendor_id,status,notes,created_at&vendor_id=in.(' + ids + ')&status=eq.pending&order=created_at.desc&limit=20', { headers });
+      const rows = r.ok ? await r.json() : [];
+      const byId = Object.fromEntries(owned.map(v => [v.id, v.name]));
+      return { ok: true, requests: rows.map(row => ({ ...row, vendor_name: byId[row.vendor_id] || row.vendor_id })) };
+    } catch (e) { return { error: String(e.message || e) }; }
+  },
+
+  async cliVendorMenu(args) {
+    if (!Auth?.user) return { error: 'login required' };
+    const sub = (args[0] || 'list').toLowerCase();
+    if (sub === 'list' || sub === 'ls') {
+      const owned = await this.myVendors();
+      if (!owned.length) return { error: 'you do not own any vendor — claim shop in dashboard first' };
+      return {
+        ok: true,
+        vendors: owned.map(v => ({
+          id: v.id,
+          name: v.name,
+          items: this.menuFor(v).length,
+        })),
+      };
+    }
+    if (sub === 'add') {
+      const ref = args[1];
+      const price = parseFloat(args[args.length - 1]);
+      const name = args.slice(2, -1).join(' ').trim();
+      if (!ref || !name || isNaN(price)) return { error: 'usage: vendor menu add <shop> <item name> <price>' };
+      const v = await this.resolveOwnedVendor(ref);
+      if (!v) return { error: 'owned vendor not found: ' + ref };
+      const items = this.menuFor(v).concat([{ name, price }]);
+      const r = await this.updateVendorMenu(v.id, items);
+      if (r.error) return r;
+      return { ok: true, message: 'added ' + name + ' @ ' + price + ' AVC to ' + v.name, items: items.length };
+    }
+    if (sub === 'clear') {
+      const ref = args[1];
+      if (!ref) return { error: 'usage: vendor menu clear <shop>' };
+      const v = await this.resolveOwnedVendor(ref);
+      if (!v) return { error: 'owned vendor not found: ' + ref };
+      const r = await this.updateVendorMenu(v.id, []);
+      if (r.error) return r;
+      return { ok: true, message: 'cleared menu for ' + v.name };
+    }
+    if (sub === 'show') {
+      const ref = args[1];
+      const v = await this.resolveOwnedVendor(ref);
+      if (!v) return { error: 'owned vendor not found' };
+      return { ok: true, vendor: v.name, menu: this.menuFor(v) };
+    }
+    return { error: 'usage: vendor menu list|add|clear|show' };
   },
 
   announceVendors() {

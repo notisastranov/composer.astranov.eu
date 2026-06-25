@@ -51,6 +51,7 @@ jobs:
           supabase functions deploy aicycle        --no-verify-jwt
           supabase functions deploy coders-bridge  --no-verify-jwt
           supabase functions deploy order-intake   --no-verify-jwt
+          supabase functions deploy menu-request   --no-verify-jwt
           supabase functions deploy brain          --no-verify-jwt
           supabase functions deploy council        --no-verify-jwt
           supabase functions deploy voice          --no-verify-jwt
