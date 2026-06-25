@@ -21,17 +21,32 @@ jobs:
           SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
           SUPABASE_PROJECT_REF: lkoatrkhuigdolnjsbie
         run: |
-          set -e
+          set +e
           supabase link --project-ref "$SUPABASE_PROJECT_REF"
-          for fn in vendor-crawler order-intake debug-write debug-reader ai-router astranov-api aci aicycle coders-bridge brain council voice; do
+          CRITICAL="aci aicycle coders-bridge"
+          OPTIONAL="vendor-crawler order-intake debug-write debug-reader ai-router astranov-api brain council voice"
+          FAILED=""
+          deploy_one() {
+            local fn="$1"
             echo ""
             echo "=== Deploying $fn ==="
-            if [ -d "supabase/functions/$fn" ]; then
-              supabase functions deploy "$fn" --no-verify-jwt
-            else
+            if [ ! -d "supabase/functions/$fn" ]; then
               echo "skipped (no source dir)"
+              return 0
             fi
+            supabase functions deploy "$fn" --no-verify-jwt
+            return $?
+          }
+          for fn in $CRITICAL; do
+            deploy_one "$fn" || FAILED="$FAILED $fn"
           done
+          for fn in $OPTIONAL; do
+            deploy_one "$fn" || echo "optional deploy failed: $fn"
+          done
+          if [ -n "$FAILED" ]; then
+            echo "Critical function deploy failed:$FAILED"
+            exit 1
+          fi
 
   cloudflare:
     runs-on: ubuntu-latest
