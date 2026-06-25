@@ -36,14 +36,14 @@
   #sr-ptt { width:100%; padding:12px; background:rgba(180,40,20,0.5); border:2px solid #f84; border-radius:12px; color:#fff; font-weight:700; cursor:pointer; touch-action:none; }
   #sr-ptt.active { background:rgba(255,60,20,0.85); }
   #sr-close { background:transparent; border:1px solid #666; color:#aaa; border-radius:8px; padding:4px 10px; cursor:pointer; }
-  #aci-bar { display:flex; gap:6px; padding:8px 10px; margin:0 8px 8px; background:rgba(0,8,18,0.82); border:1px solid rgba(0,180,255,0.35); border-radius:24px; pointer-events:auto; backdrop-filter:blur(12px); align-items:center; }
-  #aci-input { flex:1; min-width:0; background:rgba(0,20,40,0.6); border:1px solid rgba(100,200,255,0.25); color:#e8f4ff; border-radius:16px; padding:8px 12px; font:14px system-ui; outline:none; }
+  #aci-bar { display:flex; gap:6px; padding:8px 10px; margin:0 8px 8px; background:rgba(0,8,18,0.82); border:1px solid rgba(0,180,255,0.35); border-radius:24px; pointer-events:auto; backdrop-filter:blur(12px); align-items:center; justify-content:center; flex-wrap:wrap; }
+  #aci-input, #aci-send { display:none !important; }
   #aci-mic, #aci-send, #aci-order, #aci-vhf, #aci-call, #aci-stop, #aci-login { background:rgba(0,100,180,0.35); border:1px solid rgba(0,200,255,0.4); color:#aaf; border-radius:50%; width:38px; height:38px; cursor:pointer; font-size:14px; flex-shrink:0; }
   #aci-login { font-weight:700; font-size:13px; }
   #aci-stop { background:rgba(120,20,40,0.45); border-color:rgba(255,80,100,0.5); color:#faa; }
   #map-action { margin:0 12px 2px; padding:4px 12px; font:11px/1.3 system-ui; color:#8cf; max-height:32px; overflow:hidden; opacity:0.85; pointer-events:none; }
   #aci-reply { margin:0 12px 4px; padding:6px 12px; font:12px/1.4 system-ui; color:#9fd; max-height:48px; overflow:hidden; opacity:0.9; pointer-events:none; }
-  #news-ticker { margin:8px 8px 0; padding:6px 12px; background:rgba(10,0,20,0.75); border:1px solid rgba(180,100,255,0.3); border-radius:14px; font:11px system-ui; color:#ddaaff; white-space:nowrap; overflow:hidden; pointer-events:auto; }
+  #news-ticker { display:none; margin:8px 8px 0; padding:6px 12px; background:rgba(10,0,20,0.75); border:1px solid rgba(180,100,255,0.3); border-radius:14px; font:11px system-ui; color:#ddaaff; white-space:nowrap; overflow:hidden; pointer-events:auto; }
   #zoom-label { position:fixed; top:10px; left:10px; z-index:40; font:11px system-ui; color:rgba(150,220,255,0.7); pointer-events:none; }
   #aci-cli { display:none; margin:0 8px 6px; max-height:42vh; background:rgba(0,4,12,0.94); border:1px solid rgba(0,255,160,0.35); border-radius:14px; pointer-events:auto; font:12px/1.4 ui-monospace,monospace; overflow:hidden; flex-direction:column; }
   #aci-cli.visible { display:flex; }
@@ -58,7 +58,8 @@
   #aci-cli-input-row { display:flex; align-items:center; gap:6px; padding:8px 10px; border-top:1px solid rgba(0,255,160,0.15); }
   #aci-cli-prompt { color:#6fc; flex-shrink:0; font-size:11px; }
   #aci-cli-in { flex:1; background:transparent; border:none; color:#e8f4ff; font:inherit; outline:none; min-width:0; }
-  #aci-cli-toggle { display:none; background:rgba(0,60,40,0.5); border:1px solid rgba(0,255,160,0.4); color:#6fc; border-radius:50%; width:38px; height:38px; cursor:pointer; font-size:15px; flex-shrink:0; align-items:center; justify-content:center; }
+  #aci-cli-toggle { display:inline-flex; background:rgba(0,60,40,0.5); border:1px solid rgba(0,255,160,0.4); color:#6fc; border-radius:50%; width:38px; height:38px; cursor:pointer; font-size:15px; flex-shrink:0; align-items:center; justify-content:center; }
+  @media (min-width:720px) { #news-ticker { display:block; } }
 </style>
 </head>
 <body>
@@ -71,7 +72,7 @@
     <div id="map-action"></div>
     <div id="aci-reply"></div>
     <div id="aci-cli">
-      <div id="aci-cli-header"><span>Astranov Collective CLI · login only</span><button id="aci-cli-close" type="button" title="Close">▁</button></div>
+      <div id="aci-cli-header"><span>Collective CLI — tasks &amp; conversation</span><button id="aci-cli-close" type="button" title="Close">▁</button></div>
       <div id="aci-cli-out"></div>
       <div id="aci-cli-input-row">
         <span id="aci-cli-prompt">collective $</span>
@@ -94,7 +95,7 @@
     </div>
     <div id="aci-bar">
       <button id="aci-login" title="Sign in with Google" type="button">G</button>
-      <button id="aci-cli-toggle" title="Collective CLI (login required) · ` key" type="button">⌨</button>
+      <button id="aci-cli-toggle" title="CLI panel — tasks &amp; conversation (login for full access)" type="button">⌨</button>
       <button id="aci-stop" title="Stop — take control" type="button">⏹</button>
       <button id="aci-mic" title="Voice (tap while speaking to interrupt)" type="button">🎙</button>
       <input id="aci-input" placeholder="connect · order · claim · roles · deploy · login G…" />
@@ -139,7 +140,7 @@ let idleRoll = 0.00035;
 let globePivot;
 let trackVelX = 0, trackVelY = 0;
 let cityLevel = false;
-let voiceEnabled = true;
+let voiceEnabled = false;
 let voiceSessionActive = false;
 let isListening = false;
 let recognition;
@@ -350,14 +351,18 @@ const Voice = {
     this._queue = Promise.resolve();
   },
 
-  enqueue(text, onEnd) {
+  maySpeak() {
+    return voiceEnabled && voiceSessionActive && !this.stopped;
+  },
+
+  enqueue(text, onEnd, forceBrowser) {
     this._queue = this._queue
-      .then(() => this._speakOne(text, onEnd))
+      .then(() => this._speakOne(text, onEnd, forceBrowser))
       .catch(() => {});
     return this._queue;
   },
 
-  async _speakOne(text, onEnd) {
+  async _speakOne(text, onEnd, forceBrowser) {
     if (!voiceEnabled) { if (onEnd) onEnd(); return; }
     const clean = this.humanize(text).slice(0, 420);
     if (!this.shouldSpeak(clean)) { if (onEnd) onEnd(); return; }
@@ -376,8 +381,11 @@ const Voice = {
 
     if (blob) {
       await this.playBlob(blob, gen);
-    } else {
+    } else if (forceBrowser) {
       await this.speakBrowser(clean, lang, gen);
+    } else {
+      this.engine = 'text-only';
+      if (window.ACIControl) ACIControl.reply(clean.slice(0, 160));
     }
 
     if (gen === this._gen) this.speaking = false;
@@ -385,7 +393,10 @@ const Voice = {
   }
 };
 
-function speak(text, onEnd) { return Voice.enqueue(text, onEnd); }
+function speak(text, onEnd, force) {
+  if (!force && !Voice.maySpeak()) { if (onEnd) onEnd(); return Promise.resolve(); }
+  return Voice.enqueue(text, onEnd, !!force);
+}
 function stopSpeaking() { Voice.flush(); }
 
 const MapDepict = {
@@ -399,7 +410,6 @@ const MapDepict = {
   setHud(label, detail) {
     const ma = document.getElementById('map-action');
     if (ma) ma.textContent = detail ? label + ' — ' + detail : label;
-    if (label && window.ACIControl) ACIControl.reply((label + (detail ? ': ' + detail : '')).slice(0, 220));
   },
 
   cancelAll() {
@@ -543,6 +553,7 @@ window.MapDepict = MapDepict;
 function userIntervene() {
   Voice.flush();
   voiceSessionActive = false;
+  voiceEnabled = false;
   if (window.PmrRadio) PmrRadio.hide();
   if (window.DrivingView) DrivingView.deactivate();
   MapDepict.cancelAll();
@@ -554,8 +565,7 @@ function userIntervene() {
   if (ACI) ACI.evolving = false;
   const ma = document.getElementById('map-action');
   if (ma) ma.textContent = '⏹ Διακοπή — εσύ παίρνεις τον έλεγχο';
-  if (window.ACIControl) ACIControl.reply('Stopped — your move. Drag, zoom, type or speak.');
-  speak('Σταμάτησα. Your move.', () => {});
+  if (window.ACIControl) ACIControl.reply('Stopped — globe is yours. Drag · pinch · tap.');
 }
 
 window.userIntervene = userIntervene;
@@ -632,13 +642,6 @@ const Auth = {
     this.updateOwnerUI();
     if (window.FieldBrain) FieldBrain.onAuth();
     if (window.AciCli) AciCli.onAuthChange();
-    if (this.isOwner && window.AciConnect && !window._aciAutoOpen) {
-      window._aciAutoOpen = true;
-      setTimeout(() => {
-        if (window.AciCli) AciCli.show();
-        AciConnect.connect(false);
-      }, 800);
-    }
   },
 
   updateOwnerUI() {
@@ -675,7 +678,7 @@ const Auth = {
     window._aciOwner = false;
     this.applyUser();
     this.updateOwnerUI();
-    speak('Αποσυνδέθηκες.', () => {});
+    if (Voice.maySpeak()) speak('Signed out.', () => {}, true);
   },
 
   applyUser() {
@@ -738,7 +741,7 @@ const AciCli = {
     }
     window.addEventListener('keydown', e => {
       if (!Auth?.user) return;
-      if (e.key === '`' && !e.ctrlKey && !e.metaKey && document.activeElement?.id !== 'aci-input') {
+      if (e.key === '`' && !e.ctrlKey && !e.metaKey && !/aci-cli-in|aci-input/.test(document.activeElement?.id || '')) {
         e.preventDefault();
         this.toggle();
       }
@@ -750,9 +753,10 @@ const AciCli = {
     const panel = document.getElementById('aci-cli');
     const toggle = document.getElementById('aci-cli-toggle');
     const logged = !!(Auth && Auth.user);
-    if (toggle) toggle.style.display = logged ? 'inline-flex' : 'none';
+    if (toggle) toggle.style.display = 'inline-flex';
     if (!logged) {
       this._welcomed = false;
+      this._sessionOpened = false;
       this.hide();
       if (panel) panel.classList.remove('visible');
       return;
@@ -761,17 +765,19 @@ const AciCli = {
     const prompt = document.getElementById('aci-cli-prompt');
     if (prompt) prompt.textContent = name + '@collective $';
     this.loadHistory();
-    if (!this._welcomed) {
-      this._welcomed = true;
-      this.show();
-      if (Auth.isOwner) {
-        this.print('OWNER AUTHORITY — notisastranov@gmail.com · full collective control');
-        this.print('seed · distill · council · evolve · think');
-      } else {
-        this.print('Collective CLI — standard access. Architect email gets full authority.');
-      }
-      this.print('Type help · ` toggles · exit closes');
+    if (!this._sessionOpened) {
+      this._sessionOpened = true;
+      setTimeout(() => this.openOnLogin(), 500);
     }
+  },
+
+  async openOnLogin() {
+    if (!Auth?.user) return;
+    this.show();
+    if (window.AciConnect && !window._aciConnected) {
+      await AciConnect.connect(false);
+    }
+    if (window.AciCoders) await AciCoders.ensureBridge();
   },
 
   loadHistory() {
@@ -790,7 +796,7 @@ const AciCli = {
 
   toggle() {
     if (!Auth?.user) {
-      ACIControl?.reply('Sign in with G to unlock Collective CLI');
+      ACIControl?.reply('Globe is your UI — sign in with G for full CLI');
       Auth?.signInGoogle();
       return;
     }
@@ -800,8 +806,14 @@ const AciCli = {
   show() {
     if (!Auth?.user) return;
     this.open = true;
-    if (!document.getElementById('aci-cli-out')?.childElementCount) {
-      this.print('Astranov Collective CLI — authenticated dev shell');
+    if (!this._welcomed) {
+      this._welcomed = true;
+      this.print('Collective CLI — tasks & conversation (globe stays primary)');
+      if (Auth.isOwner) {
+        this.print('OWNER — seed · distill · council · evolve · deploy');
+      }
+      this.print('coders <task> — Grok instant · Composer = Cursor queue');
+      this.print('help · order · drive · think <prompt> · ` toggles');
     }
     const panel = document.getElementById('aci-cli');
     if (panel) panel.classList.add('visible');
@@ -892,13 +904,22 @@ const AciCli = {
           this.print('council list     — council cases');
           this.print('council convene <title> | <desc>');
         }
-        this.print('connect | open     — link collective AI (required)');
+        this.print('coders <task>              — summon (grok=instant, composer=Cursor queue)');
+        this.print('coders use grok|composer   — grok=xAI  composer=Cursor Composer');
+        this.print('coders switch | coders list | coders poll <id>');
+        this.print('summon coders <task>       — same');
+        this.print('connect | open     — link collective AI');
         this.print('deploy <task>      — deployment plan (owner)');
         this.print('roles              — your hats: client+driver+vendor');
         this.print('claim <order_id>   — take delivery (any logged-in driver)');
         if (Auth?.isOwner) this.print('field_stats        — field usage → brain (owner)');
         this.print('clear | exit | logout');
         this.print('…or any free text → think');
+        return;
+      }
+      if (cmd === 'coders' || (cmd === 'summon' && /^coders?$/i.test(parts[1] || ''))) {
+        const task = cmd === 'coders' ? rest : parts.slice(2).join(' ');
+        await AciCoders?.handleCodersCommand(task);
         return;
       }
       if (cmd === 'connect' || cmd === 'open') {
@@ -1065,8 +1086,8 @@ const AciConnect = {
     if (conn.greeting) {
       ACIControl?.reply(conn.greeting);
       if (AciCli) AciCli.print(conn.greeting, 'out');
-      if (speakGreeting && voiceSessionActive && Voice.shouldSpeak(conn.greeting)) {
-        speak(conn.greeting.slice(0, 200));
+      if (speakGreeting && Voice.maySpeak() && Voice.shouldSpeak(conn.greeting)) {
+        speak(conn.greeting.slice(0, 120), () => resumeListening());
       }
     }
 
@@ -1090,11 +1111,247 @@ const AciConnect = {
     const text = r.plan || r.text || r.response || r.error || '';
     if (AciCli) AciCli.print(text.slice(0, 800), r.ok ? 'out' : 'err');
     ACIControl?.reply(text.slice(0, 220));
-    if (Voice.shouldSpeak(text)) speak(text.slice(0, 200));
+    if (Voice.maySpeak() && Voice.shouldSpeak(text)) speak(text.slice(0, 120));
     return r;
   }
 };
 window.AciConnect = AciConnect;
+
+// === ASTRANOV CODERS BRIDGE ===
+// grok     → xAI Grok (sync reply in CLI)
+// composer → Cursor Composer queue (async — poll for answer)
+const AciCoders = {
+  ready: false,
+  history: [],
+  lastSummonId: null,
+  engine: 'grok',
+  _pollTimer: null,
+
+  loadEngine() {
+    try {
+      const e = localStorage.getItem('aci-coders-engine');
+      if (e === 'composer' || e === 'grok') this.engine = e;
+    } catch (_) {}
+  },
+
+  saveEngine() {
+    try { localStorage.setItem('aci-coders-engine', this.engine); } catch (_) {}
+  },
+
+  setEngine(name) {
+    const e = String(name || '').toLowerCase();
+    if (e !== 'grok' && e !== 'composer') return false;
+    this.engine = e;
+    this.saveEngine();
+    this.updateHud();
+    return true;
+  },
+
+  toggleEngine() {
+    return this.setEngine(this.engine === 'grok' ? 'composer' : 'grok');
+  },
+
+  updateHud() {
+    const hdr = document.querySelector('#aci-cli-header span');
+    if (hdr && Auth?.user) {
+      const tag = this.engine === 'composer' ? 'Cursor Composer' : 'Grok';
+      hdr.textContent = 'Collective CLI — coders · ' + tag;
+    }
+  },
+
+  async ensureBridge() {
+    if (!Auth?.user) return;
+    this.loadEngine();
+    if (this.ready) {
+      this.updateHud();
+      return;
+    }
+    this.ready = true;
+    if (AciCli) {
+      AciCli.print('◇ Astranov Coders bridge ONLINE', 'ok');
+      AciCli.print('  grok → xAI (instant)  ·  composer → Cursor queue (poll)', 'dim');
+      AciCli.print('  coders use grok|composer  ·  coders switch  ·  coders list', 'dim');
+    }
+    this.updateHud();
+    window._aciCodersReady = true;
+  },
+
+  stopPoll() {
+    if (this._pollTimer) {
+      clearInterval(this._pollTimer);
+      this._pollTimer = null;
+    }
+  },
+
+  startPoll(summonId) {
+    this.stopPoll();
+    if (!summonId) return;
+    let tries = 0;
+    this._pollTimer = setInterval(async () => {
+      tries++;
+      const r = await this.poll(summonId, true);
+      if (r?.status === 'answered' || tries > 36) this.stopPoll();
+    }, 5000);
+  },
+
+  async poll(summonId, quiet) {
+    const id = summonId || this.lastSummonId;
+    if (!id) {
+      if (!quiet && AciCli) AciCli.print('usage: coders poll <summon_id>', 'err');
+      return { error: 'no id' };
+    }
+    const r = await AciCli.api({ mode: 'coders_poll', summon_id: id });
+    if (!quiet && AciCli) {
+      if (r.pending) {
+        AciCli.print('#' + id + ' pending — Cursor Composer working…', 'dim');
+      } else if (r.text) {
+        AciCli.print('Composer #' + id + ': ' + r.text.slice(0, 900), 'out');
+        this._recordReply(id, r.text);
+      } else {
+        AciCli.print('#' + id + ' status: ' + (r.status || 'unknown'), 'dim');
+      }
+    }
+    if (r.text && !r.pending) {
+      ACIControl?.reply('Composer #' + id + ': ' + r.text.slice(0, 160));
+    }
+    return r;
+  },
+
+  async listSummons() {
+    const r = await AciCli.api({ mode: 'coders_list' });
+    if (!r.summons?.length) {
+      if (AciCli) AciCli.print('no coders summons yet', 'dim');
+      return r;
+    }
+    if (AciCli) {
+      AciCli.print('── coders summons ──', 'dim');
+      r.summons.forEach(s => {
+        AciCli.print('#' + s.id + ' [' + s.status + '] ' + s.engine + ' — ' + s.question, s.status === 'open' ? 'dim' : 'ok');
+      });
+    }
+    return r;
+  },
+
+  _recordReply(id, text) {
+    this.history.push({ role: 'assistant', content: '[composer #' + id + '] ' + text });
+    if (this.history.length > 16) this.history = this.history.slice(-16);
+  },
+
+  async handleCodersCommand(rest) {
+    if (!Auth?.user) {
+      ACIControl?.reply('Login required to summon Astranov Coders');
+      Auth?.signInGoogle();
+      return { error: 'login required' };
+    }
+    await this.ensureBridge();
+    const parts = String(rest || '').trim().split(/\s+/);
+    const sub = (parts[0] || '').toLowerCase();
+
+    if (sub === 'use' && parts[1]) {
+      if (this.setEngine(parts[1])) {
+        const tag = this.engine === 'composer' ? 'Cursor Composer' : 'Grok/xAI';
+        if (AciCli) AciCli.print('Coders → ' + tag, 'ok');
+        ACIControl?.reply('Coders: ' + tag);
+        return { ok: true, coder_engine: this.engine };
+      }
+      if (AciCli) AciCli.print('usage: coders use grok|composer', 'err');
+      return { error: 'bad engine' };
+    }
+    if (sub === 'engine') {
+      const tag = this.engine === 'composer' ? 'Cursor Composer (async)' : 'Grok (sync)';
+      if (AciCli) AciCli.print('active: ' + tag, 'ok');
+      ACIControl?.reply('Coders: ' + tag);
+      return { ok: true, coder_engine: this.engine };
+    }
+    if (sub === 'switch' || sub === 'toggle') {
+      this.toggleEngine();
+      const tag = this.engine === 'composer' ? 'Cursor Composer' : 'Grok';
+      if (AciCli) AciCli.print('switched → ' + tag, 'ok');
+      ACIControl?.reply('Coders: ' + tag);
+      return { ok: true, coder_engine: this.engine };
+    }
+    if (sub === 'list') return this.listSummons();
+    if (sub === 'poll' || sub === 'status') {
+      const id = parts[1] ? parseInt(parts[1], 10) : this.lastSummonId;
+      return this.poll(id, false);
+    }
+    if (sub === 'grok' || sub === 'composer') {
+      const task = parts.slice(1).join(' ');
+      if (task.length < 3) {
+        this.setEngine(sub);
+        const tag = sub === 'composer' ? 'Cursor Composer' : 'Grok';
+        if (AciCli) AciCli.print('engine → ' + tag + '. Now: coders <task>', 'ok');
+        return { ok: true, coder_engine: this.engine };
+      }
+      const prev = this.engine;
+      this.setEngine(sub);
+      const r = await this.summon(task);
+      if (r?.error) this.engine = prev;
+      return r;
+    }
+    if (!rest || rest.length < 3) {
+      if (AciCli) AciCli.print('usage: coders <task> | coders poll <id> | coders list', 'err');
+      return { error: 'usage' };
+    }
+    return this.summon(rest);
+  },
+
+  async summon(task) {
+    if (!Auth?.user) {
+      ACIControl?.reply('Login required to summon Astranov Coders');
+      Auth?.signInGoogle();
+      return { error: 'login required' };
+    }
+    this.loadEngine();
+    const t = String(task || '').trim();
+    if (t.length < 3) {
+      if (AciCli) AciCli.print('usage: coders <what to build or fix>', 'err');
+      return { error: 'task required' };
+    }
+
+    if (!window._aciConnected && window.AciConnect) await AciConnect.connect(false);
+    const tag = this.engine === 'composer' ? 'Cursor Composer' : 'Grok';
+    if (AciCli) AciCli.print('summoning ' + tag + '…', 'dim');
+    MapDepict?.action('think', { detail: tag + ': ' + t.slice(0, 48) });
+
+    const r = await AciCli.api({
+      mode: 'coders',
+      task: t,
+      coder_engine: this.engine,
+      history: this.history.slice(-6),
+    });
+
+    const text = r.text || r.response || r.error || '';
+    const label = r.label || ('Astranov Coders · ' + tag);
+    if (r.summon_id) this.lastSummonId = r.summon_id;
+    if (r.coder_engine) this.setEngine(r.coder_engine);
+
+    this.history.push({ role: 'user', content: '[' + this.engine + '] ' + t });
+    if (text && !r.error) {
+      this.history.push({ role: 'assistant', content: text });
+      if (this.history.length > 16) this.history = this.history.slice(-16);
+    }
+
+    if (AciCli) {
+      if (r.summon_id) {
+        AciCli.print('summon #' + r.summon_id + ' · ' + tag + (r.via ? ' · ' + r.via : ''), r.pending ? 'dim' : 'ok');
+      }
+      AciCli.print(label + ': ' + text.slice(0, 880), r.ok !== false ? 'out' : 'err');
+      if (r.pending) AciCli.print('polling… type: coders poll ' + r.summon_id, 'dim');
+    }
+    ACIControl?.reply(label + (r.summon_id ? ' #' + r.summon_id : '') + ': ' + text.slice(0, 150));
+
+    if (r.pending && r.summon_id) this.startPoll(r.summon_id);
+    else this.stopPoll();
+
+    if (!r.pending && Voice.maySpeak() && Voice.shouldSpeak(text)) {
+      speak(text.slice(0, 120), () => resumeListening());
+    }
+
+    return r;
+  }
+};
+window.AciCoders = AciCoders;
 
 // === FIELD BRAIN — multi-role field usage → collective brain (compliant scope) ===
 // All logged-in users: client + driver. Vendor when they own a shop. Same person, all hats.
@@ -1318,7 +1575,7 @@ const ACI = {
   },
 
   async init() {
-    await this.api({ mode: 'seed' });
+    if (window._aciOwner || Auth?.isOwner) await this.api({ mode: 'seed' });
     const stats = await this.api({ mode: 'stats' });
     if (stats.principles && stats.principles.length) {
       this.syncNeuronsFromPrinciples(stats.principles.map(p => p.content || p));
@@ -1363,10 +1620,6 @@ const sbHeaders = () => ({ apikey: SB_KEY, Authorization: 'Bearer ' + SB_KEY, 'C
 // ── ACI CONTROL (text + buttons — you command the collective) ──
 const ACIControl = {
   init() {
-    const input = document.getElementById('aci-input');
-    const send = () => this.handle(input.value.trim());
-    document.getElementById('aci-send').onclick = send;
-    input.addEventListener('keydown', e => { if (e.key === 'Enter') send(); });
     const mic = document.getElementById('aci-mic');
     mic.onclick = () => {
       if (Voice.speaking || voiceSessionActive) {
@@ -1384,46 +1637,159 @@ const ACIControl = {
   reply(text) {
     const el = document.getElementById('aci-reply');
     if (el) el.textContent = (text || '').slice(0, 220);
+    if (window.AciCli?.open) AciCli.print((text || '').slice(0, 280), 'out');
   },
-  async handle(text) {
-    if (!text) return;
-    const low = text.toLowerCase();
-    ACIControl.reply('…');
-    if (/^(stop|σταμάτα|σταματα|pause|διακοπή)/.test(low)) { userIntervene(); return; }
-    if (/^(cli|terminal|console)$/.test(low)) { AciCli.toggle(); return; }
-    if (/^(connect|open|link)$/.test(low)) { AciConnect.open(); return; }
-    if (/^deploy/.test(low)) { AciConnect.deploy(text.replace(/^deploy\s*/i, '')); return; }
+
+  voiceAck(msg, fromVoice) {
+    if (!fromVoice || !Voice.maySpeak()) return;
+    speak(String(msg || '').slice(0, 120), () => resumeListening());
+  },
+
+  async handle(text, opts = {}) {
+    if (!text) return { executed: false };
+    const fromVoice = !!opts.fromVoice;
+    const low = text.toLowerCase().trim();
+    const say = (msg) => this.voiceAck(msg, fromVoice);
+
+    if (/^(stop|σταμάτα|σταματα|pause|διακοπή|quiet|σιωπή|mute)/.test(low)) {
+      userIntervene();
+      return { executed: true, action: 'stop' };
+    }
+    if (/^(cli|terminal|console|κονσόλα)$/.test(low)) { AciCli.toggle(); this.reply('CLI panel'); say('CLI.'); return { executed: true }; }
+    if (/^summon\s+coders?\s+/i.test(text) || /^coders\b/i.test(low)) {
+      const task = text.replace(/^summon\s+coders?\s+/i, '').replace(/^coders\s+/i, '').trim();
+      await AciCoders?.handleCodersCommand(task);
+      return { executed: true, action: 'coders' };
+    }
+    if (/^(use\s+)?(grok|composer)$/.test(low) || /^switch\s+(to\s+)?(grok|composer)$/.test(low)) {
+      const eng = low.match(/grok|composer/)?.[0];
+      if (eng) AciCoders?.setEngine(eng);
+      else AciCoders?.toggleEngine();
+      ACIControl.reply('Coders: ' + (AciCoders?.engine || 'grok'));
+      say('Coders ' + (AciCoders?.engine || 'grok') + '.');
+      return { executed: true, action: 'coders_engine' };
+    }
+    if (/^(connect|open|link|σύνδεση aci)$/.test(low)) { await AciConnect.open(); return { executed: true }; }
+    if (/^deploy/.test(low)) { await AciConnect.deploy(text.replace(/^deploy\s*/i, '')); return { executed: true }; }
     if (/^claim/.test(low)) {
       const oid = text.replace(/^claim\s*/i, '').trim();
-      if (oid) FieldBrain?.claimDelivery(oid);
-      return;
+      if (oid) await FieldBrain?.claimDelivery(oid);
+      return { executed: true };
     }
-    if (/^roles/.test(low)) { FieldBrain?.onAuth(); ACIControl.reply('Roles: ' + (FieldBrain?.roles || []).join(' + ')); return; }
-    if (/^(login|sign in|google|σύνδεση)/.test(low)) { Auth.signInGoogle(); return; }
-    if (/^(logout|sign out|αποσύνδεση)/.test(low)) { Auth.signOut(); return; }
-    if (/telecom|sat radio|satellite radio|ασύρματος/.test(low)) { Comms.startTelecomms(); return; }
-    if (/pitogyra|πιτογυρ|μπίρ|τσιγαρ|order|παραγγελ/.test(low)) {
+    if (/^roles/.test(low)) {
+      await FieldBrain?.onAuth();
+      this.reply('Roles: ' + (FieldBrain?.roles || []).join(' + '));
+      say('Roles synced.');
+      return { executed: true };
+    }
+    if (/^(login|sign in|google)$/.test(low) || /^σύνδεση$/.test(low)) { Auth.signInGoogle(); return { executed: true }; }
+    if (/^(logout|sign out|αποσύνδεση)$/.test(low)) { Auth.signOut(); return { executed: true }; }
+    if (/telecom|sat radio|satellite radio|ασύρματος/.test(low)) { Comms.startTelecomms(); return { executed: true }; }
+    if (/pitogyra|πιτογυρ|μπίρ|τσιγαρ|order|παραγγελ|work|δουλειά|delivery|διανομ/.test(low)) {
       await Commerce.orderPitogyra();
-      return;
+      return { executed: true, action: 'order' };
     }
-    if (/vhf|radio|ασυρμ/.test(low)) { Comms.startVHF(); return; }
-    if (/phone|call|τηλέφων|κλήση|video/.test(low)) {
-      if (/video|βίντεο/.test(low)) { MapDepict.action('video', { detail: 'Αξαδίνα' }); startOrbitalVideoCall('Αξαδίνα'); }
-      else Comms.startPhone();
-      return;
+    if (/^drive|οδήγ|οδηγ/.test(low)) {
+      if (window.DrivingView) DrivingView.activate();
+      MapDepict.action('drive', { detail: 'road mode' });
+      this.reply('Driving view on globe');
+      say('Driving.');
+      return { executed: true, action: 'drive' };
     }
-    if (/news|νέα|ειδήσει/.test(low)) { NewsFeed.flash(); return; }
-    if (/vendor|κατάστη|shop/.test(low)) { await Commerce.loadVendors(); Commerce.announceVendors(); return; }
-    if (/evolve|neuron|collective|εξέλιξη/.test(low)) {
+    if (/vhf|ασυρμ/.test(low) && !/video/.test(low)) { Comms.startVHF(); return { executed: true }; }
+    if (/phone|τηλέφων/.test(low) && !/video|βίντεο/.test(low)) { Comms.startPhone(); return { executed: true }; }
+    if (/video|βίντεο|orbital/.test(low)) {
+      MapDepict.action('video', { detail: 'Αξαδίνα' });
+      startOrbitalVideoCall('Αξαδίνα');
+      return { executed: true, action: 'video' };
+    }
+    if (/news|νέα|ειδήσει/.test(low)) { NewsFeed.flash(); return { executed: true }; }
+    if (/vendor|κατάστη|shop/.test(low)) {
+      await Commerce.loadVendors();
+      Commerce.announceVendors();
+      return { executed: true };
+    }
+    if (/explore|εξερεύ|πήγαινε|go to|focus/.test(low)) {
+      requestLocationIfNeeded(() => {
+        const lat = 35 + Math.random() * 10;
+        const lng = 25 + Math.random() * 10;
+        const p = latLngToPos(lat, lng);
+        MapDepict.action('explore', { lat, lng, detail: 'explore' });
+        focusOnGlobePoint(new THREE.Vector3(p.x, p.y, p.z));
+        this.reply('Exploring ' + lat.toFixed(2) + ', ' + lng.toFixed(2));
+        say('Exploring.');
+      });
+      return { executed: true, action: 'explore' };
+    }
+    if (/request.*tech|orbital tech|technology|τεχνολογ/.test(low)) {
+      requestOrbitalTech();
+      say('Request copied.');
+      return { executed: true };
+    }
+    if (/english|αγγλικά/.test(low)) {
+      Voice.preferredListenLang = 'en-US';
+      if (recognition) recognition.lang = 'en-US';
+      MapDepict.action('mode', { detail: 'English listen' });
+      say('English.');
+      return { executed: true };
+    }
+    if (/ελληνικά|greek/.test(low)) {
+      Voice.preferredListenLang = 'el-GR';
+      if (recognition) recognition.lang = 'el-GR';
+      MapDepict.action('mode', { detail: 'Greek listen' });
+      say('Greek.');
+      return { executed: true };
+    }
+    if (/athenian|αθηναϊκ/.test(low)) {
+      ACI.thinkMode = 'athenian';
+      MapDepict.action('mode', { detail: 'athenian' });
+      say('Athenian mode.');
+      return { executed: true };
+    }
+    if (/spartan|σπαρτιατ/.test(low)) {
+      ACI.thinkMode = 'spartan';
+      MapDepict.action('mode', { detail: 'spartan' });
+      say('Spartan mode.');
+      return { executed: true };
+    }
+    if (/myrmidon|μυρμιδόν/.test(low)) {
+      ACI.thinkMode = 'myrmidon';
+      MapDepict.action('mode', { detail: 'myrmidon' });
+      say('Myrmidon mode.');
+      return { executed: true };
+    }
+    if (/^(remember|θυμήσου|να θυμάσαι)/.test(low)) {
+      const content = text.replace(/^(remember|θυμήσου|να θυμάσαι)[:,]?\s*/i, '').trim();
+      await ACI.teach(content || text);
+      say('Remembered.');
+      return { executed: true };
+    }
+    if (/evolve|neuron|collective|εξέλιξη|brain/.test(low)) {
       await ACI.evolve('user-command');
-      ACIControl.reply('Collective evolved. Council judged. Neurons updated.');
-      speak('Η collective intelligence εξελίχθηκε. Neurons updated.', () => {});
-      return;
+      this.reply('Collective evolved on globe.');
+      say('Evolved.');
+      return { executed: true };
     }
+    if (/^(mic|voice|μίκροφωνο|ακού)/.test(low)) {
+      startVoiceOptions();
+      return { executed: true };
+    }
+
+    if (low.length < 4) {
+      this.reply('Use globe gestures · or open ⌨ CLI · or say order, explore, stop');
+      if (fromVoice) say('Say order, explore, or stop.');
+      return { executed: false };
+    }
+
     const ans = await ACI.think(text);
-    if (!ans) return;
-    ACIControl.reply(ans);
-    if (Voice.shouldSpeak(ans)) speak(ans.slice(0, 200));
+    if (!ans) return { executed: false };
+    const short = ans.slice(0, 160);
+    this.reply(short);
+    MapDepict.action('think', { detail: short.slice(0, 60) });
+    if (fromVoice && Voice.maySpeak() && Voice.shouldSpeak(short)) {
+      speak(short, () => resumeListening());
+    }
+    return { executed: true, action: 'think' };
   }
 };
 
@@ -1462,13 +1828,13 @@ const Commerce = {
     const names = this.vendors.map(v => v.name).join(', ');
     const msg = 'Καταστήματα στον χάρτη: ' + names;
     ACIControl.reply(msg);
-    if (Voice.shouldSpeak(msg)) speak(msg.slice(0, 160));
+    if (Voice.maySpeak() && Voice.shouldSpeak(msg)) speak(msg.slice(0, 100));
   },
   async orderPitogyra() {
     requestLocationIfNeeded(async () => {
       await this.loadVendors();
       const vendor = this.vendors.find(v => /πιτο|pit|food|γυρ/i.test(v.name + v.id)) || this.vendors[0];
-      if (!vendor) { speak('No vendor found.'); return; }
+      if (!vendor) { ACIControl.reply('No vendor found.'); if (Voice.maySpeak()) speak('No vendor.', () => resumeListening()); return; }
       let dLat = 36.22, dLng = 28.12;
       if (userLocated && window._lastPos) { dLat = window._lastPos.lat; dLng = window._lastPos.lng; }
       else if (window._meMarker) {
@@ -1499,7 +1865,7 @@ const Commerce = {
       ACIControl.reply(msg);
       FieldBrain?.pulse('order', vendor.name + ' → ' + driver, { role: 'client' });
       if (orderResult?.order?.id && driverObj?.self) FieldBrain?.pulse('order', 'self-delivery ' + orderResult.order.short_id, { role: 'driver' });
-      speak(msg, () => resumeListening());
+      if (Voice.maySpeak()) speak(msg.slice(0, 100), () => resumeListening());
       groupOrder();
     });
   }
@@ -1517,8 +1883,8 @@ const Comms = {
       MapDepict.action('phone', { lat: up.lat, lng: up.lng, detail: num });
       window.location.href = 'tel:' + num.replace(/\s/g, '');
       ACIControl.reply('Τηλέφωνο: ' + num);
-      speak('Ανοίγω τηλέφωνο για κλήση.', () => {});
-    } else speak('Λάθος αριθμός.');
+      if (Voice.maySpeak()) speak('Calling.', () => resumeListening());
+    } else if (Voice.maySpeak()) speak('Wrong number.');
   },
 
   startVHF() {
@@ -1554,7 +1920,7 @@ const NewsFeed = {
   flash() {
     this.fetch();
     MapDepict.action('news', { worldLat: 51.5, worldLng: -0.12, detail: (this.items[0] || '').slice(0, 50) });
-    speak(this.items[0] || 'Φόρτωση ειδήσεων');
+    if (Voice.maySpeak()) speak((this.items[0] || 'News').slice(0, 100), () => resumeListening());
   }
 };
 
@@ -1921,9 +2287,19 @@ const CosmicZoom = {
   }
 };
 
-// Trackball — rotate entire globe pivot (earth + atmosphere + clouds + markers)
+// Globe gestures — primary UI (Google Earth / Maps style). CLI is secondary.
 const canvas = renderer.domElement;
-const TRACK_SENS = 0.005;
+const TRACK_SENS = 0.0048;
+const ZOOM_MIN = 1.15;
+const ZOOM_MAX = 22;
+
+let pinchDist = 0;
+let lastTapAt = 0;
+let lastTapX = 0;
+let lastTapY = 0;
+let pressTimer = null;
+let pressStartX = 0;
+let pressStartY = 0;
 
 function trackballMove(clientX, clientY) {
   const dx = clientX - px;
@@ -1933,53 +2309,147 @@ function trackballMove(clientX, clientY) {
   globePivot.rotation.y += dx * TRACK_SENS;
   globePivot.rotation.x += dy * TRACK_SENS;
   globePivot.rotation.x = Math.max(-1.25, Math.min(1.25, globePivot.rotation.x));
-  trackVelX = dx * TRACK_SENS * 0.35;
-  trackVelY = dy * TRACK_SENS * 0.35;
+  trackVelX = dx * TRACK_SENS * 0.38;
+  trackVelY = dy * TRACK_SENS * 0.38;
 }
 
 function trackballStart(clientX, clientY) {
+  window._globeFly = null;
   drag = true;
   dragging = true;
   px = clientX;
   py = clientY;
+  pressStartX = clientX;
+  pressStartY = clientY;
   trackVelX = 0;
   trackVelY = 0;
   canvas.classList.add('dragging');
+  clearTimeout(pressTimer);
+  pressTimer = setTimeout(() => {
+    if (!drag) return;
+    zoomAt(pressStartX, pressStartY, 0.85);
+    MapDepict?.setHud('Zoom out', 'long-press');
+  }, 750);
 }
 
-function trackballEnd() {
+function trackballEnd(clientX, clientY) {
+  clearTimeout(pressTimer);
   drag = false;
   canvas.classList.remove('dragging');
-  setTimeout(() => { dragging = false; }, 80);
+  setTimeout(() => { dragging = false; }, 100);
+  if (clientX != null && clientY != null) registerTap(clientX, clientY);
+}
+
+function registerTap(clientX, clientY) {
+  const now = Date.now();
+  if (now - lastTapAt < 340 && Math.hypot(clientX - lastTapX, clientY - lastTapY) < 36) {
+    zoomAt(clientX, clientY, -0.65);
+    MapDepict?.setHud('Zoom in', 'double-tap');
+    lastTapAt = 0;
+    return;
+  }
+  lastTapAt = now;
+  lastTapX = clientX;
+  lastTapY = clientY;
+}
+
+function zoomBy(delta) {
+  const next = Math.max(ZOOM_MIN, Math.min(ZOOM_MAX, camera.position.z + delta));
+  camera.position.z = next;
+  camera.lookAt(0, 0, 0);
+  CosmicZoom.update(camera.position.z);
+}
+
+function zoomAt(clientX, clientY, delta) {
+  mouse.x = (clientX / window.innerWidth) * 2 - 1;
+  mouse.y = -(clientY / window.innerHeight) * 2 + 1;
+  raycaster.setFromCamera(mouse, camera);
+  const hits = raycaster.intersectObject(earth);
+  if (hits.length) {
+    const dir = hits[0].point.clone().normalize();
+    const pull = delta > 0 ? 0.04 : -0.06;
+    globePivot.rotation.y += dir.x * pull;
+    globePivot.rotation.x = Math.max(-1.25, Math.min(1.25, globePivot.rotation.x + dir.y * pull));
+  }
+  zoomBy(delta);
+}
+window.zoomBy = zoomBy;
+window.zoomAt = zoomAt;
+
+function onWheelZoom(e) {
+  e.preventDefault();
+  const scale = e.deltaMode === 1 ? 0.06 : 0.0018;
+  zoomAt(e.clientX, e.clientY, e.deltaY * scale);
 }
 
 canvas.addEventListener('mousedown', e => { if (e.button === 0) trackballStart(e.clientX, e.clientY); });
-window.addEventListener('mouseup', () => { if (drag) trackballEnd(); });
-canvas.addEventListener('mousemove', e => { if (drag) trackballMove(e.clientX, e.clientY); });
+window.addEventListener('mouseup', e => { if (drag) trackballEnd(e.clientX, e.clientY); });
+canvas.addEventListener('mousemove', e => {
+  if (!drag) return;
+  if (Math.hypot(e.clientX - pressStartX, e.clientY - pressStartY) > 12) clearTimeout(pressTimer);
+  trackballMove(e.clientX, e.clientY);
+});
+canvas.addEventListener('wheel', onWheelZoom, { passive: false });
+container.addEventListener('wheel', onWheelZoom, { passive: false });
 
 canvas.addEventListener('touchstart', e => {
-  if (e.touches.length === 1) { e.preventDefault(); trackballStart(e.touches[0].clientX, e.touches[0].clientY); }
+  if (e.touches.length === 2) {
+    if (drag) trackballEnd();
+    clearTimeout(pressTimer);
+    pinchDist = Math.hypot(
+      e.touches[0].clientX - e.touches[1].clientX,
+      e.touches[0].clientY - e.touches[1].clientY
+    );
+    e.preventDefault();
+    return;
+  }
+  if (e.touches.length === 1) {
+    e.preventDefault();
+    trackballStart(e.touches[0].clientX, e.touches[0].clientY);
+  }
 }, { passive: false });
+
 canvas.addEventListener('touchmove', e => {
-  if (drag && e.touches.length === 1) { e.preventDefault(); trackballMove(e.touches[0].clientX, e.touches[0].clientY); }
+  if (e.touches.length === 2 && pinchDist) {
+    e.preventDefault();
+    const d = Math.hypot(
+      e.touches[0].clientX - e.touches[1].clientX,
+      e.touches[0].clientY - e.touches[1].clientY
+    );
+    const midX = (e.touches[0].clientX + e.touches[1].clientX) / 2;
+    const midY = (e.touches[0].clientY + e.touches[1].clientY) / 2;
+    zoomAt(midX, midY, (pinchDist - d) * 0.006);
+    pinchDist = d;
+    return;
+  }
+  if (drag && e.touches.length === 1) {
+    e.preventDefault();
+    if (Math.hypot(e.touches[0].clientX - pressStartX, e.touches[0].clientY - pressStartY) > 14) {
+      clearTimeout(pressTimer);
+    }
+    trackballMove(e.touches[0].clientX, e.touches[0].clientY);
+  }
 }, { passive: false });
-canvas.addEventListener('touchend', () => { if (drag) trackballEnd(); });
 
-canvas.addEventListener('wheel', e => {
+canvas.addEventListener('touchend', e => {
+  if (e.touches.length < 2) pinchDist = 0;
+  if (e.touches.length === 0 && drag) {
+    const t = e.changedTouches[0];
+    trackballEnd(t ? t.clientX : null, t ? t.clientY : null);
+  }
+});
+
+canvas.addEventListener('dblclick', e => {
   e.preventDefault();
-  camera.position.z += e.deltaY * 0.002;
-  camera.position.z = Math.max(1.2, Math.min(22, camera.position.z));
-  CosmicZoom.update(camera.position.z);
-}, { passive: false });
+  zoomAt(e.clientX, e.clientY, -0.7);
+});
 
-// Handle window resize so canvas always full and correct
 window.addEventListener('resize', () => {
   camera.aspect = window.innerWidth / window.innerHeight;
   camera.updateProjectionMatrix();
   renderer.setSize(window.innerWidth, window.innerHeight);
 });
 
-// Raycast for globe clicks - focus rotate/zoom on the Earth itself
 const raycaster = new THREE.Raycaster();
 const mouse = new THREE.Vector2();
 
@@ -2000,7 +2470,7 @@ function globeClickTargets() {
 function onGlobeClick(e) {
   if (dragging) return;
   mouse.x = (e.clientX / window.innerWidth) * 2 - 1;
-  mouse.y = - (e.clientY / window.innerHeight) * 2 + 1;
+  mouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
   raycaster.setFromCamera(mouse, camera);
 
   const markerHits = raycaster.intersectObjects(globeClickTargets(), true);
@@ -2010,44 +2480,79 @@ function onGlobeClick(e) {
     const ud = root.userData || hit.userData || {};
 
     if (ud.vendor) {
+      const vp = latLngToPos(ud.vendor.lat, ud.vendor.lng, 1.03);
+      flyToPoint(new THREE.Vector3(vp.x, vp.y, vp.z), 1.55);
       MapDepict.action('vendor', { lat: ud.vendor.lat, lng: ud.vendor.lng, detail: ud.vendor.name });
-      ACIControl?.reply('Κατάστημα: ' + ud.vendor.name + ' — πες order ή κλικ 🛒');
-      Commerce.orderPitogyra();
       return;
     }
     if (ud.type === 'me' || ud.name === (me?.name || 'Αξάς') || root === window._meMarker) {
-      if (voiceEnabled) startVoiceOptions();
-      else toggleKryfto();
+      const up = window._lastPos || { lat: 36.22, lng: 28.12 };
+      const mp = latLngToPos(up.lat, up.lng, 1.03);
+      flyToPoint(new THREE.Vector3(mp.x, mp.y, mp.z), 1.5);
+      MapDepict.action('location', { lat: up.lat, lng: up.lng, detail: me?.name || 'Αξάς' });
       return;
     }
     if (ud.name) {
+      const mp = latLngToPos(ud.lat, ud.lng, 1.03);
+      flyToPoint(new THREE.Vector3(mp.x, mp.y, mp.z), 1.55);
       MapDepict.action('explore', { lat: ud.lat, lng: ud.lng, detail: ud.name });
-      ACIControl?.reply('User: ' + ud.name);
-      if (voiceEnabled) speak('Επιλέχθηκε ' + ud.name + '.', () => {});
       return;
     }
   }
 
   const intersects = raycaster.intersectObject(earth);
   if (intersects.length > 0) {
-    const point = intersects[0].point;
-    focusOnGlobePoint(point);
-    cityLevel = camera.position.z < 2.2;
-    MapDepict.action('explore', { detail: 'globe' });
+    flyToPoint(intersects[0].point, 1.45);
+    cityLevel = true;
+    MapDepict.action('explore', { detail: 'tap' });
   }
 }
 
-function focusOnGlobePoint(point) {
+function flyToPoint(point, targetZ = 1.55) {
   const dir = point.clone().normalize();
-  const rotY = Math.atan2(dir.x, dir.z);
-  globePivot.rotation.y = -rotY;
-  const rotX = Math.asin(Math.max(-1, Math.min(1, dir.y)));
-  globePivot.rotation.x = Math.max(-1.25, Math.min(1.25, -rotX * 0.7));
-  camera.position.z = 1.7;
-  cityLevel = camera.position.z < 2.2;
+  window._globeFly = {
+    fromY: globePivot.rotation.y,
+    fromX: globePivot.rotation.x,
+    fromZ: camera.position.z,
+    toY: -Math.atan2(dir.x, dir.z),
+    toX: Math.max(-1.25, Math.min(1.25, -Math.asin(Math.max(-1, Math.min(1, dir.y))) * 0.7)),
+    toZ: targetZ,
+    t0: performance.now(),
+    dur: 520
+  };
 }
 
-// =====================================================
+function focusOnGlobePoint(point) {
+  flyToPoint(point, 1.45);
+  cityLevel = true;
+}
+
+function tickGlobeFly() {
+  const f = window._globeFly;
+  if (!f) return;
+  const p = Math.min(1, (performance.now() - f.t0) / f.dur);
+  const ease = 1 - Math.pow(1 - p, 3);
+  globePivot.rotation.y = f.fromY + (f.toY - f.fromY) * ease;
+  globePivot.rotation.x = f.fromX + (f.toX - f.fromX) * ease;
+  camera.position.z = f.fromZ + (f.toZ - f.fromZ) * ease;
+  camera.lookAt(0, 0, 0);
+  CosmicZoom.update(camera.position.z);
+  if (p >= 1) window._globeFly = null;
+}
+window.tickGlobeFly = tickGlobeFly;
+
+function showGestureHint() {
+  if (sessionStorage.getItem('astranov-gesture-hint')) return;
+  const el = document.createElement('div');
+  el.id = 'gesture-hint';
+  el.textContent = 'Drag · Pinch · Double-tap zoom · Tap to fly';
+  el.style.cssText = 'position:fixed;bottom:72px;left:50%;transform:translateX(-50%);padding:8px 14px;background:rgba(0,12,24,0.82);border:1px solid rgba(0,180,255,0.35);border-radius:20px;font:12px system-ui;color:#9fd;z-index:44;pointer-events:none;opacity:1;transition:opacity 1.2s';
+  document.body.appendChild(el);
+  sessionStorage.setItem('astranov-gesture-hint', '1');
+  setTimeout(() => { el.style.opacity = '0'; }, 3200);
+  setTimeout(() => { el.remove(); }, 4500);
+}
+setTimeout(showGestureHint, 600);
 
 // ASTRANOV AI GRAPHICS ENGINE
 // Advanced gaming graphics - fully procedural, no 3D models
@@ -2466,7 +2971,7 @@ const DrivingView = {
       this.destination = v ? { lat: v.lat, lng: v.lng } : { lat: 36.89, lng: 27.29 };
     }
     this.fetchRoadRoute();
-    speak('Οδήγηση ενεργή στον χάρτη. Road routing ON.', () => {});
+    if (Voice.maySpeak()) speak('Driving on.', () => resumeListening());
   },
 
   deactivate() {
@@ -2579,9 +3084,8 @@ function requestOrbitalTech() {
   });
 
   // Speak the request - direct, no roleplay
-  if (voiceEnabled) {
-    speak('Orbital tech request prepared and copied to clipboard.');
-  }
+  MapDepict?.action('think', { detail: 'orbital tech request' });
+  if (Voice.maySpeak()) speak('Request copied.', () => resumeListening());
 
   // Visual on globe: signal
   AIGraphics.spawnEffect( new THREE.Vector3(0, 1.5, 0), 0xffaa00, 20, 60 );
@@ -2589,7 +3093,7 @@ function requestOrbitalTech() {
 
 async function startOrbitalVideoCall(targetName = 'Αξαδίνα') {
   if (orbitalCallActive) {
-    speak('Call already active.');
+    if (Voice.maySpeak()) speak('Call active.');
     return;
   }
 
@@ -2675,7 +3179,7 @@ async function startOrbitalVideoCall(targetName = 'Αξαδίνα') {
     pc.oniceconnectionstatechange = () => {
       console.log('%c[WebRTC] ICE state: ' + pc.iceConnectionState, 'color:#00ff88');
       if (pc.iceConnectionState === 'connected') {
-        speak('Orbital connection established. Real global video active.');
+        if (Voice.maySpeak()) speak('Video connected.');
       }
     };
 
@@ -2708,7 +3212,7 @@ async function startOrbitalVideoCall(targetName = 'Αξαδίνα') {
 
   } catch (err) {
     console.error('Orbital WebRTC error:', err);
-    speak('Unable to start video. Camera permission needed for real orbital call.');
+    if (Voice.maySpeak()) speak('Camera needed for video.');
     endRealOrbitalCall();
   }
 }
@@ -2768,7 +3272,7 @@ function endRealOrbitalCall() {
     videoUI = null;
   }
   console.log('%c[Orbital] Call ended.', 'color:#ffaa00');
-  speak('Orbital call ended.');
+  if (Voice.maySpeak()) speak('Call ended.');
 }
 
 // Update animate to include sats
@@ -2810,10 +3314,7 @@ function initUser() {
 try { initUser(); } catch(e){ console.warn('User init skipped:', e.message); }
 
 // Let user explore the globe freely first
-console.log('%c[Astranov] Drag/zoom/click freely. Click marker for voice options incl. orbital video call or "request orbital tech". Location only when needed. Real WebRTC + orbital request for reduced wireless impact.', 'color:#00ddff');
-
-// Globe-first instructions (no Windows-like panels)
-console.log('%c[Astranov] Drag για περιστροφή, wheel zoom. Κλικ marker για voice: orbital video call ή request orbital tech. Location μόνο όταν χρειάζεται. No sim - real WebRTC, request sent to providers.', 'color:#00ddff');
+console.log('%c[Astranov] Globe UI: drag rotate · wheel/pinch zoom · tap/double-tap fly. ⌨ CLI for tasks. 🎙 mic optional.', 'color:#00ddff');
 
 // Voice system - ask with voice, stop to listen, provoke answer. No delirium.
 function initVoice() {
@@ -2841,110 +3342,29 @@ function startListeningForOptions() {
 
 function handleVoiceCommand(event) {
   isListening = false;
-  const transcript = (event.results[0][0].transcript || '').toLowerCase();
+  const transcript = (event.results[0][0].transcript || '').trim();
+  if (!transcript) return;
   console.log('User said:', transcript);
-
-  if (transcript.includes('stop') || transcript.includes('σταμάτα') || transcript.includes('σταματα') || transcript.includes('διακοπή')) {
-    userIntervene();
-    return;
-  } else if (transcript.includes('english') || transcript.includes('αγγλικά')) {
-    Voice.preferredListenLang = 'en-US';
-    if (recognition) recognition.lang = 'en-US';
-    MapDepict.action('mode', { detail: 'English listen' });
-    speak('English mode on.', () => resumeListening());
-  } else if (transcript.includes('ελληνικά') || transcript.includes('greek')) {
-    Voice.preferredListenLang = 'el-GR';
-    if (recognition) recognition.lang = 'el-GR';
-    MapDepict.action('mode', { detail: 'Greek listen' });
-    speak('Ελληνικά mode.', () => resumeListening());
-  } else if (transcript.includes('cli') || transcript.includes('terminal') || transcript.includes('κονσόλα')) {
-    AciCli.toggle();
-  } else if (transcript.includes('logout') || transcript.includes('αποσύνδεση') || transcript.includes('sign out')) {
-    Auth.signOut();
-  } else if (transcript.includes('login') || transcript.includes('σύνδεση') || transcript.includes('google')) {
-    Auth.signInGoogle();
-  } else if (transcript.includes('telecom') || transcript.includes('satellite') || transcript.includes('sat radio')) {
-    Comms.startTelecomms();
-  } else if (transcript.includes('work') || transcript.includes('δουλειά') || transcript.includes('pitogyra') || transcript.includes('πιτογυρ') || transcript.includes('μπίρ') || transcript.includes('τσιγαρ')) {
-    Commerce.orderPitogyra();
-  } else if (transcript.includes('explore') || transcript.includes('εξερεύνηση')) {
-    requestLocationIfNeeded(() => {
-      const randomLat = 35 + Math.random() * 10;
-      const randomLng = 25 + Math.random() * 10;
-      MapDepict.action('explore', { lat: randomLat, lng: randomLng, detail: 'explore' });
-      const p = latLngToPos(randomLat, randomLng);
-      focusOnGlobePoint(new THREE.Vector3(p.x, p.y, p.z));
-      speak('Εξερευνάμε εδώ στον χάρτη.', () => resumeListening());
-    });
-  } else if (transcript.includes('video') || transcript.includes('call') || transcript.includes('βίντεο') || transcript.includes('κλήση') || transcript.includes('orbital')) {
-    requestLocationIfNeeded(() => {
-      const target = 'Αξαδίνα';
-      MapDepict.action('video', { detail: target });
-      startOrbitalVideoCall(target);
-      speak('Ξεκινάω orbital video call.', () => resumeListening());
-    });
-  } else if (transcript.includes('mute') || transcript.includes('σιωπή') || transcript.includes('mute all')) {
-    voiceEnabled = false;
-    speak('Σίγαση.', () => {});
-  } else if (transcript.includes('sleep') || transcript.includes('ύπνος')) {
-    idleRoll = 0.00005;
-    voiceEnabled = false;
-    speak('Ύπνος.', () => {});
-  } else if (transcript.includes('vhf') || transcript.includes('ασυρμ') || transcript.includes('radio')) {
-    Comms.startVHF();
-  } else if (transcript.includes('phone') || transcript.includes('τηλέφων')) {
-    Comms.startPhone();
-  } else if (transcript.includes('news') || transcript.includes('νέα') || transcript.includes('ειδήσει')) {
-    NewsFeed.flash();
-  } else if (transcript.includes('vendor') || transcript.includes('κατάστη')) {
-    Commerce.loadVendors().then(() => Commerce.announceVendors());
-  } else if (transcript.includes('request') || transcript.includes('technology') || transcript.includes('tech')) {
-    requestOrbitalTech();
-    speak('Request prepared.', () => resumeListening());
-  } else if (transcript.includes('athenian') || transcript.includes('αθηναϊκ')) {
-    ACI.thinkMode = 'athenian';
-    MapDepict.action('mode', { detail: 'athenian' });
-    speak('Athenian mode.', () => resumeListening());
-  } else if (transcript.includes('spartan') || transcript.includes('σπαρτιατ')) {
-    ACI.thinkMode = 'spartan';
-    MapDepict.action('mode', { detail: 'spartan' });
-    speak('Spartan mode.', () => resumeListening());
-  } else if (transcript.includes('myrmidon') || transcript.includes('μυρμιδόν')) {
-    ACI.thinkMode = 'myrmidon';
-    MapDepict.action('mode', { detail: 'myrmidon' });
-    speak('Myrmidon mode.', () => resumeListening());
-  } else if (transcript.match(/^(remember|θυμήσου|να θυμάσαι)/)) {
-    const content = transcript.replace(/^(remember|θυμήσου|να θυμάσαι)[:,]?\s*/i, '').trim();
-    ACI.teach(content || transcript).then(() => {
-      speak('Remembered.', () => resumeListening());
-    });
-  } else if (transcript.includes('evolve') || transcript.includes('collective') || transcript.includes('brain') || transcript.includes('neuron') || transcript.includes('self evolve')) {
-    ACI.evolve('voice-command').then(() => {
-      speak('Collective evolved.', () => resumeListening());
-    });
-  } else if (transcript.length > 3) {
-    ACI.think(transcript).then(text => {
-      if (!text) return;
-      ACIControl.reply(text);
-      speak(text.slice(0, 280), () => resumeListening());
-    });
-  } else {
-    speak('Πες κάτι στο Astranov Collective Intelligence, ή: work, explore, evolve, remember, athenian, spartan.', () => startListeningForOptions());
-  }
+  voiceSessionActive = true;
+  voiceEnabled = true;
+  ACIControl.handle(transcript, { fromVoice: true });
 }
 
 function resumeListening() {
   if (!voiceSessionActive || !voiceEnabled || isListening || Voice.speaking) return;
-  setTimeout(() => startListeningForOptions(), 500);
+  setTimeout(() => {
+    if (!voiceSessionActive || Voice.speaking) return;
+    startListeningForOptions();
+  }, 700);
 }
 window.resumeListening = resumeListening;
 
 function startVoiceOptions() {
-  if (!voiceEnabled) return;
+  Voice.flush();
   voiceSessionActive = true;
-  Voice.stop();
-  const txt = 'Astranov listening. Say work, explore, evolve, connect, or ask anything.';
-  speak(txt, () => startListeningForOptions());
+  voiceEnabled = true;
+  ACIControl.reply('Mic on — say order, explore, drive, stop');
+  speak('Listening.', () => startListeningForOptions(), true);
 }
 
 function requestLocationIfNeeded(onLocated) {
@@ -3211,6 +3631,7 @@ function animate() {
   }
 
   // ASTRANOV AI Graphics Engine tick
+  tickGlobeFly?.();
   AIGraphics.update();
   updateOrbital();
 

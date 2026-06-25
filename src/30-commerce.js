@@ -33,13 +33,13 @@ const Commerce = {
     const names = this.vendors.map(v => v.name).join(', ');
     const msg = 'Καταστήματα στον χάρτη: ' + names;
     ACIControl.reply(msg);
-    if (Voice.shouldSpeak(msg)) speak(msg.slice(0, 160));
+    if (Voice.maySpeak() && Voice.shouldSpeak(msg)) speak(msg.slice(0, 100));
   },
   async orderPitogyra() {
     requestLocationIfNeeded(async () => {
       await this.loadVendors();
       const vendor = this.vendors.find(v => /πιτο|pit|food|γυρ/i.test(v.name + v.id)) || this.vendors[0];
-      if (!vendor) { speak('No vendor found.'); return; }
+      if (!vendor) { ACIControl.reply('No vendor found.'); if (Voice.maySpeak()) speak('No vendor.', () => resumeListening()); return; }
       let dLat = 36.22, dLng = 28.12;
       if (userLocated && window._lastPos) { dLat = window._lastPos.lat; dLng = window._lastPos.lng; }
       else if (window._meMarker) {
@@ -70,7 +70,7 @@ const Commerce = {
       ACIControl.reply(msg);
       FieldBrain?.pulse('order', vendor.name + ' → ' + driver, { role: 'client' });
       if (orderResult?.order?.id && driverObj?.self) FieldBrain?.pulse('order', 'self-delivery ' + orderResult.order.short_id, { role: 'driver' });
-      speak(msg, () => resumeListening());
+      if (Voice.maySpeak()) speak(msg.slice(0, 100), () => resumeListening());
       groupOrder();
     });
   }

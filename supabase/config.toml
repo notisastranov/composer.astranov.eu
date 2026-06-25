@@ -32,3 +32,6 @@ verify_jwt = false
 
 [functions.voice]
 verify_jwt = false
+
+[functions.coders-bridge]
+verify_jwt = false

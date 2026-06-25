@@ -155,6 +155,159 @@ serve(async (req) => {
       })
     }
 
+    if (mode === 'coders_poll' || mode === 'coders_status') {
+      if (!caller.callerId) return json({ error: 'login required' }, 401)
+      const summonId = body.summon_id ?? body.id
+      if (!summonId) return json({ error: 'summon_id required' }, 400)
+      let q = sb.from('cic_queue').select('id, question, status, answer, created_at, answered_at, context')
+        .eq('id', summonId).eq('reason', 'coder_summon')
+      if (!caller.isOwner) q = q.eq('user_id', caller.callerId)
+      const { data, error } = await q.single()
+      if (error || !data) return json({ error: 'summon not found' }, 404)
+      const ctx = (data.context || {}) as { coder_engine?: string }
+      const answered = data.status === 'answered' && data.answer
+      return json({
+        ok: true,
+        summon_id: data.id,
+        status: data.status,
+        pending: data.status === 'open',
+        coder_engine: ctx.coder_engine || 'composer',
+        question: data.question,
+        text: answered ? String(data.answer) : '',
+        response: answered ? String(data.answer) : '',
+        label: answered ? 'Astranov Coders · Cursor Composer' : 'Awaiting Cursor Composer',
+      })
+    }
+
+    if (mode === 'coders_list') {
+      if (!caller.callerId) return json({ error: 'login required' }, 401)
+      let q = sb.from('cic_queue')
+        .select('id, question, status, answer, created_at, answered_at, context')
+        .eq('reason', 'coder_summon')
+        .order('created_at', { ascending: false })
+        .limit(25)
+      if (!caller.isOwner) q = q.eq('user_id', caller.callerId)
+      const { data, error } = await q
+      if (error) return json({ error: error.message }, 500)
+      const rows = (data || []).map(r => {
+        const ctx = (r.context || {}) as { coder_engine?: string }
+        return {
+          id: r.id,
+          status: r.status,
+          engine: ctx.coder_engine || 'composer',
+          question: String(r.question || '').slice(0, 120),
+          has_answer: !!(r.answer && r.status === 'answered'),
+        }
+      })
+      return json({ ok: true, summons: rows })
+    }
+
+    if (mode === 'coders') {
+      if (!caller.callerId) return json({ error: 'login required — sign in to summon Astranov Coders' }, 401)
+      const task = String(body.task || body.prompt || '').trim().slice(0, 2000)
+      if (task.length < 3) return json({ error: 'task required — e.g. coders fix zoom on mobile' }, 400)
+      const coderEngine = String(body.coder_engine || 'grok').toLowerCase()
+      const engine = coderEngine === 'composer' ? 'composer' : 'grok'
+
+      const { data: qrow, error: qerr } = await sb.from('cic_queue').insert({
+        user_id: caller.callerId,
+        question: task,
+        context: {
+          type: 'astranov_coders',
+          source: 'cli',
+          email: caller.email,
+          owner: caller.isOwner,
+          coder_engine: engine,
+        },
+        reason: 'coder_summon',
+        for_owner: true,
+        status: 'open',
+      }).select('id').single()
+      if (qerr) console.error('cic_queue insert:', qerr)
+
+      const summonId = qrow?.id ?? null
+
+      if (memoryOwnerId) {
+        await sb.from('ai_memory').insert({
+          profile_id: memoryOwnerId,
+          content: `[coders-summon #${summonId} · ${engine}] ${task.slice(0, 260)}`,
+          is_private: false,
+          source: 'cic_log',
+          importance: 1.35,
+          distilled: false,
+        }).catch(() => {})
+      }
+
+      // Composer = Cursor Composer async queue (NOT Anthropic / NOT a fake LLM)
+      if (engine === 'composer') {
+        const bridge = `${base}/functions/v1/coders-bridge`
+        await fetch(bridge, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            apikey: anon,
+            Authorization: `Bearer ${anon}`,
+          },
+          body: JSON.stringify({
+            mode: 'register',
+            summon_id: summonId,
+            task,
+            user_id: caller.callerId,
+            email: caller.email,
+          }),
+        }).catch(() => {})
+
+        const text = `Summon #${summonId} queued for Cursor Composer (Anysphere). Poll: coders poll ${summonId}`
+        return json({
+          ok: true,
+          bridged: true,
+          pending: true,
+          summon_id: summonId,
+          text,
+          response: text,
+          label: 'Astranov Coders · Cursor Composer',
+          coder_engine: 'composer',
+          via: 'cursor/queue',
+          queued: true,
+          owner: caller.isOwner,
+        })
+      }
+
+      // Grok = xAI / Grok APIs (sync)
+      const result = await invokeFn(base, anon, caller.authToken, 'aicycle', {
+        prompt: task,
+        profile_id: caller.callerId,
+        mode: 'coders',
+        coder_engine: 'grok',
+        agent_system: `Grok coders summon #${summonId}. Field CLI on astranov.eu.`,
+        history: Array.isArray(body.history) ? body.history : [],
+      })
+      const text = String(result.text || result.response || 'Grok coders received your summon.')
+      const label = 'Astranov Coders · Grok'
+
+      if (summonId && text) {
+        await sb.from('cic_queue').update({
+          status: 'answered',
+          answer: text.slice(0, 8000),
+          answered_at: new Date().toISOString(),
+        }).eq('id', summonId).catch(() => {})
+      }
+
+      return json({
+        ok: true,
+        bridged: true,
+        pending: false,
+        summon_id: summonId,
+        text,
+        response: text,
+        label,
+        coder_engine: 'grok',
+        via: result.via || 'grok',
+        queued: !!summonId,
+        owner: caller.isOwner,
+      })
+    }
+
     if (mode === 'deploy') {
       if (!caller.isOwner) return json({ error: 'architect owner only' }, 403)
       const task = String(body.task || 'continue deployment').slice(0, 800)
@@ -422,7 +575,7 @@ serve(async (req) => {
 
     return json({
       error: 'unknown mode',
-      modes: ['think', 'evolve', 'log', 'teach', 'stats', 'seed', 'owner_sync', 'connect', 'deploy', 'distill', 'council', 'roles_sync', 'field_pulse', 'claim_delivery', 'field_stats'],
+      modes: ['think', 'evolve', 'log', 'teach', 'stats', 'seed', 'owner_sync', 'connect', 'coders', 'coders_poll', 'coders_status', 'coders_list', 'deploy', 'distill', 'council', 'roles_sync', 'field_pulse', 'claim_delivery', 'field_stats'],
     }, 400)
   } catch (e) {
     return json({ error: String(e) }, 500)

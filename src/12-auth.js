@@ -70,13 +70,6 @@ const Auth = {
     this.updateOwnerUI();
     if (window.FieldBrain) FieldBrain.onAuth();
     if (window.AciCli) AciCli.onAuthChange();
-    if (this.isOwner && window.AciConnect && !window._aciAutoOpen) {
-      window._aciAutoOpen = true;
-      setTimeout(() => {
-        if (window.AciCli) AciCli.show();
-        AciConnect.connect(false);
-      }, 800);
-    }
   },
 
   updateOwnerUI() {
@@ -113,7 +106,7 @@ const Auth = {
     window._aciOwner = false;
     this.applyUser();
     this.updateOwnerUI();
-    speak('Αποσυνδέθηκες.', () => {});
+    if (Voice.maySpeak()) speak('Signed out.', () => {}, true);
   },
 
   applyUser() {

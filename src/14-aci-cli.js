@@ -17,7 +17,7 @@ const AciCli = {
     }
     window.addEventListener('keydown', e => {
       if (!Auth?.user) return;
-      if (e.key === '`' && !e.ctrlKey && !e.metaKey && document.activeElement?.id !== 'aci-input') {
+      if (e.key === '`' && !e.ctrlKey && !e.metaKey && !/aci-cli-in|aci-input/.test(document.activeElement?.id || '')) {
         e.preventDefault();
         this.toggle();
       }
@@ -29,9 +29,10 @@ const AciCli = {
     const panel = document.getElementById('aci-cli');
     const toggle = document.getElementById('aci-cli-toggle');
     const logged = !!(Auth && Auth.user);
-    if (toggle) toggle.style.display = logged ? 'inline-flex' : 'none';
+    if (toggle) toggle.style.display = 'inline-flex';
     if (!logged) {
       this._welcomed = false;
+      this._sessionOpened = false;
       this.hide();
       if (panel) panel.classList.remove('visible');
       return;
@@ -40,17 +41,19 @@ const AciCli = {
     const prompt = document.getElementById('aci-cli-prompt');
     if (prompt) prompt.textContent = name + '@collective $';
     this.loadHistory();
-    if (!this._welcomed) {
-      this._welcomed = true;
-      this.show();
-      if (Auth.isOwner) {
-        this.print('OWNER AUTHORITY — notisastranov@gmail.com · full collective control');
-        this.print('seed · distill · council · evolve · think');
-      } else {
-        this.print('Collective CLI — standard access. Architect email gets full authority.');
-      }
-      this.print('Type help · ` toggles · exit closes');
+    if (!this._sessionOpened) {
+      this._sessionOpened = true;
+      setTimeout(() => this.openOnLogin(), 500);
     }
+  },
+
+  async openOnLogin() {
+    if (!Auth?.user) return;
+    this.show();
+    if (window.AciConnect && !window._aciConnected) {
+      await AciConnect.connect(false);
+    }
+    if (window.AciCoders) await AciCoders.ensureBridge();
   },
 
   loadHistory() {
@@ -69,7 +72,7 @@ const AciCli = {
 
   toggle() {
     if (!Auth?.user) {
-      ACIControl?.reply('Sign in with G to unlock Collective CLI');
+      ACIControl?.reply('Globe is your UI — sign in with G for full CLI');
       Auth?.signInGoogle();
       return;
     }
@@ -79,8 +82,14 @@ const AciCli = {
   show() {
     if (!Auth?.user) return;
     this.open = true;
-    if (!document.getElementById('aci-cli-out')?.childElementCount) {
-      this.print('Astranov Collective CLI — authenticated dev shell');
+    if (!this._welcomed) {
+      this._welcomed = true;
+      this.print('Collective CLI — tasks & conversation (globe stays primary)');
+      if (Auth.isOwner) {
+        this.print('OWNER — seed · distill · council · evolve · deploy');
+      }
+      this.print('coders <task> — Grok instant · Composer = Cursor queue');
+      this.print('help · order · drive · think <prompt> · ` toggles');
     }
     const panel = document.getElementById('aci-cli');
     if (panel) panel.classList.add('visible');
@@ -171,13 +180,22 @@ const AciCli = {
           this.print('council list     — council cases');
           this.print('council convene <title> | <desc>');
         }
-        this.print('connect | open     — link collective AI (required)');
+        this.print('coders <task>              — summon (grok=instant, composer=Cursor queue)');
+        this.print('coders use grok|composer   — grok=xAI  composer=Cursor Composer');
+        this.print('coders switch | coders list | coders poll <id>');
+        this.print('summon coders <task>       — same');
+        this.print('connect | open     — link collective AI');
         this.print('deploy <task>      — deployment plan (owner)');
         this.print('roles              — your hats: client+driver+vendor');
         this.print('claim <order_id>   — take delivery (any logged-in driver)');
         if (Auth?.isOwner) this.print('field_stats        — field usage → brain (owner)');
         this.print('clear | exit | logout');
         this.print('…or any free text → think');
+        return;
+      }
+      if (cmd === 'coders' || (cmd === 'summon' && /^coders?$/i.test(parts[1] || ''))) {
+        const task = cmd === 'coders' ? rest : parts.slice(2).join(' ');
+        await AciCoders?.handleCodersCommand(task);
         return;
       }
       if (cmd === 'connect' || cmd === 'open') {

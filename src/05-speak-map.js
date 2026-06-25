@@ -152,14 +152,18 @@ const Voice = {
     this._queue = Promise.resolve();
   },
 
-  enqueue(text, onEnd) {
+  maySpeak() {
+    return voiceEnabled && voiceSessionActive && !this.stopped;
+  },
+
+  enqueue(text, onEnd, forceBrowser) {
     this._queue = this._queue
-      .then(() => this._speakOne(text, onEnd))
+      .then(() => this._speakOne(text, onEnd, forceBrowser))
       .catch(() => {});
     return this._queue;
   },
 
-  async _speakOne(text, onEnd) {
+  async _speakOne(text, onEnd, forceBrowser) {
     if (!voiceEnabled) { if (onEnd) onEnd(); return; }
     const clean = this.humanize(text).slice(0, 420);
     if (!this.shouldSpeak(clean)) { if (onEnd) onEnd(); return; }
@@ -178,8 +182,11 @@ const Voice = {
 
     if (blob) {
       await this.playBlob(blob, gen);
-    } else {
+    } else if (forceBrowser) {
       await this.speakBrowser(clean, lang, gen);
+    } else {
+      this.engine = 'text-only';
+      if (window.ACIControl) ACIControl.reply(clean.slice(0, 160));
     }
 
     if (gen === this._gen) this.speaking = false;
@@ -187,7 +194,10 @@ const Voice = {
   }
 };
 
-function speak(text, onEnd) { return Voice.enqueue(text, onEnd); }
+function speak(text, onEnd, force) {
+  if (!force && !Voice.maySpeak()) { if (onEnd) onEnd(); return Promise.resolve(); }
+  return Voice.enqueue(text, onEnd, !!force);
+}
 function stopSpeaking() { Voice.flush(); }
 
 const MapDepict = {
@@ -201,7 +211,6 @@ const MapDepict = {
   setHud(label, detail) {
     const ma = document.getElementById('map-action');
     if (ma) ma.textContent = detail ? label + ' — ' + detail : label;
-    if (label && window.ACIControl) ACIControl.reply((label + (detail ? ': ' + detail : '')).slice(0, 220));
   },
 
   cancelAll() {
@@ -345,6 +354,7 @@ window.MapDepict = MapDepict;
 function userIntervene() {
   Voice.flush();
   voiceSessionActive = false;
+  voiceEnabled = false;
   if (window.PmrRadio) PmrRadio.hide();
   if (window.DrivingView) DrivingView.deactivate();
   MapDepict.cancelAll();
@@ -356,8 +366,7 @@ function userIntervene() {
   if (ACI) ACI.evolving = false;
   const ma = document.getElementById('map-action');
   if (ma) ma.textContent = '⏹ Διακοπή — εσύ παίρνεις τον έλεγχο';
-  if (window.ACIControl) ACIControl.reply('Stopped — your move. Drag, zoom, type or speak.');
-  speak('Σταμάτησα. Your move.', () => {});
+  if (window.ACIControl) ACIControl.reply('Stopped — globe is yours. Drag · pinch · tap.');
 }
 
 window.userIntervene = userIntervene;

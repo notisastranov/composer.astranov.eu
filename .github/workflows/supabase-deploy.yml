@@ -18,7 +18,7 @@ jobs:
     env:
       SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
       SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
-      SUPABASE_PROJECT_REF: kzlabcrlrpbnfiiyrjvl
+      SUPABASE_PROJECT_REF: lkoatrkhuigdolnjsbie
     steps:
       - uses: actions/checkout@v4
 
@@ -34,22 +34,33 @@ jobs:
 
       - name: Deploy Edge Functions
         run: |
-          supabase functions deploy ai-router    --no-verify-jwt
-          supabase functions deploy astranov-api --no-verify-jwt
-          supabase functions deploy debug-write  --no-verify-jwt
-          supabase functions deploy debug-reader --no-verify-jwt
+          supabase functions deploy ai-router      --no-verify-jwt
+          supabase functions deploy astranov-api   --no-verify-jwt
+          supabase functions deploy debug-write    --no-verify-jwt
+          supabase functions deploy debug-reader   --no-verify-jwt
+          supabase functions deploy aci            --no-verify-jwt
+          supabase functions deploy aicycle        --no-verify-jwt
+          supabase functions deploy coders-bridge  --no-verify-jwt
+          supabase functions deploy order-intake   --no-verify-jwt
+          supabase functions deploy brain          --no-verify-jwt
+          supabase functions deploy council        --no-verify-jwt
+          supabase functions deploy voice          --no-verify-jwt
 
       - name: Set Edge Function secrets
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
           GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
+          XAI_API_KEY: ${{ secrets.XAI_API_KEY }}
+          CODERS_BRIDGE_SECRET: ${{ secrets.CODERS_BRIDGE_SECRET }}
           GH_PUSH_TOKEN: ${{ secrets.GH_PUSH_TOKEN }}
         run: |
           supabase secrets set \
             ANTHROPIC_API_KEY="$ANTHROPIC_API_KEY" \
             OPENAI_API_KEY="$OPENAI_API_KEY" \
             GROQ_API_KEY="$GROQ_API_KEY" \
+            XAI_API_KEY="$XAI_API_KEY" \
+            CODERS_BRIDGE_SECRET="$CODERS_BRIDGE_SECRET" \
             GITHUB_TOKEN="$GH_PUSH_TOKEN" \
-            GITHUB_REPO=notisastranov/Astranov \
-            GITHUB_BRANCH=claude/build-astranov-app-DHkQw
+            GITHUB_REPO=notisastranov/astranov.eu \
+            GITHUB_BRANCH=main

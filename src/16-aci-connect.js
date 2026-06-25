@@ -47,8 +47,8 @@ const AciConnect = {
     if (conn.greeting) {
       ACIControl?.reply(conn.greeting);
       if (AciCli) AciCli.print(conn.greeting, 'out');
-      if (speakGreeting && voiceSessionActive && Voice.shouldSpeak(conn.greeting)) {
-        speak(conn.greeting.slice(0, 200));
+      if (speakGreeting && Voice.maySpeak() && Voice.shouldSpeak(conn.greeting)) {
+        speak(conn.greeting.slice(0, 120), () => resumeListening());
       }
     }
 
@@ -72,7 +72,7 @@ const AciConnect = {
     const text = r.plan || r.text || r.response || r.error || '';
     if (AciCli) AciCli.print(text.slice(0, 800), r.ok ? 'out' : 'err');
     ACIControl?.reply(text.slice(0, 220));
-    if (Voice.shouldSpeak(text)) speak(text.slice(0, 200));
+    if (Voice.maySpeak() && Voice.shouldSpeak(text)) speak(text.slice(0, 120));
     return r;
   }
 };

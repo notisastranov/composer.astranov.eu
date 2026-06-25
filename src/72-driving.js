@@ -88,7 +88,7 @@ const DrivingView = {
       this.destination = v ? { lat: v.lat, lng: v.lng } : { lat: 36.89, lng: 27.29 };
     }
     this.fetchRoadRoute();
-    speak('Οδήγηση ενεργή στον χάρτη. Road routing ON.', () => {});
+    if (Voice.maySpeak()) speak('Driving on.', () => resumeListening());
   },
 
   deactivate() {

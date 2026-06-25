@@ -32,7 +32,7 @@ let idleRoll = 0.00035;
 let globePivot;
 let trackVelX = 0, trackVelY = 0;
 let cityLevel = false;
-let voiceEnabled = true;
+let voiceEnabled = false;
 let voiceSessionActive = false;
 let isListening = false;
 let recognition;

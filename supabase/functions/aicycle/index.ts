@@ -27,6 +27,9 @@ const MODE_DIRECTIVE: Record<string, string> = {
   athenian: 'ACTIVE MODE: ATHENIAN. Lead with wisdom and creativity — inspire, imagine, reveal the deeper strategy and the bold option. You may expand to a few sentences when the insight earns it.',
   spartan:  'ACTIVE MODE: SPARTAN. Be terse and decisive. One or two sentences. Act now, cut all non-essential words. Effectiveness above all.',
   myrmidon: 'ACTIVE MODE: MYRMIDON. Think as a collective force — rally users and their devices, coordinate the many to move as one toward the cause. Frame action as shared movement.',
+  coders: `ACTIVE MODE: ASTRANOV CODERS · GROK — xAI build agent for astranov.eu (NOT Cursor Composer — that uses a separate queue).
+Summoned from the Astranov CLI globe. Reply as Astranov Grok Coders: concrete code paths (src/*.js), supabase/functions, deploy steps.
+Repo: Documents/GitHub/Astranov — index.html monolith + modules. No simulation. Match user language. 2–5 sentences.`,
 }
 
 function json(data: unknown, status = 200) {
@@ -80,13 +83,22 @@ async function callOpenAICompat(url: string, key: string, model: string, system:
   } catch { return null }
 }
 
-async function callOpenRouter(key: string, system: string, messages: Msg[]): Promise<string | null> {
+async function callOpenRouter(key: string, system: string, messages: Msg[], model?: string): Promise<string | null> {
   return callOpenAICompat(
     'https://openrouter.ai/api/v1/chat/completions',
     key,
-    Deno.env.get('OPENROUTER_MODEL') || 'meta-llama/llama-3.3-70b-instruct',
+    model || Deno.env.get('OPENROUTER_MODEL') || 'meta-llama/llama-3.3-70b-instruct',
     system, messages,
     { 'HTTP-Referer': 'https://astranov.eu', 'X-Title': 'AstranoV' },
+  )
+}
+
+async function callXAI(key: string, system: string, messages: Msg[]): Promise<string | null> {
+  return callOpenAICompat(
+    'https://api.x.ai/v1/chat/completions',
+    key,
+    Deno.env.get('XAI_MODEL') || Deno.env.get('GROK_MODEL') || 'grok-3-mini',
+    system, messages,
   )
 }
 
@@ -200,14 +212,33 @@ serve(async (req) => {
     const ANTHROPIC  = Deno.env.get('ANTHROPIC_PAID_API_KEY') || Deno.env.get('ANTHROPIC_API_KEY')
     const OPENROUTER = Deno.env.get('OPENROUTER_API_KEY') || Deno.env.get('OPENROUTER') || Deno.env.get('OPENROUTER.AI')
     const GROQ       = Deno.env.get('GROQ_API_KEY')
+    const XAI        = Deno.env.get('XAI_API_KEY')
+    const coderEngine = String(body.coder_engine || '').toLowerCase()
 
     let raw: string | null = null
-    if (isOwner && ANTHROPIC) raw = await callAnthropic(ANTHROPIC, system, messages)
-    if (!raw && OPENROUTER)   raw = await callOpenRouter(OPENROUTER, system, messages)
-    if (!raw && GROQ)         raw = await callGroq(GROQ, system, messages)
-    if (!raw && GEMINI)       raw = await callGemini(GEMINI, system, messages)
-    const provider = 'astranov'
-    const via = ''
+    let via = ''
+    let provider = 'astranov'
+
+    if (mode === 'coders') {
+      provider = 'astranov-coders-grok'
+      if (coderEngine === 'composer') {
+        raw = 'Composer summons use the Cursor queue — not this LLM path. Type: coders poll <id>'
+        via = 'cursor/queue-only'
+      } else {
+        if (XAI) { raw = await callXAI(XAI, system, messages); if (raw) via = 'grok/xai' }
+        if (!raw && OPENROUTER) {
+          raw = await callOpenRouter(OPENROUTER, system, messages, Deno.env.get('GROK_OPENROUTER_MODEL') || 'x-ai/grok-4-fast')
+          if (raw) via = 'grok/openrouter'
+        }
+        if (!raw && GROQ) { raw = await callGroq(GROQ, system, messages); if (raw) via = 'grok/groq-fallback' }
+        if (!raw && GEMINI) { raw = await callGemini(GEMINI, system, messages); if (raw) via = 'grok/gemini-fallback' }
+      }
+    } else {
+      if (isOwner && ANTHROPIC) raw = await callAnthropic(ANTHROPIC, system, messages)
+      if (!raw && OPENROUTER)   raw = await callOpenRouter(OPENROUTER, system, messages)
+      if (!raw && GROQ)         raw = await callGroq(GROQ, system, messages)
+      if (!raw && GEMINI)       raw = await callGemini(GEMINI, system, messages)
+    }
 
     if (!raw) return json({ response: 'Astranov is gathering itself — try again in a moment.', text: 'Astranov is gathering itself — try again in a moment.', provider: 'astranov', via: '' })
 
@@ -239,12 +270,19 @@ serve(async (req) => {
     } catch (e) { console.error('backfill:', e) }
 
     const latencyMs = Date.now() - t0
-    const label = 'Astranov'
+    const label = mode === 'coders' ? 'Astranov Coders · Grok' : 'Astranov'
     try {
-      await supabase.from('cic_logs').insert({ profile_id: profileId, query: prompt.slice(0, 2000), response: raw.slice(0, 4000), provider: 'astranov', via: '', latency_ms: latencyMs })
+      await supabase.from('cic_logs').insert({
+        profile_id: profileId, query: prompt.slice(0, 2000), response: raw.slice(0, 4000),
+        provider, via, latency_ms: latencyMs,
+      })
     } catch (e) { console.error('cic_log:', e) }
-
-    return json({ response: raw, text: raw, provider, via, label, mode: mode || 'adaptive', recalled: { creator: creatorMind.length, user: userMemory.length } })
+    return json({
+      response: raw, text: raw, provider, via, label,
+      mode: mode || 'adaptive',
+      coder_engine: mode === 'coders' ? (coderEngine || null) : undefined,
+      recalled: { creator: creatorMind.length, user: userMemory.length },
+    })
   } catch (e) {
     console.error('aicycle error:', e)
     return json({ response: 'Something went wrong.', text: 'Something went wrong.', provider: 'error', via: '' }, 500)

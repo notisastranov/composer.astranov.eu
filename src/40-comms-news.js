@@ -10,8 +10,8 @@ const Comms = {
       MapDepict.action('phone', { lat: up.lat, lng: up.lng, detail: num });
       window.location.href = 'tel:' + num.replace(/\s/g, '');
       ACIControl.reply('Τηλέφωνο: ' + num);
-      speak('Ανοίγω τηλέφωνο για κλήση.', () => {});
-    } else speak('Λάθος αριθμός.');
+      if (Voice.maySpeak()) speak('Calling.', () => resumeListening());
+    } else if (Voice.maySpeak()) speak('Wrong number.');
   },
 
   startVHF() {
@@ -47,6 +47,6 @@ const NewsFeed = {
   flash() {
     this.fetch();
     MapDepict.action('news', { worldLat: 51.5, worldLng: -0.12, detail: (this.items[0] || '').slice(0, 50) });
-    speak(this.items[0] || 'Φόρτωση ειδήσεων');
+    if (Voice.maySpeak()) speak((this.items[0] || 'News').slice(0, 100), () => resumeListening());
   }
 };

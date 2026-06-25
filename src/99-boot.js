@@ -29,6 +29,7 @@ function animate() {
   }
 
   // ASTRANOV AI Graphics Engine tick
+  tickGlobeFly?.();
   AIGraphics.update();
   updateOrbital();
 

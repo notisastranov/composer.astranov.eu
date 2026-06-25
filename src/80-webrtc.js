@@ -29,9 +29,8 @@ function requestOrbitalTech() {
   });
 
   // Speak the request - direct, no roleplay
-  if (voiceEnabled) {
-    speak('Orbital tech request prepared and copied to clipboard.');
-  }
+  MapDepict?.action('think', { detail: 'orbital tech request' });
+  if (Voice.maySpeak()) speak('Request copied.', () => resumeListening());
 
   // Visual on globe: signal
   AIGraphics.spawnEffect( new THREE.Vector3(0, 1.5, 0), 0xffaa00, 20, 60 );
@@ -39,7 +38,7 @@ function requestOrbitalTech() {
 
 async function startOrbitalVideoCall(targetName = 'Αξαδίνα') {
   if (orbitalCallActive) {
-    speak('Call already active.');
+    if (Voice.maySpeak()) speak('Call active.');
     return;
   }
 
@@ -125,7 +124,7 @@ async function startOrbitalVideoCall(targetName = 'Αξαδίνα') {
     pc.oniceconnectionstatechange = () => {
       console.log('%c[WebRTC] ICE state: ' + pc.iceConnectionState, 'color:#00ff88');
       if (pc.iceConnectionState === 'connected') {
-        speak('Orbital connection established. Real global video active.');
+        if (Voice.maySpeak()) speak('Video connected.');
       }
     };
 
@@ -158,7 +157,7 @@ async function startOrbitalVideoCall(targetName = 'Αξαδίνα') {
 
   } catch (err) {
     console.error('Orbital WebRTC error:', err);
-    speak('Unable to start video. Camera permission needed for real orbital call.');
+    if (Voice.maySpeak()) speak('Camera needed for video.');
     endRealOrbitalCall();
   }
 }
@@ -218,7 +217,7 @@ function endRealOrbitalCall() {
     videoUI = null;
   }
   console.log('%c[Orbital] Call ended.', 'color:#ffaa00');
-  speak('Orbital call ended.');
+  if (Voice.maySpeak()) speak('Call ended.');
 }
 
 // Update animate to include sats

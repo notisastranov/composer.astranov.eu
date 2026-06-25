@@ -1,3 +1,4 @@
 .vercel
 supabase/.temp/
 src/.assembled-check.js
+scripts/.coders-bridge-secret

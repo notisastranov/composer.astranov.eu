@@ -116,7 +116,7 @@ const ACI = {
   },
 
   async init() {
-    await this.api({ mode: 'seed' });
+    if (window._aciOwner || Auth?.isOwner) await this.api({ mode: 'seed' });
     const stats = await this.api({ mode: 'stats' });
     if (stats.principles && stats.principles.length) {
       this.syncNeuronsFromPrinciples(stats.principles.map(p => p.content || p));
@@ -161,10 +161,6 @@ const sbHeaders = () => ({ apikey: SB_KEY, Authorization: 'Bearer ' + SB_KEY, 'C
 // ── ACI CONTROL (text + buttons — you command the collective) ──
 const ACIControl = {
   init() {
-    const input = document.getElementById('aci-input');
-    const send = () => this.handle(input.value.trim());
-    document.getElementById('aci-send').onclick = send;
-    input.addEventListener('keydown', e => { if (e.key === 'Enter') send(); });
     const mic = document.getElementById('aci-mic');
     mic.onclick = () => {
       if (Voice.speaking || voiceSessionActive) {
@@ -182,45 +178,158 @@ const ACIControl = {
   reply(text) {
     const el = document.getElementById('aci-reply');
     if (el) el.textContent = (text || '').slice(0, 220);
+    if (window.AciCli?.open) AciCli.print((text || '').slice(0, 280), 'out');
   },
-  async handle(text) {
-    if (!text) return;
-    const low = text.toLowerCase();
-    ACIControl.reply('…');
-    if (/^(stop|σταμάτα|σταματα|pause|διακοπή)/.test(low)) { userIntervene(); return; }
-    if (/^(cli|terminal|console)$/.test(low)) { AciCli.toggle(); return; }
-    if (/^(connect|open|link)$/.test(low)) { AciConnect.open(); return; }
-    if (/^deploy/.test(low)) { AciConnect.deploy(text.replace(/^deploy\s*/i, '')); return; }
+
+  voiceAck(msg, fromVoice) {
+    if (!fromVoice || !Voice.maySpeak()) return;
+    speak(String(msg || '').slice(0, 120), () => resumeListening());
+  },
+
+  async handle(text, opts = {}) {
+    if (!text) return { executed: false };
+    const fromVoice = !!opts.fromVoice;
+    const low = text.toLowerCase().trim();
+    const say = (msg) => this.voiceAck(msg, fromVoice);
+
+    if (/^(stop|σταμάτα|σταματα|pause|διακοπή|quiet|σιωπή|mute)/.test(low)) {
+      userIntervene();
+      return { executed: true, action: 'stop' };
+    }
+    if (/^(cli|terminal|console|κονσόλα)$/.test(low)) { AciCli.toggle(); this.reply('CLI panel'); say('CLI.'); return { executed: true }; }
+    if (/^summon\s+coders?\s+/i.test(text) || /^coders\b/i.test(low)) {
+      const task = text.replace(/^summon\s+coders?\s+/i, '').replace(/^coders\s+/i, '').trim();
+      await AciCoders?.handleCodersCommand(task);
+      return { executed: true, action: 'coders' };
+    }
+    if (/^(use\s+)?(grok|composer)$/.test(low) || /^switch\s+(to\s+)?(grok|composer)$/.test(low)) {
+      const eng = low.match(/grok|composer/)?.[0];
+      if (eng) AciCoders?.setEngine(eng);
+      else AciCoders?.toggleEngine();
+      ACIControl.reply('Coders: ' + (AciCoders?.engine || 'grok'));
+      say('Coders ' + (AciCoders?.engine || 'grok') + '.');
+      return { executed: true, action: 'coders_engine' };
+    }
+    if (/^(connect|open|link|σύνδεση aci)$/.test(low)) { await AciConnect.open(); return { executed: true }; }
+    if (/^deploy/.test(low)) { await AciConnect.deploy(text.replace(/^deploy\s*/i, '')); return { executed: true }; }
     if (/^claim/.test(low)) {
       const oid = text.replace(/^claim\s*/i, '').trim();
-      if (oid) FieldBrain?.claimDelivery(oid);
-      return;
+      if (oid) await FieldBrain?.claimDelivery(oid);
+      return { executed: true };
     }
-    if (/^roles/.test(low)) { FieldBrain?.onAuth(); ACIControl.reply('Roles: ' + (FieldBrain?.roles || []).join(' + ')); return; }
-    if (/^(login|sign in|google|σύνδεση)/.test(low)) { Auth.signInGoogle(); return; }
-    if (/^(logout|sign out|αποσύνδεση)/.test(low)) { Auth.signOut(); return; }
-    if (/telecom|sat radio|satellite radio|ασύρματος/.test(low)) { Comms.startTelecomms(); return; }
-    if (/pitogyra|πιτογυρ|μπίρ|τσιγαρ|order|παραγγελ/.test(low)) {
+    if (/^roles/.test(low)) {
+      await FieldBrain?.onAuth();
+      this.reply('Roles: ' + (FieldBrain?.roles || []).join(' + '));
+      say('Roles synced.');
+      return { executed: true };
+    }
+    if (/^(login|sign in|google)$/.test(low) || /^σύνδεση$/.test(low)) { Auth.signInGoogle(); return { executed: true }; }
+    if (/^(logout|sign out|αποσύνδεση)$/.test(low)) { Auth.signOut(); return { executed: true }; }
+    if (/telecom|sat radio|satellite radio|ασύρματος/.test(low)) { Comms.startTelecomms(); return { executed: true }; }
+    if (/pitogyra|πιτογυρ|μπίρ|τσιγαρ|order|παραγγελ|work|δουλειά|delivery|διανομ/.test(low)) {
       await Commerce.orderPitogyra();
-      return;
+      return { executed: true, action: 'order' };
     }
-    if (/vhf|radio|ασυρμ/.test(low)) { Comms.startVHF(); return; }
-    if (/phone|call|τηλέφων|κλήση|video/.test(low)) {
-      if (/video|βίντεο/.test(low)) { MapDepict.action('video', { detail: 'Αξαδίνα' }); startOrbitalVideoCall('Αξαδίνα'); }
-      else Comms.startPhone();
-      return;
+    if (/^drive|οδήγ|οδηγ/.test(low)) {
+      if (window.DrivingView) DrivingView.activate();
+      MapDepict.action('drive', { detail: 'road mode' });
+      this.reply('Driving view on globe');
+      say('Driving.');
+      return { executed: true, action: 'drive' };
     }
-    if (/news|νέα|ειδήσει/.test(low)) { NewsFeed.flash(); return; }
-    if (/vendor|κατάστη|shop/.test(low)) { await Commerce.loadVendors(); Commerce.announceVendors(); return; }
-    if (/evolve|neuron|collective|εξέλιξη/.test(low)) {
+    if (/vhf|ασυρμ/.test(low) && !/video/.test(low)) { Comms.startVHF(); return { executed: true }; }
+    if (/phone|τηλέφων/.test(low) && !/video|βίντεο/.test(low)) { Comms.startPhone(); return { executed: true }; }
+    if (/video|βίντεο|orbital/.test(low)) {
+      MapDepict.action('video', { detail: 'Αξαδίνα' });
+      startOrbitalVideoCall('Αξαδίνα');
+      return { executed: true, action: 'video' };
+    }
+    if (/news|νέα|ειδήσει/.test(low)) { NewsFeed.flash(); return { executed: true }; }
+    if (/vendor|κατάστη|shop/.test(low)) {
+      await Commerce.loadVendors();
+      Commerce.announceVendors();
+      return { executed: true };
+    }
+    if (/explore|εξερεύ|πήγαινε|go to|focus/.test(low)) {
+      requestLocationIfNeeded(() => {
+        const lat = 35 + Math.random() * 10;
+        const lng = 25 + Math.random() * 10;
+        const p = latLngToPos(lat, lng);
+        MapDepict.action('explore', { lat, lng, detail: 'explore' });
+        focusOnGlobePoint(new THREE.Vector3(p.x, p.y, p.z));
+        this.reply('Exploring ' + lat.toFixed(2) + ', ' + lng.toFixed(2));
+        say('Exploring.');
+      });
+      return { executed: true, action: 'explore' };
+    }
+    if (/request.*tech|orbital tech|technology|τεχνολογ/.test(low)) {
+      requestOrbitalTech();
+      say('Request copied.');
+      return { executed: true };
+    }
+    if (/english|αγγλικά/.test(low)) {
+      Voice.preferredListenLang = 'en-US';
+      if (recognition) recognition.lang = 'en-US';
+      MapDepict.action('mode', { detail: 'English listen' });
+      say('English.');
+      return { executed: true };
+    }
+    if (/ελληνικά|greek/.test(low)) {
+      Voice.preferredListenLang = 'el-GR';
+      if (recognition) recognition.lang = 'el-GR';
+      MapDepict.action('mode', { detail: 'Greek listen' });
+      say('Greek.');
+      return { executed: true };
+    }
+    if (/athenian|αθηναϊκ/.test(low)) {
+      ACI.thinkMode = 'athenian';
+      MapDepict.action('mode', { detail: 'athenian' });
+      say('Athenian mode.');
+      return { executed: true };
+    }
+    if (/spartan|σπαρτιατ/.test(low)) {
+      ACI.thinkMode = 'spartan';
+      MapDepict.action('mode', { detail: 'spartan' });
+      say('Spartan mode.');
+      return { executed: true };
+    }
+    if (/myrmidon|μυρμιδόν/.test(low)) {
+      ACI.thinkMode = 'myrmidon';
+      MapDepict.action('mode', { detail: 'myrmidon' });
+      say('Myrmidon mode.');
+      return { executed: true };
+    }
+    if (/^(remember|θυμήσου|να θυμάσαι)/.test(low)) {
+      const content = text.replace(/^(remember|θυμήσου|να θυμάσαι)[:,]?\s*/i, '').trim();
+      await ACI.teach(content || text);
+      say('Remembered.');
+      return { executed: true };
+    }
+    if (/evolve|neuron|collective|εξέλιξη|brain/.test(low)) {
       await ACI.evolve('user-command');
-      ACIControl.reply('Collective evolved. Council judged. Neurons updated.');
-      speak('Η collective intelligence εξελίχθηκε. Neurons updated.', () => {});
-      return;
+      this.reply('Collective evolved on globe.');
+      say('Evolved.');
+      return { executed: true };
     }
+    if (/^(mic|voice|μίκροφωνο|ακού)/.test(low)) {
+      startVoiceOptions();
+      return { executed: true };
+    }
+
+    if (low.length < 4) {
+      this.reply('Use globe gestures · or open ⌨ CLI · or say order, explore, stop');
+      if (fromVoice) say('Say order, explore, or stop.');
+      return { executed: false };
+    }
+
     const ans = await ACI.think(text);
-    if (!ans) return;
-    ACIControl.reply(ans);
-    if (Voice.shouldSpeak(ans)) speak(ans.slice(0, 200));
+    if (!ans) return { executed: false };
+    const short = ans.slice(0, 160);
+    this.reply(short);
+    MapDepict.action('think', { detail: short.slice(0, 60) });
+    if (fromVoice && Voice.maySpeak() && Voice.shouldSpeak(short)) {
+      speak(short, () => resumeListening());
+    }
+    return { executed: true, action: 'think' };
   }
 };
