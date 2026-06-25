@@ -179,7 +179,8 @@ const AciCli = {
         this.print('teach <text>     — store memory / neuron');
         this.print('stats | owner    — memory / authority status');
         this.print('mode <athenian|spartan|myrmidon>');
-        this.print('vendors | order [name] | vendor menu | vendor requests | vhf | drive | news');
+        this.print('vendors | order [items] | vendor menu | vendor requests | vhf | drive | news');
+        this.print('  order pitogyra mpironia tsigareta — compare vendors on globe');
         if (Auth?.isOwner) {
           this.print('--- OWNER (notisastranov@gmail.com) ---');
           this.print('seed             — founding neurons');

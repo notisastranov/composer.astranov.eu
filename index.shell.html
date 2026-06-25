@@ -74,6 +74,19 @@
   #vm-request { width:calc(100% - 16px); margin:8px; padding:12px; border:none; border-radius:12px; background:rgba(80,60,20,0.55); border:2px solid #c84; color:#fda; font-weight:700; cursor:pointer; font-size:13px; }
   #vm-request:disabled { opacity:0.55; cursor:default; }
   #vm-empty { padding:12px 8px; color:#fc8; font-size:12px; line-height:1.5; }
+  #vm-compare { padding:4px 0; }
+  #vm-wanted { padding:6px 4px 10px; }
+  .vm-wanted-title, .vm-drivers-title { color:#9ab; font-size:10px; margin-bottom:6px; }
+  .vm-tag { display:inline-block; margin:3px 4px 3px 0; padding:4px 8px; border-radius:8px; background:rgba(80,50,0,0.35); border:1px solid rgba(255,170,60,0.25); color:#fda; font-size:11px; }
+  .vm-tag.driver { background:rgba(0,40,80,0.35); border-color:rgba(80,160,255,0.35); color:#9cf; }
+  .vm-match { padding:10px; margin:6px 0; border-radius:10px; background:rgba(0,0,0,0.35); border:1px solid rgba(255,170,60,0.2); cursor:pointer; }
+  .vm-match.best { border-color:rgba(0,255,160,0.35); }
+  .vm-match.picked { border-color:rgba(255,200,80,0.65); box-shadow:0 0 0 1px rgba(255,200,80,0.25); }
+  .vm-match-head { display:flex; justify-content:space-between; color:#fda; font-weight:600; }
+  .vm-match-sub { color:#9ab; font-size:10px; margin-top:4px; }
+  .vm-match-items { color:#bdf; font-size:10px; margin-top:4px; }
+  #vm-confirm-pay { width:calc(100% - 16px); margin:8px; padding:12px; border:none; border-radius:12px; background:rgba(40,120,60,0.55); border:2px solid #4c8; color:#fff; font-weight:700; cursor:pointer; font-size:13px; }
+  #vm-compare-back { background:transparent; border:none; color:#9cb; cursor:pointer; font-size:11px; padding:4px 0 8px; }
   #vm-back { background:transparent; border:none; color:#9cb; cursor:pointer; font-size:11px; padding:4px 0 8px; }
   @media (min-width:720px) { #news-ticker { display:block; } }
 </style>
@@ -111,7 +124,7 @@
     </div>
     <div id="vendor-menu">
       <div id="vm-header"><span id="vm-title">Καταστήματα</span><button id="vm-close" type="button">✕</button></div>
-      <div id="vm-body"><div id="vm-list"></div><div id="vm-detail" style="display:none"><button id="vm-back" type="button">← όλα τα καταστήματα</button><div id="vm-empty" style="display:none"></div><div id="vm-items"></div><button id="vm-request" type="button" style="display:none">Ζήτησε μενού από κατάστημα</button><button id="vm-place" type="button">Παραγγελία</button></div></div>
+      <div id="vm-body"><div id="vm-list"></div><div id="vm-detail" style="display:none"><button id="vm-back" type="button">← όλα τα καταστήματα</button><div id="vm-empty" style="display:none"></div><div id="vm-items"></div><button id="vm-request" type="button" style="display:none">Ζήτησε μενού από κατάστημα</button><button id="vm-place" type="button">Παραγγελία</button></div><div id="vm-compare" style="display:none"><button id="vm-compare-back" type="button">← όλα τα καταστήματα</button><div id="vm-wanted"></div><div id="vm-matches"></div><div id="vm-drivers"></div><div id="vm-balance"></div><button id="vm-confirm-pay" type="button" style="display:none">Επιβεβαίωση &amp; Πληρωμή</button></div></div>
     </div>
     <div id="aci-bar">
       <button id="aci-login" title="Sign in with Google" type="button">G</button>

@@ -78,7 +78,7 @@ serve(async (req) => {
     }
 
     const body = await req.json().catch(() => ({}))
-    const { vendor_id, items, calc, delivery_lat, delivery_lng, delivery_address, notes } = body
+    const { vendor_id, items, calc, delivery_lat, delivery_lng, delivery_address, notes, pay_with_balance } = body
 
     if (!vendor_id || !Array.isArray(items) || items.length === 0) {
       return new Response(JSON.stringify({ error: 'vendor_id and items required' }), { status: 400, headers: cors })
@@ -126,11 +126,48 @@ serve(async (req) => {
     const dLng = typeof delivery_lng === 'number' ? delivery_lng : null
     const driver = await pickDriver(sb, dLat, dLng, customerId)
 
+    const totalAvc = typeof calc?.total_avc === 'number'
+      ? calc.total_avc
+      : (items as Array<{ qty?: number; price?: number }>).reduce(
+        (s, i) => s + (i.qty || 1) * (i.price || 0), 0,
+      )
+
+    let balanceAfter: number | null = null
+    let paid = false
+    if (pay_with_balance) {
+      if (!customerId) {
+        return new Response(JSON.stringify({ error: 'login_required' }), { status: 401, headers: cors })
+      }
+      const { data: ledger } = await sb.from('balance_ledger').select('balance').eq('user_id', customerId).maybeSingle()
+      let balance = Number(ledger?.balance) || 0
+      if (!ledger) {
+        const { data: prof } = await sb.from('profiles').select('balance').eq('id', customerId).single()
+        balance = Number(prof?.balance) || 0
+      }
+      if (balance < totalAvc) {
+        return new Response(JSON.stringify({
+          error: 'insufficient_balance',
+          balance,
+          needed: totalAvc,
+        }), { status: 402, headers: cors })
+      }
+      const { error: payErr } = await sb.rpc('add_balance', { uid: customerId, delta: -totalAvc })
+      if (payErr) throw payErr
+      balanceAfter = balance - totalAvc
+      paid = true
+    }
+
+    const calcOut = {
+      ...(calc ?? {}),
+      total_avc: totalAvc,
+      ...(paid ? { paid: true, paid_at: new Date().toISOString(), balance_after: balanceAfter } : {}),
+    }
+
     const row: Record<string, unknown> = {
       vendor_id,
       customer_id: customerId,
       items,
-      calc: calc ?? {},
+      calc: calcOut,
       status: driver ? 'assigned' : 'seeking_driver',
       delivery_lat: dLat,
       delivery_lng: dLng,
@@ -145,6 +182,20 @@ serve(async (req) => {
 
     const { data: order, error } = await sb.from('orders').insert(row).select().single()
     if (error) throw error
+
+    if (paid && customerId) {
+      await sb.from('invoices').insert({
+        id: 'INV-' + String(order.short_id || order.id).replace(/^ORD-/, ''),
+        order_id: String(order.id),
+        vendor_name: vendor.name,
+        buyer_id: customerId,
+        items,
+        subtotal: totalAvc,
+        total: totalAvc,
+        currency: 'AVC',
+        status: 'paid',
+      }).catch(() => {})
+    }
 
     if (customerId) {
       await sb.from('field_events').insert({
@@ -194,6 +245,9 @@ serve(async (req) => {
       driver: driver ? { id: driver.id, name: driver.name, emoji: driver.emoji, self: !!driver.self } : null,
       seeking_driver: !driver,
       multi_role: true,
+      paid,
+      paid_amount: paid ? totalAvc : null,
+      balance_after: balanceAfter,
     }), { headers: cors })
   } catch (e) {
     const err = e && typeof e === 'object' && 'message' in e ? String((e as { message?: string }).message) : String(e)

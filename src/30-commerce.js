@@ -1,11 +1,21 @@
-// ── COMMERCE: real vendors, real menus only, orders (no fake defaults) ──
+// ── COMMERCE: real vendors, real menus only, smart order on globe ──
+const ORDER_ITEM_ALIASES = [
+  { id: 'pita', label: 'Πιτογύρα', keys: ['πιτογυρ', 'πιτογύρα', 'pitogyra', 'pita', 'πιτο', 'gyro', 'γύρο', 'gyros'], match: /πιτο|pita|gyro|γύρο|pitogyra/i },
+  { id: 'beer', label: 'Μπύρα', keys: ['μπυρ', 'μπίρ', 'mpira', 'mpironia', 'beer', 'beers', 'μπύρες'], match: /μπύρ|μπυρ|beer|lager|αμστελ|heineken/i },
+  { id: 'cigarettes', label: 'Τσιγάρα', keys: ['τσιγαρ', 'tsigar', 'tsigareta', 'cigarette', 'cigarettes', 'μαλαμ'], match: /τσιγαρ|cigar|μαλαμ|marlboro|winston/i },
+  { id: 'water', label: 'Νερό', keys: ['νερ', 'nero', 'water'], match: /νερό|νερο|water/i },
+];
+
 const Commerce = {
   vendors: [],
   markers: [],
+  driverMarkers: [],
   selected: null,
   cart: {},
   _uiReady: false,
   _menuRequestSent: false,
+  _suggestion: null,
+  _balance: null,
 
   haversineKm(lat1, lng1, lat2, lng2) {
     const R = 6371;
@@ -95,8 +105,10 @@ const Commerce = {
     const panel = document.getElementById('vendor-menu');
     document.getElementById('vm-close')?.addEventListener('click', () => this.hideMenu());
     document.getElementById('vm-back')?.addEventListener('click', () => this.showPicker());
+    document.getElementById('vm-compare-back')?.addEventListener('click', () => this.showPicker());
     document.getElementById('vm-place')?.addEventListener('click', () => this.placeCart());
     document.getElementById('vm-request')?.addEventListener('click', () => this.requestMenu());
+    document.getElementById('vm-confirm-pay')?.addEventListener('click', () => this.confirmAndPay());
     if (panel) panel.addEventListener('click', e => e.stopPropagation());
   },
 
@@ -110,6 +122,250 @@ const Commerce = {
     this.selected = null;
     this.cart = {};
     this._menuRequestSent = false;
+    this._suggestion = null;
+    this.clearDriverMarkers();
+  },
+
+  clearDriverMarkers() {
+    this.driverMarkers.forEach(m => { if (m.parent) m.parent.remove(m); });
+    this.driverMarkers = [];
+  },
+
+  showDriversOnGlobe(drivers) {
+    this.clearDriverMarkers();
+    (drivers || []).forEach(d => {
+      if (d.field_lat == null) return;
+      const p = latLngToPos(d.field_lat, d.field_lng, 1.026);
+      const m = new THREE.Mesh(new THREE.SphereGeometry(0.012, 8, 8), new THREE.MeshBasicMaterial({ color: 0x4488ff }));
+      m.position.set(p.x, p.y, p.z);
+      m.userData = { driver: d };
+      globePivot.add(m);
+      this.driverMarkers.push(m);
+    });
+  },
+
+  parseWantedItems(text) {
+    const low = String(text || '').toLowerCase();
+    return ORDER_ITEM_ALIASES.filter(a => a.keys.some(k => low.includes(k)));
+  },
+
+  looksLikeVendorOnly(text) {
+    const q = String(text || '').trim().toLowerCase();
+    if (!q || q.length < 2) return false;
+    const wants = this.parseWantedItems(q);
+    if (wants.length) return false;
+    return this.vendors.some(v => v.name.toLowerCase().includes(q) || q.includes(v.name.toLowerCase().slice(0, 4)));
+  },
+
+  findMenuItemForWant(menu, want) {
+    const hits = menu.filter(i => want.match.test(String(i.name || '')));
+    if (!hits.length) return null;
+    hits.sort((a, b) => (a.price || 0) - (b.price || 0));
+    return hits[0];
+  },
+
+  scoreVendorForWants(vendor, wants, u) {
+    const menu = this.menuFor(vendor);
+    if (!menu.length) return null;
+    const picks = [];
+    wants.forEach(w => {
+      const item = this.findMenuItemForWant(menu, w);
+      if (item) picks.push({ want: w, item, price: item.price || 0 });
+    });
+    if (!picks.length) return null;
+    const total = picks.reduce((s, p) => s + p.price, 0);
+    const km = this.haversineKm(u.lat, u.lng, vendor.lat, vendor.lng);
+    const coverage = picks.length / wants.length;
+    const score = coverage * 1000 - total * 0.5 - km * 3;
+    return { vendor, picks, matched: picks.length, wanted: wants.length, total, km, score, coverage };
+  },
+
+  async fetchNearbyDrivers(lat, lng) {
+    const since = new Date(Date.now() - 30 * 60 * 1000).toISOString();
+    try {
+      const r = await fetch(SB_URL + '/rest/v1/profiles?select=id,display_name,avatar_emoji,field_lat,field_lng,field_seen_at&roles=cs.%5B%22driver%22%5D&field_seen_at=gte.' + since + '&field_lat=not.is.null&limit=25', {
+        headers: { apikey: SB_KEY, Authorization: 'Bearer ' + SB_KEY },
+      });
+      const rows = r.ok ? await r.json() : [];
+      rows.sort((a, b) => this.haversineKm(lat, lng, a.field_lat, a.field_lng) - this.haversineKm(lat, lng, b.field_lat, b.field_lng));
+      return rows;
+    } catch { return []; }
+  },
+
+  async fetchBalance() {
+    if (!Auth?.user) return 0;
+    try {
+      const headers = await Auth.authHeaders();
+      const r = await fetch(SB_URL + '/rest/v1/balance_ledger?select=balance&user_id=eq.' + Auth.user.id, { headers });
+      if (r.ok) {
+        const rows = await r.json();
+        if (rows[0]) { this._balance = Number(rows[0].balance) || 0; return this._balance; }
+      }
+      const pr = await fetch(SB_URL + '/rest/v1/profiles?select=balance&id=eq.' + Auth.user.id, { headers });
+      if (pr.ok) {
+        const rows = await pr.json();
+        this._balance = Number(rows[0]?.balance) || 0;
+        return this._balance;
+      }
+    } catch { /* */ }
+    return 0;
+  },
+
+  hideComparePanels() {
+    ['vm-list', 'vm-detail', 'vm-compare'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.style.display = 'none';
+    });
+  },
+
+  renderCompare(matches, drivers, wants, balance) {
+    const compare = document.getElementById('vm-compare');
+    const wanted = document.getElementById('vm-wanted');
+    const matchBox = document.getElementById('vm-matches');
+    const driverBox = document.getElementById('vm-drivers');
+    const balBox = document.getElementById('vm-balance');
+    const confirmBtn = document.getElementById('vm-confirm-pay');
+    if (!compare) return;
+
+    this.hideComparePanels();
+    compare.style.display = 'block';
+
+    if (wanted) {
+      wanted.innerHTML = '<div class="vm-wanted-title">Ζητάς:</div>' + wants.map(w => '<span class="vm-tag">' + w.label + '</span>').join('');
+    }
+    if (matchBox) {
+      matchBox.innerHTML = '';
+      matches.slice(0, 5).forEach((m, i) => {
+        const row = document.createElement('div');
+        row.className = 'vm-match' + (i === 0 ? ' best' : '');
+        const miss = m.wanted - m.matched;
+        const detail = m.picks.map(p => p.item.name + ' ' + p.price + ' AVC').join(' · ');
+        row.innerHTML = '<div class="vm-match-head"><span>' + (m.vendor.emoji || '🏪') + ' ' + m.vendor.name + '</span><strong>' + m.total.toFixed(1) + ' AVC</strong></div>'
+          + '<div class="vm-match-sub">' + m.km.toFixed(1) + ' km · ' + m.matched + '/' + m.wanted + ' είδη' + (miss ? ' · <span style="color:#f96">-' + miss + '</span>' : '') + '</div>'
+          + '<div class="vm-match-items">' + detail + '</div>';
+        row.onclick = () => {
+          this._suggestion = m;
+          matchBox.querySelectorAll('.vm-match').forEach(el => el.classList.remove('picked'));
+          row.classList.add('picked');
+          if (confirmBtn) confirmBtn.textContent = 'Επιβεβαίωση & Πληρωμή · ' + m.vendor.name + ' · ' + m.total.toFixed(1) + ' AVC';
+          this.flyToVendor(m.vendor);
+        };
+        if (i === 0) { row.classList.add('picked'); this._suggestion = m; }
+        matchBox.appendChild(row);
+      });
+    }
+    if (driverBox) {
+      const n = drivers.length;
+      driverBox.innerHTML = n
+        ? '<div class="vm-drivers-title">🚴 ' + n + ' οδηγοί κοντά:</div>' + drivers.slice(0, 4).map(d => {
+          const km = this.haversineKm(this.userLatLng().lat, this.userLatLng().lng, d.field_lat, d.field_lng).toFixed(1);
+          return '<span class="vm-tag driver">' + (d.avatar_emoji || '🚴') + ' ' + (d.display_name || 'Driver') + ' · ' + km + ' km</span>';
+        }).join('')
+        : '<div class="vm-drivers-title" style="color:#f96">Δεν βρέθηκαν ενεργοί οδηγοί — θα αναζητηθεί μετά την παραγγελία</div>';
+    }
+    if (balBox) {
+      const b = balance != null ? balance : 0;
+      const need = this._suggestion?.total || matches[0]?.total || 0;
+      const ok = b >= need;
+      balBox.innerHTML = '<div>Υπόλοιπο: <strong>' + b.toFixed(1) + ' AVC</strong>'
+        + (need ? ' · Παραγγελία: <strong>' + need.toFixed(1) + ' AVC</strong>' : '')
+        + (ok ? '' : ' · <span style="color:#f96">ανεπαρκές — recharge στο CLI</span>') + '</div>';
+    }
+    if (confirmBtn && this._suggestion) {
+      confirmBtn.style.display = 'block';
+      confirmBtn.textContent = 'Επιβεβαίωση & Πληρωμή · ' + this._suggestion.vendor.name + ' · ' + this._suggestion.total.toFixed(1) + ' AVC';
+    }
+  },
+
+  async smartOrder(query) {
+    const run = async () => {
+      const q = String(query || '').replace(/^(order|παραγγελία?)\s*/i, '').trim();
+      const wants = this.parseWantedItems(q);
+      if (!wants.length) {
+        ACIControl?.reply('Δεν κατάλαβα είδη — π.χ. order pitogyra mpironia tsigareta');
+        return this.openOrderFlow(q);
+      }
+
+      await this.loadVendors();
+      const u = this.userLatLng();
+      MapDepict?.showOrderSearch({ userLat: u.lat, userLng: u.lng, wantedLabels: wants.map(w => w.label), zoom: 1.22 });
+
+      const matches = [];
+      this.vendors.forEach(v => {
+        const m = this.scoreVendorForWants(v, wants, u);
+        if (m) matches.push(m);
+      });
+      matches.sort((a, b) => b.score - a.score || a.total - b.total || a.km - b.km);
+
+      const drivers = await this.fetchNearbyDrivers(u.lat, u.lng);
+      this.showDriversOnGlobe(drivers);
+      MapDepict?.showOrderSearch({ userLat: u.lat, userLng: u.lng, wantedLabels: wants.map(w => w.label), matches, drivers, zoom: 1.22 });
+
+      const balance = Auth?.user ? await this.fetchBalance() : 0;
+      this.showMenu();
+      this.hideComparePanels();
+      document.getElementById('vm-compare').style.display = 'block';
+      const title = document.getElementById('vm-title');
+      if (title) title.textContent = 'Σύγκριση · ' + wants.map(w => w.label).join(' + ');
+
+      if (!matches.length) {
+        this.renderCompare([], drivers, wants, balance);
+        const msg = 'Κανένα κατάστημα με πραγματικό μενού για αυτά τα είδη — ζήτησε μενού από κοντινό κατάστημα';
+        ACIControl?.reply(msg);
+        AciCli?.print(msg, 'err');
+        if (Voice.maySpeak()) speak(msg.slice(0, 120), () => resumeListening());
+        return;
+      }
+
+      this.renderCompare(matches, drivers, wants, balance);
+      const best = matches[0];
+      const driverNames = drivers.slice(0, 2).map(d => d.display_name || 'Driver').join(', ');
+      const msg = 'Πρόταση: ' + best.vendor.name + ' · ' + best.total.toFixed(1) + ' AVC · ' + best.km.toFixed(1) + ' km'
+        + (driverNames ? ' · οδηγοί: ' + driverNames : ' · αναζήτηση οδηγού');
+      ACIControl?.reply(msg);
+      AciCli?.print(msg, 'ok');
+      wants.forEach(w => best.picks.filter(p => p.want.id === w.id).forEach(p => {
+        AciCli?.print('  ' + p.item.name + ' ' + p.price + ' AVC @ ' + best.vendor.name, 'dim');
+      }));
+      if (Voice.maySpeak()) speak(msg.slice(0, 140), () => resumeListening());
+      FieldBrain?.pulse('commerce', wants.map(w => w.label).join('+') + ' → ' + best.vendor.name, { role: 'client' });
+    };
+
+    if (!userLocated && navigator.geolocation) {
+      ACIControl?.reply('Zoom στον χάρτη σου…');
+      navigator.geolocation.getCurrentPosition(pos => {
+        placeMe(pos.coords.latitude, pos.coords.longitude);
+        run();
+      }, () => run());
+    } else {
+      MapDepict?.zoomToUser(1.22);
+      run();
+    }
+  },
+
+  async confirmAndPay() {
+    const sug = this._suggestion;
+    if (!sug) { ACIControl?.reply('Διάλεξε πρόταση από τη λίστα'); return; }
+    if (!Auth?.user) {
+      ACIControl?.reply('Σύνδεση για πληρωμή');
+      Auth?.signInGoogle();
+      return;
+    }
+    const balance = await this.fetchBalance();
+    if (balance < sug.total) {
+      const msg = 'Ανεπαρκές υπόλοιπο (' + balance.toFixed(1) + ' AVC) — χρειάζεσαι ' + sug.total.toFixed(1) + ' AVC';
+      ACIControl?.reply(msg);
+      AciCli?.print(msg, 'err');
+      return;
+    }
+    const items = sug.picks.map(p => ({ name: p.item.name, qty: 1, price: p.item.price }));
+    const vendor = sug.vendor;
+    MapDepict?.action('pay', {
+      lat: this.userLatLng().lat, lng: this.userLatLng().lng,
+      vendorLat: vendor.lat, vendorLng: vendor.lng,
+      detail: vendor.name + ' · ' + sug.total.toFixed(1) + ' AVC',
+    });
+    await this.placeOrder(vendor, items, 'Smart order · ' + sug.picks.map(p => p.want.label).join(' + '), true);
   },
 
   async showPicker(filter) {
@@ -118,10 +374,10 @@ const Commerce = {
     this.selected = null;
     this.cart = {};
     this._menuRequestSent = false;
+    this.hideComparePanels();
     const list = document.getElementById('vm-list');
-    const detail = document.getElementById('vm-detail');
     if (list) list.style.display = 'block';
-    if (detail) detail.style.display = 'none';
+    this._suggestion = null;
     const title = document.getElementById('vm-title');
     if (title) title.textContent = 'Επίλεξε κατάστημα · ' + this.vendors.length;
 
@@ -155,10 +411,13 @@ const Commerce = {
     this._menuRequestSent = false;
     this.flyToVendor(vendor);
     this.showMenu();
+    this.hideComparePanels();
     const list = document.getElementById('vm-list');
     const detail = document.getElementById('vm-detail');
     if (list) list.style.display = 'none';
     if (detail) detail.style.display = 'block';
+    const compare = document.getElementById('vm-compare');
+    if (compare) compare.style.display = 'none';
     const title = document.getElementById('vm-title');
     if (title) title.textContent = (vendor.emoji || '🏪') + ' ' + vendor.name;
     this.renderCart();
@@ -297,7 +556,7 @@ const Commerce = {
     await this.placeOrder(vendor, items);
   },
 
-  async placeOrder(vendor, items, notes) {
+  async placeOrder(vendor, items, notes, payWithBalance) {
     requestLocationIfNeeded(async () => {
       let dLat = this.userLatLng().lat;
       let dLng = this.userLatLng().lng;
@@ -319,12 +578,14 @@ const Commerce = {
             delivery_lng: dLng,
             notes: notes || ('Astranov order · ' + vendor.name),
             calc: { total_avc: total },
+            pay_with_balance: !!payWithBalance,
           }),
         });
         const j = await r.json().catch(() => ({}));
         if (r.ok) orderResult = j;
         else {
           if (j.error === 'vendor_menu_empty') errMsg = 'Το κατάστημα δεν έχει μενού — ζήτησε μενού πρώτα';
+          else if (j.error === 'insufficient_balance') errMsg = 'Ανεπαρκές υπόλοιπο · έχεις ' + (j.balance || 0) + ' AVC, χρειάζεσαι ' + (j.needed || total);
           else errMsg = j.error || j.message || ('HTTP ' + r.status);
         }
       } catch (e) { errMsg = String(e.message || e); }
@@ -342,9 +603,11 @@ const Commerce = {
 
       let msg;
       if (orderResult?.order) {
+        const paid = orderResult.paid ? ' · Πληρώθηκε ' + (orderResult.paid_amount || total).toFixed(1) + ' AVC' : '';
         msg = orderResult.seeking_driver
-          ? 'Παραγγελία ' + (ordId || '') + ' στο ' + vendor.name + '. Αναζητούμε οδηγό — claim στο CLI.'
-          : 'Παραγγελία ' + (ordId || '') + ' στο ' + vendor.name + '. Οδηγός: ' + (driver || 'pending') + '.';
+          ? 'Παραγγελία ' + (ordId || '') + ' στο ' + vendor.name + paid + '. Αναζητούμε οδηγό — claim στο CLI.'
+          : 'Παραγγελία ' + (ordId || '') + ' στο ' + vendor.name + paid + '. Οδηγός: ' + (driver || 'pending') + '.';
+        if (orderResult.balance_after != null) this._balance = orderResult.balance_after;
         this.hideMenu();
       } else {
         msg = 'Παραγγελία απέτυχε: ' + (errMsg || 'server error') + '. Δοκίμασε ξανά.';
@@ -449,12 +712,15 @@ const Commerce = {
   },
 
   async openOrderFlow(query) {
+    const q = String(query || '').trim();
+    if (this.parseWantedItems(q).length && !this.looksLikeVendorOnly(q)) {
+      return this.smartOrder(q);
+    }
     await this.loadVendors();
     if (!this.vendors.length) {
       ACIControl?.reply('No vendors on map yet');
       return;
     }
-    const q = String(query || '').trim();
     if (q.length >= 2) {
       const hit = this.vendors.find(v => (v.name + ' ' + v.category).toLowerCase().includes(q.toLowerCase()));
       if (hit) { this.openVendor(hit); return; }
@@ -463,6 +729,6 @@ const Commerce = {
   },
 
   async orderPitogyra() {
-    await this.openOrderFlow('goals');
+    await this.smartOrder('pitogyra mpironia tsigareta');
   },
 };

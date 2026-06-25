@@ -271,6 +271,9 @@ const MapDepict = {
       teach: 0x66ff99,
       order: 0xffaa44,
       vendor: 0xff8844,
+      compare: 0x66ffcc,
+      driver: 0x4488ff,
+      pay: 0x88ff44,
       phone: 0x44ff88,
       vhf: 0xffdd44,
       news: 0xcc88ff,
@@ -288,6 +291,9 @@ const MapDepict = {
       teach: 'Μνήμη / neuron',
       order: 'Παραγγελία',
       vendor: 'Καταστήματα',
+      compare: 'Σύγκριση τιμών',
+      driver: 'Οδηγοί διανομής',
+      pay: 'Πληρωμή AVC',
       phone: 'Τηλέφωνο',
       vhf: 'VHF ασύρματος',
       news: 'Ειδήσεις',
@@ -326,11 +332,50 @@ const MapDepict = {
       const fp = latLngToPos(lat, lng, 1.04);
       focusOnGlobePoint(new THREE.Vector3(fp.x, fp.y, fp.z));
     }
+    if (type === 'compare' && opts.matches) {
+      opts.matches.slice(0, 6).forEach((m, i) => {
+        const col = i === 0 ? 0x00ff88 : 0xffaa44;
+        const v = m.vendor || m;
+        this.pulse(v.lat, v.lng, col, (v.name || '') + ' · ' + (m.total || 0).toFixed(1) + ' AVC', 22000);
+        this.arc(v.lat, v.lng, lat, lng, col);
+      });
+    }
+    if (type === 'driver' && opts.drivers) {
+      opts.drivers.forEach(d => {
+        if (d.field_lat == null) return;
+        this.pulse(d.field_lat, d.field_lng, 0x4488ff, (d.display_name || 'Driver') + ' 🚴', 20000);
+      });
+    }
+    if (type === 'pay' && opts.vendorLat != null) {
+      this.arc(opts.vendorLat, opts.vendorLng, lat, lng, 0x88ff44);
+    }
 
     if (window.FieldBrain?.pulse) {
       FieldBrain.pulse(type, detail || labels[type] || type, { role: opts.role });
     }
     return { type, lat, lng };
+  },
+
+  zoomToUser(zoom = 1.26) {
+    const u = this.userPos();
+    this.action('location', { lat: u.lat, lng: u.lng, detail: 'εσύ · αναζήτηση' });
+    const fp = latLngToPos(u.lat, u.lng, 1.04);
+    if (typeof flyToPoint === 'function') flyToPoint(new THREE.Vector3(fp.x, fp.y, fp.z), zoom);
+    else focusOnGlobePoint(new THREE.Vector3(fp.x, fp.y, fp.z));
+    return u;
+  },
+
+  showOrderSearch(opts = {}) {
+    const u = opts.userLat != null ? { lat: opts.userLat, lng: opts.userLng } : this.userPos();
+    const wanted = (opts.wantedLabels || []).join(' · ');
+    this.zoomToUser(opts.zoom || 1.24);
+    if (opts.matches?.length) {
+      this.action('compare', { lat: u.lat, lng: u.lng, detail: wanted, matches: opts.matches });
+    }
+    if (opts.drivers?.length) {
+      this.action('driver', { lat: u.lat, lng: u.lng, detail: opts.drivers.length + ' drivers', drivers: opts.drivers });
+    }
+    return u;
   },
 
   tick() {

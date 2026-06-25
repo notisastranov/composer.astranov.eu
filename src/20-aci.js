@@ -229,9 +229,15 @@ const ACIControl = {
     if (/^(login|sign in|google)$/.test(low) || /^σύνδεση$/.test(low)) { Auth.signInGoogle(); return { executed: true }; }
     if (/^(logout|sign out|αποσύνδεση)$/.test(low)) { Auth.signOut(); return { executed: true }; }
     if (/telecom|sat radio|satellite radio|ασύρματος/.test(low)) { Comms.startTelecomms(); return { executed: true }; }
-    if (/pitogyra|πιτογυρ|μπίρ|τσιγαρ|order|παραγγελ|goals|work|δουλειά|delivery|διανομ/.test(low)) {
-      const q = low.match(/goals|πιτο|pit|pizza|supermarket|bar/)?.[0] || '';
-      await Commerce.openOrderFlow(q || text.replace(/^(order|παραγγελία?)\s*/i, ''));
+    if (/pitogyra|πιτογυρ|μπίρ|τσιγαρ|order|παραγγελ|goals|work|δουλειά|delivery|διανομ|mpiro|tsigar|beer|cigar/.test(low)) {
+      const q = text.replace(/^(order|παραγγελία?)\s*/i, '').trim();
+      const wants = Commerce.parseWantedItems?.(q) || [];
+      if (wants.length >= 1 && !/^goals$/i.test(q.trim())) {
+        await Commerce.smartOrder(q || text);
+      } else {
+        const vendorQ = low.match(/goals|πιτο|pit|pizza|supermarket|bar/)?.[0] || '';
+        await Commerce.openOrderFlow(vendorQ || q);
+      }
       return { executed: true, action: 'order' };
     }
     if (/^drive|οδήγ|οδηγ/.test(low)) {
