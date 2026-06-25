@@ -43,15 +43,15 @@ async function pickDriver(
       return da - db
     })
     const d = pool[0]
-    return { id: d.id, name: d.display_name || 'Driver', emoji: d.avatar_emoji || '🚴' }
+    return { id: d.id, name: d.display_name || 'Driver', emoji: d.avatar_emoji || '🚚' }
   }
   if (pool.length) {
     const d = pool[0]
-    return { id: d.id, name: d.display_name || 'Driver', emoji: d.avatar_emoji || '🚴' }
+    return { id: d.id, name: d.display_name || 'Driver', emoji: d.avatar_emoji || '🚚' }
   }
   if (customerId) {
     const { data: self } = await sb.from('profiles').select('display_name, avatar_emoji').eq('id', customerId).single()
-    return { id: customerId, name: self?.display_name || 'You', emoji: self?.avatar_emoji || '🚴', self: true }
+    return { id: customerId, name: self?.display_name || 'You', emoji: self?.avatar_emoji || '🚚', self: true }
   }
   return null
 }

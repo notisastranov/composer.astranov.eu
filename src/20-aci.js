@@ -327,7 +327,7 @@ const ACIControl = {
     }
 
     if (low.length < 4) {
-      this.reply('Use globe gestures · or open ⌨ CLI · or say order, explore, stop');
+      this.reply('Use globe gestures · or open ' + (AstroGlyphs?.cli || '💻') + ' CLI · or say order, explore, stop');
       if (fromVoice) say('Say order, explore, or stop.');
       return { executed: false };
     }

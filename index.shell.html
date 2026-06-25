@@ -37,6 +37,7 @@
   #sr-ptt.active { background:rgba(255,60,20,0.85); }
   #sr-close { background:transparent; border:1px solid #666; color:#aaa; border-radius:8px; padding:4px 10px; cursor:pointer; }
   #aci-bar { display:flex; gap:6px; padding:8px 10px; margin:0 8px 8px; background:rgba(0,8,18,0.82); border:1px solid rgba(0,180,255,0.35); border-radius:24px; pointer-events:auto; backdrop-filter:blur(12px); align-items:center; justify-content:center; flex-wrap:wrap; }
+  #aci-bar button { font-size:17px; line-height:1; }
   #aci-input, #aci-send { display:none !important; }
   #aci-mic, #aci-send, #aci-order, #aci-locate, #aci-vhf, #aci-call, #aci-stop, #aci-login { background:rgba(0,100,180,0.35); border:1px solid rgba(0,200,255,0.4); color:#aaf; border-radius:50%; width:38px; height:38px; cursor:pointer; font-size:14px; flex-shrink:0; }
   #aci-locate { font-size:16px; }
@@ -109,7 +110,7 @@
       </div>
     </div>
     <div id="sat-radio">
-      <div class="sr-row"><span class="sr-ch">EU PMR Ch 11</span><span class="sr-freq">446.13125 MHz</span><span>peers: <b id="sr-peers">0</b></span><button id="sr-close" type="button">✕</button></div>
+      <div class="sr-row"><span class="sr-ch">EU PMR Ch 11</span><span class="sr-freq">446.13125 MHz</span><span>peers: <b id="sr-peers">0</b></span><button id="sr-close" type="button">✖️</button></div>
       <div class="sr-honest">RF: tune YOUR PMR446 handheld to Ch 11 (446.13125 MHz) — browser cannot transmit on 446 MHz. In-app: real mic + WebRTC voice to other Astranov users on this channel.</div>
       <div class="sr-step sr-active" id="sr-step-1"><span class="sr-n">1</span><span class="sr-step-msg">Enable Mic</span></div>
       <div class="sr-step" id="sr-step-2"><span class="sr-n">2</span><span class="sr-step-msg">Join Channel (WebRTC)</span></div>
@@ -119,23 +120,23 @@
         <button id="sr-join-btn" type="button">② Join Channel</button>
       </div>
       <div id="sr-vu-wrap"><div id="sr-vu"></div></div>
-      <div id="sr-status">Tap 📻 then follow steps 1 → 2 → 3</div>
+      <div id="sr-status">Tap 📡 then follow steps 1 → 2 → 3</div>
       <button id="sr-ptt" type="button">③ HOLD PTT — REAL TRANSMIT</button>
     </div>
     <div id="vendor-menu">
-      <div id="vm-header"><span id="vm-title">Καταστήματα</span><button id="vm-close" type="button">✕</button></div>
+      <div id="vm-header"><span id="vm-title">Καταστήματα</span><button id="vm-close" type="button">✖️</button></div>
       <div id="vm-body"><div id="vm-list"></div><div id="vm-detail" style="display:none"><button id="vm-back" type="button">← όλα τα καταστήματα</button><div id="vm-empty" style="display:none"></div><div id="vm-items"></div><button id="vm-request" type="button" style="display:none">Ζήτησε μενού από κατάστημα</button><button id="vm-place" type="button">Παραγγελία</button></div><div id="vm-compare" style="display:none"><button id="vm-compare-back" type="button">← όλα τα καταστήματα</button><div id="vm-wanted"></div><div id="vm-matches"></div><div id="vm-drivers"></div><div id="vm-balance"></div><button id="vm-confirm-pay" type="button" style="display:none">Επιβεβαίωση &amp; Πληρωμή</button></div></div>
     </div>
     <div id="aci-bar">
       <button id="aci-login" title="Sign in with Google" type="button">G</button>
-      <button id="aci-cli-toggle" title="CLI panel — tasks &amp; conversation (login for full access)" type="button">⌨</button>
-      <button id="aci-stop" title="Stop — take control" type="button">⏹</button>
-      <button id="aci-mic" title="Voice (tap while speaking to interrupt)" type="button">🎙</button>
-      <button id="aci-locate" title="Locate me on globe" type="button">📍</button>
+      <button id="aci-cli-toggle" title="CLI panel — tasks &amp; conversation (login for full access)" type="button">💻</button>
+      <button id="aci-stop" title="Stop — take control" type="button">🛑</button>
+      <button id="aci-mic" title="Voice (tap while speaking to interrupt)" type="button">🎤</button>
+      <button id="aci-locate" title="Locate me on globe" type="button">🎯</button>
       <input id="aci-input" placeholder="connect · order · claim · roles · deploy · login G…" />
-      <button id="aci-send" title="Send" type="button">→</button>
-      <button id="aci-order" title="Order — pick vendor on globe" type="button">🥙</button>
-      <button id="aci-vhf" title="EU PMR Ch11 — real mic + WebRTC (see steps)" type="button">📻</button>
-      <button id="aci-call" title="Phone call" type="button">📞</button>
+      <button id="aci-send" title="Send" type="button">➡️</button>
+      <button id="aci-order" title="Order — pick vendor on globe" type="button">🛒</button>
+      <button id="aci-vhf" title="EU PMR Ch11 — real mic + WebRTC (see steps)" type="button">📡</button>
+      <button id="aci-call" title="Phone call" type="button">☎️</button>
     </div>
   </div>

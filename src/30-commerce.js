@@ -240,7 +240,7 @@ const Commerce = {
         row.className = 'vm-match' + (i === 0 ? ' best' : '');
         const miss = m.wanted - m.matched;
         const detail = m.picks.map(p => p.item.name + ' ' + p.price + ' AVC').join(' · ');
-        row.innerHTML = '<div class="vm-match-head"><span>' + (m.vendor.emoji || '🏪') + ' ' + m.vendor.name + '</span><strong>' + m.total.toFixed(1) + ' AVC</strong></div>'
+        row.innerHTML = '<div class="vm-match-head"><span>' + vendorIcon(m.vendor) + ' ' + m.vendor.name + '</span><strong>' + m.total.toFixed(1) + ' AVC</strong></div>'
           + '<div class="vm-match-sub">' + m.km.toFixed(1) + ' km · ' + m.matched + '/' + m.wanted + ' είδη' + (miss ? ' · <span style="color:#f96">-' + miss + '</span>' : '') + '</div>'
           + '<div class="vm-match-items">' + detail + '</div>';
         row.onclick = () => {
@@ -257,9 +257,9 @@ const Commerce = {
     if (driverBox) {
       const n = drivers.length;
       driverBox.innerHTML = n
-        ? '<div class="vm-drivers-title">🚴 ' + n + ' οδηγοί κοντά:</div>' + drivers.slice(0, 4).map(d => {
+        ? '<div class="vm-drivers-title">' + (AstroGlyphs?.driver || '🚚') + ' ' + n + ' οδηγοί κοντά:</div>' + drivers.slice(0, 4).map(d => {
           const km = this.haversineKm(this.userLatLng().lat, this.userLatLng().lng, d.field_lat, d.field_lng).toFixed(1);
-          return '<span class="vm-tag driver">' + (d.avatar_emoji || '🚴') + ' ' + (d.display_name || 'Driver') + ' · ' + km + ' km</span>';
+          return '<span class="vm-tag driver">' + driverIcon(d) + ' ' + (d.display_name || 'Driver') + ' · ' + km + ' km</span>';
         }).join('')
         : '<div class="vm-drivers-title" style="color:#f96">Δεν βρέθηκαν ενεργοί οδηγοί — θα αναζητηθεί μετά την παραγγελία</div>';
     }
@@ -396,7 +396,7 @@ const Commerce = {
       const hasMenu = this.hasMenu(v);
       const row = document.createElement('div');
       row.className = 'vm-vendor';
-      row.innerHTML = '<span style="font-size:22px">' + (v.emoji || '🏪') + '</span><div><div style="color:#fda;font-weight:600">' + v.name + '</div><div style="color:#9ab;font-size:10px">' + (v.category || 'shop') + ' · ' + km + ' km' + (hasMenu ? '' : ' · <span style="color:#f96">χωρίς μενού</span>') + '</div></div>';
+      row.innerHTML = '<span style="font-size:22px">' + vendorIcon(v) + '</span><div><div style="color:#fda;font-weight:600">' + v.name + '</div><div style="color:#9ab;font-size:10px">' + (v.category || 'shop') + ' · ' + km + ' km' + (hasMenu ? '' : ' · <span style="color:#f96">χωρίς μενού</span>') + '</div></div>';
       row.onclick = () => this.openVendor(v);
       list.appendChild(row);
     });
@@ -419,7 +419,7 @@ const Commerce = {
     const compare = document.getElementById('vm-compare');
     if (compare) compare.style.display = 'none';
     const title = document.getElementById('vm-title');
-    if (title) title.textContent = (vendor.emoji || '🏪') + ' ' + vendor.name;
+    if (title) title.textContent = vendorIcon(vendor) + ' ' + vendor.name;
     this.renderCart();
     if (this.hasMenu(vendor)) {
       AciCli?.print('vendor: ' + vendor.name + ' — add items, tap Παραγγελία', 'ok');
@@ -445,7 +445,7 @@ const Commerce = {
       if (placeBtn) placeBtn.style.display = 'none';
       if (requestBtn) {
         requestBtn.style.display = 'block';
-        requestBtn.textContent = this._menuRequestSent ? 'Αίτημα στάλθηκε ✓' : 'Ζήτησε μενού από κατάστημα';
+        requestBtn.textContent = this._menuRequestSent ? 'Αίτημα στάλθηκε ' + (AstroGlyphs?.ok || '✔️') : (AstroGlyphs?.menu || '📋') + ' Ζήτησε μενού από κατάστημα';
         requestBtn.disabled = !!this._menuRequestSent;
       }
       return;

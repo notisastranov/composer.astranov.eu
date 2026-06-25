@@ -42,7 +42,7 @@ const NewsFeed = {
     const el = document.getElementById('news-ticker');
     if (!el || !this.items.length) return;
     const i = Math.floor(Date.now() / 12000) % this.items.length;
-    el.textContent = '📡 ' + this.items[i];
+    el.textContent = (AstroGlyphs?.news || '📰') + ' ' + this.items[i];
   },
   flash() {
     this.fetch();

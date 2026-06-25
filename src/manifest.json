@@ -4,6 +4,7 @@
   "modules": [
     { "file": "00-globe.js", "marker": null },
     { "file": "05-speak-map.js", "marker": "// === VOICE + MAP DEPICT ===" },
+    { "file": "11-glyphs.js", "marker": "// === ASTRO GLYPHS" },
     { "file": "12-auth.js", "marker": "// === GOOGLE AUTH (Supabase) ===" },
     { "file": "14-aci-cli.js", "marker": "// === ACI CLI" },
     { "file": "16-aci-connect.js", "marker": "// === ACI CONNECT" },

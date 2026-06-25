@@ -680,7 +680,7 @@ serve(async (req) => {
       const { error } = await sb.from('orders').update({
         driver_id: caller.callerId,
         driver_name: prof?.display_name || 'Driver',
-        driver_emoji: prof?.avatar_emoji || '🚴',
+        driver_emoji: prof?.avatar_emoji || '🚚',
         status: 'assigned',
         updated_at: new Date().toISOString(),
       }).eq('id', orderId)

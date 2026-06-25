@@ -11,22 +11,22 @@ const cors = {
 }
 
 const CAT: Record<string, { emoji: string; category: string; delivery: boolean }> = {
-  restaurant:   { emoji: '🍽️', category: 'restaurant', delivery: true },
+  restaurant:   { emoji: '🍴', category: 'restaurant', delivery: true },
   cafe:         { emoji: '☕', category: 'cafe', delivery: true },
-  fast_food:    { emoji: '🍔', category: 'fast_food', delivery: true },
+  fast_food:    { emoji: '🍟', category: 'fast_food', delivery: true },
   pizza:        { emoji: '🍕', category: 'restaurant', delivery: true },
-  bakery:       { emoji: '🥐', category: 'bakery', delivery: true },
-  ice_cream:    { emoji: '🍦', category: 'cafe', delivery: true },
-  bar:          { emoji: '🍺', category: 'bar', delivery: false },
+  bakery:       { emoji: '🥖', category: 'bakery', delivery: true },
+  ice_cream:    { emoji: '🍨', category: 'cafe', delivery: true },
+  bar:          { emoji: '🍻', category: 'bar', delivery: false },
   pharmacy:     { emoji: '💊', category: 'pharmacy', delivery: true },
   supermarket:  { emoji: '🛒', category: 'supermarket', delivery: true },
-  convenience:  { emoji: '🏪', category: 'shop', delivery: true },
-  clothes:      { emoji: '👗', category: 'shop', delivery: false },
-  electronics:  { emoji: '📱', category: 'shop', delivery: false },
-  books:        { emoji: '📚', category: 'shop', delivery: false },
-  sports:       { emoji: '⚽', category: 'shop', delivery: false },
-  hairdresser:  { emoji: '✂️', category: 'service', delivery: false },
-  gym:          { emoji: '🏋️', category: 'fitness', delivery: false },
+  convenience:  { emoji: '🛍️', category: 'shop', delivery: true },
+  clothes:      { emoji: '👕', category: 'shop', delivery: false },
+  electronics:  { emoji: '💻', category: 'shop', delivery: false },
+  books:        { emoji: '📖', category: 'shop', delivery: false },
+  sports:       { emoji: '🏀', category: 'shop', delivery: false },
+  hairdresser:  { emoji: '💇', category: 'service', delivery: false },
+  gym:          { emoji: '🏃', category: 'fitness', delivery: false },
   hotel:        { emoji: '🏨', category: 'hotel', delivery: false },
   hospital:     { emoji: '🏥', category: 'health', delivery: false },
 }
@@ -66,7 +66,7 @@ out body qt 80;`
       .filter((el: any) => el.tags?.name && el.lat && el.lon)
       .map((el: any) => {
         const amenity = el.tags.amenity ?? el.tags.shop ?? 'shop'
-        const meta = CAT[amenity] ?? { emoji: '🎪', category: 'shop', delivery: false }
+        const meta = CAT[amenity] ?? { emoji: '🏬', category: 'shop', delivery: false }
         return {
           osm_id: `osm_${el.id}`,
           name: el.tags.name as string,

@@ -41,7 +41,8 @@ const FieldBrain = {
     const chip = document.getElementById('user-chip');
     if (!chip || !Auth?.user) return;
     const name = Auth.user.user_metadata?.full_name || Auth.user.email?.split('@')[0] || 'User';
-    const hats = this.roles.map(r => r === 'driver' ? '🚴' : r === 'vendor' ? '🏪' : '👤').join('');
+    const g = AstroGlyphs || { driver: '🚚', vendor: '🏬', client: '🧑' };
+    const hats = this.roles.map(r => r === 'driver' ? g.driver : r === 'vendor' ? g.vendor : g.client).join('');
     const owner = Auth.isOwner ? ' · OWNER' : '';
     chip.textContent = (name + ' ' + hats + owner).slice(0, 48);
     chip.title = 'Roles: ' + this.roles.join(', ');

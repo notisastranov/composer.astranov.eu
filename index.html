@@ -37,6 +37,7 @@
   #sr-ptt.active { background:rgba(255,60,20,0.85); }
   #sr-close { background:transparent; border:1px solid #666; color:#aaa; border-radius:8px; padding:4px 10px; cursor:pointer; }
   #aci-bar { display:flex; gap:6px; padding:8px 10px; margin:0 8px 8px; background:rgba(0,8,18,0.82); border:1px solid rgba(0,180,255,0.35); border-radius:24px; pointer-events:auto; backdrop-filter:blur(12px); align-items:center; justify-content:center; flex-wrap:wrap; }
+  #aci-bar button { font-size:17px; line-height:1; }
   #aci-input, #aci-send { display:none !important; }
   #aci-mic, #aci-send, #aci-order, #aci-locate, #aci-vhf, #aci-call, #aci-stop, #aci-login { background:rgba(0,100,180,0.35); border:1px solid rgba(0,200,255,0.4); color:#aaf; border-radius:50%; width:38px; height:38px; cursor:pointer; font-size:14px; flex-shrink:0; }
   #aci-locate { font-size:16px; }
@@ -109,7 +110,7 @@
       </div>
     </div>
     <div id="sat-radio">
-      <div class="sr-row"><span class="sr-ch">EU PMR Ch 11</span><span class="sr-freq">446.13125 MHz</span><span>peers: <b id="sr-peers">0</b></span><button id="sr-close" type="button">✕</button></div>
+      <div class="sr-row"><span class="sr-ch">EU PMR Ch 11</span><span class="sr-freq">446.13125 MHz</span><span>peers: <b id="sr-peers">0</b></span><button id="sr-close" type="button">✖️</button></div>
       <div class="sr-honest">RF: tune YOUR PMR446 handheld to Ch 11 (446.13125 MHz) — browser cannot transmit on 446 MHz. In-app: real mic + WebRTC voice to other Astranov users on this channel.</div>
       <div class="sr-step sr-active" id="sr-step-1"><span class="sr-n">1</span><span class="sr-step-msg">Enable Mic</span></div>
       <div class="sr-step" id="sr-step-2"><span class="sr-n">2</span><span class="sr-step-msg">Join Channel (WebRTC)</span></div>
@@ -119,24 +120,24 @@
         <button id="sr-join-btn" type="button">② Join Channel</button>
       </div>
       <div id="sr-vu-wrap"><div id="sr-vu"></div></div>
-      <div id="sr-status">Tap 📻 then follow steps 1 → 2 → 3</div>
+      <div id="sr-status">Tap 📡 then follow steps 1 → 2 → 3</div>
       <button id="sr-ptt" type="button">③ HOLD PTT — REAL TRANSMIT</button>
     </div>
     <div id="vendor-menu">
-      <div id="vm-header"><span id="vm-title">Καταστήματα</span><button id="vm-close" type="button">✕</button></div>
+      <div id="vm-header"><span id="vm-title">Καταστήματα</span><button id="vm-close" type="button">✖️</button></div>
       <div id="vm-body"><div id="vm-list"></div><div id="vm-detail" style="display:none"><button id="vm-back" type="button">← όλα τα καταστήματα</button><div id="vm-empty" style="display:none"></div><div id="vm-items"></div><button id="vm-request" type="button" style="display:none">Ζήτησε μενού από κατάστημα</button><button id="vm-place" type="button">Παραγγελία</button></div><div id="vm-compare" style="display:none"><button id="vm-compare-back" type="button">← όλα τα καταστήματα</button><div id="vm-wanted"></div><div id="vm-matches"></div><div id="vm-drivers"></div><div id="vm-balance"></div><button id="vm-confirm-pay" type="button" style="display:none">Επιβεβαίωση &amp; Πληρωμή</button></div></div>
     </div>
     <div id="aci-bar">
       <button id="aci-login" title="Sign in with Google" type="button">G</button>
-      <button id="aci-cli-toggle" title="CLI panel — tasks &amp; conversation (login for full access)" type="button">⌨</button>
-      <button id="aci-stop" title="Stop — take control" type="button">⏹</button>
-      <button id="aci-mic" title="Voice (tap while speaking to interrupt)" type="button">🎙</button>
-      <button id="aci-locate" title="Locate me on globe" type="button">📍</button>
+      <button id="aci-cli-toggle" title="CLI panel — tasks &amp; conversation (login for full access)" type="button">💻</button>
+      <button id="aci-stop" title="Stop — take control" type="button">🛑</button>
+      <button id="aci-mic" title="Voice (tap while speaking to interrupt)" type="button">🎤</button>
+      <button id="aci-locate" title="Locate me on globe" type="button">🎯</button>
       <input id="aci-input" placeholder="connect · order · claim · roles · deploy · login G…" />
-      <button id="aci-send" title="Send" type="button">→</button>
-      <button id="aci-order" title="Order — pick vendor on globe" type="button">🥙</button>
-      <button id="aci-vhf" title="EU PMR Ch11 — real mic + WebRTC (see steps)" type="button">📻</button>
-      <button id="aci-call" title="Phone call" type="button">📞</button>
+      <button id="aci-send" title="Send" type="button">➡️</button>
+      <button id="aci-order" title="Order — pick vendor on globe" type="button">🛒</button>
+      <button id="aci-vhf" title="EU PMR Ch11 — real mic + WebRTC (see steps)" type="button">📡</button>
+      <button id="aci-call" title="Phone call" type="button">☎️</button>
     </div>
   </div>
 <script>
@@ -576,7 +577,7 @@ const MapDepict = {
     if (type === 'driver' && opts.drivers) {
       opts.drivers.forEach(d => {
         if (d.field_lat == null) return;
-        this.pulse(d.field_lat, d.field_lng, 0x4488ff, (d.display_name || 'Driver') + ' 🚴', 20000);
+        this.pulse(d.field_lat, d.field_lng, 0x4488ff, (d.display_name || 'Driver') + ' ' + (typeof driverIcon === 'function' ? driverIcon(d) : '🚚'), 20000);
       });
     }
     if (type === 'pay' && opts.vendorLat != null) {
@@ -648,11 +649,63 @@ function userIntervene() {
   isListening = false;
   if (ACI) ACI.evolving = false;
   const ma = document.getElementById('map-action');
-  if (ma) ma.textContent = '⏹ Διακοπή — εσύ παίρνεις τον έλεγχο';
+  if (ma) ma.textContent = (AstroGlyphs?.stop || '🛑') + ' Διακοπή — εσύ παίρνεις τον έλεγχο';
   if (window.ACIControl) ACIControl.reply('Stopped — globe is yours. Drag · pinch · tap.');
 }
 
 window.userIntervene = userIntervene;
+
+// === ASTRO GLYPHS — high-contrast icons for globe HUD (readable at small size) ===
+const AstroGlyphs = {
+  client: '🧑',
+  driver: '🚚',
+  vendor: '🏬',
+  shop: '🛍️',
+  order: '🛒',
+  locate: '🎯',
+  mic: '🎤',
+  cli: '💻',
+  stop: '🛑',
+  vhf: '📡',
+  phone: '☎️',
+  news: '📰',
+  drive: '🚗',
+  fast: '⚡',
+  send: '➡️',
+  close: '✖️',
+  ok: '✔️',
+  err: '❌',
+  pilot: '🛸',
+  beer: '🍻',
+  menu: '📋',
+};
+
+const CATEGORY_GLYPH = {
+  restaurant: '🍴', cafe: '☕', fast_food: '🍟', bakery: '🥖', bar: '🍻',
+  pharmacy: '💊', supermarket: '🛒', shop: '🛍️', service: '💇', fitness: '🏃',
+  hotel: '🏨', health: '🏥',
+};
+
+const LEGACY_VENDOR_EMOJI = new Set(['🎪', '🏪', '🍽️', '🍔', '🥐', '🍦', '🍺', '👗', '📱', '📚', '⚽', '✂️', '🏋️']);
+
+function vendorIcon(v) {
+  if (!v) return AstroGlyphs.shop;
+  const e = v.emoji;
+  if (e && !LEGACY_VENDOR_EMOJI.has(e)) return e;
+  return CATEGORY_GLYPH[v.category] || AstroGlyphs.shop;
+}
+
+const LEGACY_DRIVER_EMOJI = new Set(['🚴', '👤', '🛵']);
+
+function driverIcon(d) {
+  const e = d && (d.avatar_emoji || d.emoji);
+  if (e && !LEGACY_DRIVER_EMOJI.has(e)) return e;
+  return AstroGlyphs.driver;
+}
+
+window.AstroGlyphs = AstroGlyphs;
+window.vendorIcon = vendorIcon;
+window.driverIcon = driverIcon;
 
 // === GOOGLE AUTH (Supabase) ===
 // Architect: notisastranov@gmail.com → profiles.is_owner (existing DB column)
@@ -1214,11 +1267,11 @@ const AciConnect = {
 
     if (AciCli) {
       if (this.connected) {
-        AciCli.print('✓ CONNECTED — collective AI online · session ' + (this.sessionId || '').slice(0, 8), 'ok');
+        AciCli.print((AstroGlyphs?.ok || '✔️') + ' CONNECTED — collective AI online · session ' + (this.sessionId || '').slice(0, 8), 'ok');
         if (conn.steps) conn.steps.forEach(s => AciCli.print('  · ' + s, 'dim'));
         if (conn.deploy_ready) AciCli.print('  · deploy authority: FULL — type: deploy <task>', 'ok');
       } else {
-        AciCli.print('✗ CONNECT FAILED: ' + (conn.error || JSON.stringify(conn).slice(0, 120)), 'err');
+        AciCli.print((AstroGlyphs?.err || '❌') + ' CONNECT FAILED: ' + (conn.error || JSON.stringify(conn).slice(0, 120)), 'err');
       }
     }
 
@@ -1460,7 +1513,7 @@ const AciCoders = {
     MapDepict?.action('think', { detail: 'coders: ' + m.slice(0, 40) });
 
     try {
-      if (/locate\s+me|locate\s+button|📍/i.test(m)) {
+      if (/locate\s+me|locate\s+button|🎯|📍/i.test(m)) {
         locateMe();
       }
 
@@ -1594,7 +1647,8 @@ const FieldBrain = {
     const chip = document.getElementById('user-chip');
     if (!chip || !Auth?.user) return;
     const name = Auth.user.user_metadata?.full_name || Auth.user.email?.split('@')[0] || 'User';
-    const hats = this.roles.map(r => r === 'driver' ? '🚴' : r === 'vendor' ? '🏪' : '👤').join('');
+    const g = AstroGlyphs || { driver: '🚚', vendor: '🏬', client: '🧑' };
+    const hats = this.roles.map(r => r === 'driver' ? g.driver : r === 'vendor' ? g.vendor : g.client).join('');
     const owner = Auth.isOwner ? ' · OWNER' : '';
     chip.textContent = (name + ' ' + hats + owner).slice(0, 48);
     chip.title = 'Roles: ' + this.roles.join(', ');
@@ -1985,7 +2039,7 @@ const ACIControl = {
     }
 
     if (low.length < 4) {
-      this.reply('Use globe gestures · or open ⌨ CLI · or say order, explore, stop');
+      this.reply('Use globe gestures · or open ' + (AstroGlyphs?.cli || '💻') + ' CLI · or say order, explore, stop');
       if (fromVoice) say('Say order, explore, or stop.');
       return { executed: false };
     }
@@ -2244,7 +2298,7 @@ const Commerce = {
         row.className = 'vm-match' + (i === 0 ? ' best' : '');
         const miss = m.wanted - m.matched;
         const detail = m.picks.map(p => p.item.name + ' ' + p.price + ' AVC').join(' · ');
-        row.innerHTML = '<div class="vm-match-head"><span>' + (m.vendor.emoji || '🏪') + ' ' + m.vendor.name + '</span><strong>' + m.total.toFixed(1) + ' AVC</strong></div>'
+        row.innerHTML = '<div class="vm-match-head"><span>' + vendorIcon(m.vendor) + ' ' + m.vendor.name + '</span><strong>' + m.total.toFixed(1) + ' AVC</strong></div>'
           + '<div class="vm-match-sub">' + m.km.toFixed(1) + ' km · ' + m.matched + '/' + m.wanted + ' είδη' + (miss ? ' · <span style="color:#f96">-' + miss + '</span>' : '') + '</div>'
           + '<div class="vm-match-items">' + detail + '</div>';
         row.onclick = () => {
@@ -2261,9 +2315,9 @@ const Commerce = {
     if (driverBox) {
       const n = drivers.length;
       driverBox.innerHTML = n
-        ? '<div class="vm-drivers-title">🚴 ' + n + ' οδηγοί κοντά:</div>' + drivers.slice(0, 4).map(d => {
+        ? '<div class="vm-drivers-title">' + (AstroGlyphs?.driver || '🚚') + ' ' + n + ' οδηγοί κοντά:</div>' + drivers.slice(0, 4).map(d => {
           const km = this.haversineKm(this.userLatLng().lat, this.userLatLng().lng, d.field_lat, d.field_lng).toFixed(1);
-          return '<span class="vm-tag driver">' + (d.avatar_emoji || '🚴') + ' ' + (d.display_name || 'Driver') + ' · ' + km + ' km</span>';
+          return '<span class="vm-tag driver">' + driverIcon(d) + ' ' + (d.display_name || 'Driver') + ' · ' + km + ' km</span>';
         }).join('')
         : '<div class="vm-drivers-title" style="color:#f96">Δεν βρέθηκαν ενεργοί οδηγοί — θα αναζητηθεί μετά την παραγγελία</div>';
     }
@@ -2400,7 +2454,7 @@ const Commerce = {
       const hasMenu = this.hasMenu(v);
       const row = document.createElement('div');
       row.className = 'vm-vendor';
-      row.innerHTML = '<span style="font-size:22px">' + (v.emoji || '🏪') + '</span><div><div style="color:#fda;font-weight:600">' + v.name + '</div><div style="color:#9ab;font-size:10px">' + (v.category || 'shop') + ' · ' + km + ' km' + (hasMenu ? '' : ' · <span style="color:#f96">χωρίς μενού</span>') + '</div></div>';
+      row.innerHTML = '<span style="font-size:22px">' + vendorIcon(v) + '</span><div><div style="color:#fda;font-weight:600">' + v.name + '</div><div style="color:#9ab;font-size:10px">' + (v.category || 'shop') + ' · ' + km + ' km' + (hasMenu ? '' : ' · <span style="color:#f96">χωρίς μενού</span>') + '</div></div>';
       row.onclick = () => this.openVendor(v);
       list.appendChild(row);
     });
@@ -2423,7 +2477,7 @@ const Commerce = {
     const compare = document.getElementById('vm-compare');
     if (compare) compare.style.display = 'none';
     const title = document.getElementById('vm-title');
-    if (title) title.textContent = (vendor.emoji || '🏪') + ' ' + vendor.name;
+    if (title) title.textContent = vendorIcon(vendor) + ' ' + vendor.name;
     this.renderCart();
     if (this.hasMenu(vendor)) {
       AciCli?.print('vendor: ' + vendor.name + ' — add items, tap Παραγγελία', 'ok');
@@ -2449,7 +2503,7 @@ const Commerce = {
       if (placeBtn) placeBtn.style.display = 'none';
       if (requestBtn) {
         requestBtn.style.display = 'block';
-        requestBtn.textContent = this._menuRequestSent ? 'Αίτημα στάλθηκε ✓' : 'Ζήτησε μενού από κατάστημα';
+        requestBtn.textContent = this._menuRequestSent ? 'Αίτημα στάλθηκε ' + (AstroGlyphs?.ok || '✔️') : (AstroGlyphs?.menu || '📋') + ' Ζήτησε μενού από κατάστημα';
         requestBtn.disabled = !!this._menuRequestSent;
       }
       return;
@@ -2887,7 +2941,7 @@ const NewsFeed = {
     const el = document.getElementById('news-ticker');
     if (!el || !this.items.length) return;
     const i = Math.floor(Date.now() / 12000) % this.items.length;
-    el.textContent = '📡 ' + this.items[i];
+    el.textContent = (AstroGlyphs?.news || '📰') + ' ' + this.items[i];
   },
   flash() {
     this.fetch();
@@ -3930,7 +3984,8 @@ const DrivingView = {
     }
     if (prev !== this.mode && fast) {
       const el = document.getElementById('drive-guide');
-      if (el) el.textContent = (this.mode === 'drive' ? '🚗 DRIVING' : '🏃 FAST') + ' · ' + Math.round(this.speed * 3.6) + ' km/h';
+      const g = AstroGlyphs || { drive: '🚗', fast: '⚡' };
+      if (el) el.textContent = (this.mode === 'drive' ? g.drive + ' DRIVING' : g.fast + ' FAST') + ' · ' + Math.round(this.speed * 3.6) + ' km/h';
     }
   },
 
@@ -4289,7 +4344,7 @@ function initUser() {
 try { initUser(); } catch(e){ console.warn('User init skipped:', e.message); }
 
 // Let user explore the globe freely first
-console.log('%c[Astranov] Globe UI: drag rotate · wheel/pinch zoom · tap/double-tap fly. ⌨ CLI for tasks. 🎙 mic optional.', 'color:#00ddff');
+console.log('%c[Astranov] Globe UI: drag rotate · wheel/pinch zoom · tap/double-tap fly. 💻 CLI for tasks. 🎤 mic optional.', 'color:#00ddff');
 
 // Voice system - ask with voice, stop to listen, provoke answer. No delirium.
 function initVoice() {
@@ -4406,9 +4461,9 @@ window.locateMe = locateMe;
 
 function showOtherUsers() {
   others = [
-    {id:'o1', name:'Αξαδίνα', lat:36.21, lng:28.11, hidden:false, emoji:'🛵'},
-    {id:'o3', name:'Αξάς', lat:36.25, lng:28.15, hidden:false, emoji:'🛵'},
-    {id:'o2', name:'Σταύρος', lat:36.18, lng:28.09, hidden:false, emoji:'🍺'},
+    {id:'o1', name:'Αξαδίνα', lat:36.21, lng:28.11, hidden:false, emoji:'🛸'},
+    {id:'o3', name:'Αξάς', lat:36.25, lng:28.15, hidden:false, emoji:'🛸'},
+    {id:'o2', name:'Σταύρος', lat:36.18, lng:28.09, hidden:false, emoji:'🍻'},
   ];
   others.forEach(u => {
     const pos = latLngToPos(u.lat, u.lng, 1.025);

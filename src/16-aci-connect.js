@@ -36,11 +36,11 @@ const AciConnect = {
 
     if (AciCli) {
       if (this.connected) {
-        AciCli.print('✓ CONNECTED — collective AI online · session ' + (this.sessionId || '').slice(0, 8), 'ok');
+        AciCli.print((AstroGlyphs?.ok || '✔️') + ' CONNECTED — collective AI online · session ' + (this.sessionId || '').slice(0, 8), 'ok');
         if (conn.steps) conn.steps.forEach(s => AciCli.print('  · ' + s, 'dim'));
         if (conn.deploy_ready) AciCli.print('  · deploy authority: FULL — type: deploy <task>', 'ok');
       } else {
-        AciCli.print('✗ CONNECT FAILED: ' + (conn.error || JSON.stringify(conn).slice(0, 120)), 'err');
+        AciCli.print((AstroGlyphs?.err || '❌') + ' CONNECT FAILED: ' + (conn.error || JSON.stringify(conn).slice(0, 120)), 'err');
       }
     }
 

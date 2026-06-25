@@ -72,7 +72,8 @@ const DrivingView = {
     }
     if (prev !== this.mode && fast) {
       const el = document.getElementById('drive-guide');
-      if (el) el.textContent = (this.mode === 'drive' ? '🚗 DRIVING' : '🏃 FAST') + ' · ' + Math.round(this.speed * 3.6) + ' km/h';
+      const g = AstroGlyphs || { drive: '🚗', fast: '⚡' };
+      if (el) el.textContent = (this.mode === 'drive' ? g.drive + ' DRIVING' : g.fast + ' FAST') + ' · ' + Math.round(this.speed * 3.6) + ' km/h';
     }
   },
 

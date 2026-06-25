@@ -202,7 +202,7 @@ const AciCoders = {
     MapDepict?.action('think', { detail: 'coders: ' + m.slice(0, 40) });
 
     try {
-      if (/locate\s+me|locate\s+button|📍/i.test(m)) {
+      if (/locate\s+me|locate\s+button|🎯|📍/i.test(m)) {
         locateMe();
       }
 

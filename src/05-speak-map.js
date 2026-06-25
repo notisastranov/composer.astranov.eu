@@ -343,7 +343,7 @@ const MapDepict = {
     if (type === 'driver' && opts.drivers) {
       opts.drivers.forEach(d => {
         if (d.field_lat == null) return;
-        this.pulse(d.field_lat, d.field_lng, 0x4488ff, (d.display_name || 'Driver') + ' 🚴', 20000);
+        this.pulse(d.field_lat, d.field_lng, 0x4488ff, (d.display_name || 'Driver') + ' ' + (typeof driverIcon === 'function' ? driverIcon(d) : '🚚'), 20000);
       });
     }
     if (type === 'pay' && opts.vendorLat != null) {
@@ -415,7 +415,7 @@ function userIntervene() {
   isListening = false;
   if (ACI) ACI.evolving = false;
   const ma = document.getElementById('map-action');
-  if (ma) ma.textContent = '⏹ Διακοπή — εσύ παίρνεις τον έλεγχο';
+  if (ma) ma.textContent = (AstroGlyphs?.stop || '🛑') + ' Διακοπή — εσύ παίρνεις τον έλεγχο';
   if (window.ACIControl) ACIControl.reply('Stopped — globe is yours. Drag · pinch · tap.');
 }
 

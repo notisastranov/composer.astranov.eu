@@ -29,7 +29,7 @@ function initUser() {
 try { initUser(); } catch(e){ console.warn('User init skipped:', e.message); }
 
 // Let user explore the globe freely first
-console.log('%c[Astranov] Globe UI: drag rotate · wheel/pinch zoom · tap/double-tap fly. ⌨ CLI for tasks. 🎙 mic optional.', 'color:#00ddff');
+console.log('%c[Astranov] Globe UI: drag rotate · wheel/pinch zoom · tap/double-tap fly. 💻 CLI for tasks. 🎤 mic optional.', 'color:#00ddff');
 
 // Voice system - ask with voice, stop to listen, provoke answer. No delirium.
 function initVoice() {
@@ -146,9 +146,9 @@ window.locateMe = locateMe;
 
 function showOtherUsers() {
   others = [
-    {id:'o1', name:'Αξαδίνα', lat:36.21, lng:28.11, hidden:false, emoji:'🛵'},
-    {id:'o3', name:'Αξάς', lat:36.25, lng:28.15, hidden:false, emoji:'🛵'},
-    {id:'o2', name:'Σταύρος', lat:36.18, lng:28.09, hidden:false, emoji:'🍺'},
+    {id:'o1', name:'Αξαδίνα', lat:36.21, lng:28.11, hidden:false, emoji:'🛸'},
+    {id:'o3', name:'Αξάς', lat:36.25, lng:28.15, hidden:false, emoji:'🛸'},
+    {id:'o2', name:'Σταύρος', lat:36.18, lng:28.09, hidden:false, emoji:'🍻'},
   ];
   others.forEach(u => {
     const pos = latLngToPos(u.lat, u.lng, 1.025);
