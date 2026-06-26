@@ -153,13 +153,13 @@
     <div id="news-ticker">Astranov Collective Intelligence — loading news…</div>
     <div id="globe-deck" class="collapsed">
       <div id="globe-deck-header">
-        <span id="globe-deck-title">Super CLI — Collective</span>
+        <span id="globe-deck-title">Astranov Command Line</span>
         <span id="globe-deck-preview"></span>
         <button id="globe-deck-handle" type="button" title="Tap or swipe to expand/collapse">▔</button>
       </div>
       <div id="super-cli-bar">
         <button id="aci-login" title="Sign in with Google" type="button">G</button>
-        <button id="aci-cli-toggle" title="Expand/collapse Super CLI" type="button">💻</button>
+        <button id="aci-cli-toggle" title="Expand/collapse Astranov Command Line" type="button">💻</button>
         <button id="aci-stop" title="Stop" type="button">🛑</button>
         <button id="aci-mic" title="Voice" type="button">🎤</button>
         <button id="aci-locate" title="Locate me" type="button">🎯</button>
@@ -1059,7 +1059,7 @@ const GlobeDeck = {
       const stage = document.getElementById('globe-deck-stage');
       if (el && stage && el.parentElement !== stage) stage.appendChild(el);
     });
-    this.setTitle('Collective — globe deck');
+    this.setTitle(window.SuperCli?.title || 'Astranov Command Line');
   },
 
   bindDeckGestures() {
@@ -1105,7 +1105,7 @@ const GlobeDeck = {
 
   setTitle(text) {
     const el = document.getElementById('globe-deck-title');
-    if (el) el.textContent = text || 'Collective — globe deck';
+    if (el) el.textContent = text || (window.SuperCli?.title || 'Astranov Command Line');
   },
 
   setPreview(text) {
@@ -1230,7 +1230,7 @@ const GlobeDeck = {
   superAction(action) {
     this._userEngaged = true;
     if (this._collapseTimer) { clearTimeout(this._collapseTimer); this._collapseTimer = null; }
-    this.expand('Super CLI — ' + (action || 'collective'));
+    this.expand((window.SuperCli?.title || 'Astranov Command Line') + ' — ' + (action || 'collective'));
   },
 
   collapse() {
@@ -1296,7 +1296,7 @@ const GlobeDeck = {
     this.hideStage();
     this.collapse();
     this.activeTask = null;
-    this.setTitle('Collective — globe deck');
+    this.setTitle(window.SuperCli?.title || 'Astranov Command Line');
     SuperCli?.setContext?.(SuperCli.inferContext?.() || 'idle');
   },
 
@@ -1322,9 +1322,12 @@ const GlobeDeck = {
 window.GlobeDeck = GlobeDeck;
 
 // === SUPER CLI — one window: toolbar + log + stage + input ===
+const ACL_TITLE = 'Astranov Command Line';
+
 const SuperCli = {
   _bound: false,
   _context: 'idle',
+  title: ACL_TITLE,
 
   CORE: ['aci-login', 'aci-cli-toggle', 'aci-stop', 'globe-deck-send'],
   CONTEXT_BTNS: {
@@ -1343,7 +1346,7 @@ const SuperCli = {
     this._bound = true;
     this.bindToolbar();
     this.setContext(this.inferContext());
-    GlobeDeck?.setTitle('Super CLI — Collective');
+    GlobeDeck?.setTitle(ACL_TITLE);
   },
 
   inferContext() {
@@ -1442,10 +1445,10 @@ const SuperCli = {
       case 'phone':
       case 'call':
         GlobeDeck?.hideStage();
-        GlobeDeck?.expand('Super CLI — phone');
+        GlobeDeck?.expand(ACL_TITLE + ' — phone');
         this.setContext('phone');
         AciCli?.print('Type: call +30… (e.g. call +306912345678)', 'ok');
-        ACIControl?.reply('Type call +number in Super CLI');
+        ACIControl?.reply('Type call +number in Astranov Command Line');
         document.getElementById('aci-cli-in')?.focus();
         break;
       case 'news':
@@ -1459,7 +1462,7 @@ const SuperCli = {
         this.setContext('drive');
         break;
       case 'cli':
-        GlobeDeck?.expand('Super CLI');
+        GlobeDeck?.expand(ACL_TITLE);
         document.getElementById('aci-cli-in')?.focus();
         break;
       default:
@@ -1486,7 +1489,7 @@ const AciCli = {
       e.stopPropagation();
       const line = (input?.value || '').trim();
       if (!line) {
-        GlobeDeck?.expand('Super CLI');
+        GlobeDeck?.expand(SuperCli?.title || 'Astranov Command Line');
         input?.focus();
         return;
       }
@@ -1553,7 +1556,7 @@ const AciCli = {
 
   toggle() {
     if (!Auth?.user) {
-      GlobeDeck?.onUserMessage('Guest — Super CLI');
+      GlobeDeck?.onUserMessage('Guest — Astranov Command Line');
       this.showGuest();
       return;
     }

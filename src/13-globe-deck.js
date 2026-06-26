@@ -23,7 +23,7 @@ const GlobeDeck = {
       const stage = document.getElementById('globe-deck-stage');
       if (el && stage && el.parentElement !== stage) stage.appendChild(el);
     });
-    this.setTitle('Collective — globe deck');
+    this.setTitle(window.SuperCli?.title || 'Astranov Command Line');
   },
 
   bindDeckGestures() {
@@ -69,7 +69,7 @@ const GlobeDeck = {
 
   setTitle(text) {
     const el = document.getElementById('globe-deck-title');
-    if (el) el.textContent = text || 'Collective — globe deck';
+    if (el) el.textContent = text || (window.SuperCli?.title || 'Astranov Command Line');
   },
 
   setPreview(text) {
@@ -194,7 +194,7 @@ const GlobeDeck = {
   superAction(action) {
     this._userEngaged = true;
     if (this._collapseTimer) { clearTimeout(this._collapseTimer); this._collapseTimer = null; }
-    this.expand('Super CLI — ' + (action || 'collective'));
+    this.expand((window.SuperCli?.title || 'Astranov Command Line') + ' — ' + (action || 'collective'));
   },
 
   collapse() {
@@ -260,7 +260,7 @@ const GlobeDeck = {
     this.hideStage();
     this.collapse();
     this.activeTask = null;
-    this.setTitle('Collective — globe deck');
+    this.setTitle(window.SuperCli?.title || 'Astranov Command Line');
     SuperCli?.setContext?.(SuperCli.inferContext?.() || 'idle');
   },
 

@@ -15,7 +15,7 @@ const AciCli = {
       e.stopPropagation();
       const line = (input?.value || '').trim();
       if (!line) {
-        GlobeDeck?.expand('Super CLI');
+        GlobeDeck?.expand(SuperCli?.title || 'Astranov Command Line');
         input?.focus();
         return;
       }
@@ -82,7 +82,7 @@ const AciCli = {
 
   toggle() {
     if (!Auth?.user) {
-      GlobeDeck?.onUserMessage('Guest — Super CLI');
+      GlobeDeck?.onUserMessage('Guest — Astranov Command Line');
       this.showGuest();
       return;
     }

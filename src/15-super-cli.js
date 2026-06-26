@@ -1,7 +1,10 @@
 // === SUPER CLI — one window: toolbar + log + stage + input ===
+const ACL_TITLE = 'Astranov Command Line';
+
 const SuperCli = {
   _bound: false,
   _context: 'idle',
+  title: ACL_TITLE,
 
   CORE: ['aci-login', 'aci-cli-toggle', 'aci-stop', 'globe-deck-send'],
   CONTEXT_BTNS: {
@@ -20,7 +23,7 @@ const SuperCli = {
     this._bound = true;
     this.bindToolbar();
     this.setContext(this.inferContext());
-    GlobeDeck?.setTitle('Super CLI — Collective');
+    GlobeDeck?.setTitle(ACL_TITLE);
   },
 
   inferContext() {
@@ -119,10 +122,10 @@ const SuperCli = {
       case 'phone':
       case 'call':
         GlobeDeck?.hideStage();
-        GlobeDeck?.expand('Super CLI — phone');
+        GlobeDeck?.expand(ACL_TITLE + ' — phone');
         this.setContext('phone');
         AciCli?.print('Type: call +30… (e.g. call +306912345678)', 'ok');
-        ACIControl?.reply('Type call +number in Super CLI');
+        ACIControl?.reply('Type call +number in Astranov Command Line');
         document.getElementById('aci-cli-in')?.focus();
         break;
       case 'news':
@@ -136,7 +139,7 @@ const SuperCli = {
         this.setContext('drive');
         break;
       case 'cli':
-        GlobeDeck?.expand('Super CLI');
+        GlobeDeck?.expand(ACL_TITLE);
         document.getElementById('aci-cli-in')?.focus();
         break;
       default:
