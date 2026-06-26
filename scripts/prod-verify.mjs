@@ -55,7 +55,7 @@ await check('assemble + syntax', () => {
 await check('live site has coders bridge', async () => {
   const r = await fetch(SITE + '/index.html');
   const html = await r.text();
-  const markers = ['AciCoders', 'coders use grok', 'coders poll', 'Cursor Composer'];
+  const markers = ['AciCoders', 'ensureSession', 'queueCoder', 'coders poll'];
   const missing = markers.filter(m => !html.includes(m));
   if (missing.length) throw new Error('missing: ' + missing.join(', '));
   return markers.length + ' markers present';
