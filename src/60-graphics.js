@@ -7,6 +7,11 @@ const AIGraphics = {
   clouds: null,
   cityLights: null,
   activeEffects: [],
+  batchGroup: null,
+  batchRing: null,
+  batchNodes: null,
+  superBatchActive: false,
+  shellDim: false,
 
   init(parent, earthRadius = 1) {
     this._parent = parent;
@@ -166,7 +171,79 @@ const AIGraphics = {
     });
   },
 
+  setSiteShellMode(on) {
+    this.shellDim = !!on;
+    if (this.atmosphere) this.atmosphere.material.opacity = on ? 0.12 : 0.06;
+    if (this.idleNodes) this.idleNodes.material.opacity = on ? 0.55 : 0.35;
+  },
+
+  setSuperBatchActive(on, meta = {}) {
+    this.superBatchActive = !!on;
+    if (!this._parent) return;
+    if (!this.batchGroup) {
+      this.batchGroup = new THREE.Group();
+      this._parent.add(this.batchGroup);
+      const ringGeo = new THREE.RingGeometry(1.06, 1.14, 64);
+      const ringMat = new THREE.MeshBasicMaterial({
+        color: 0xaa88ff,
+        transparent: true,
+        opacity: 0.35,
+        side: THREE.DoubleSide,
+        blending: THREE.AdditiveBlending,
+        depthWrite: false
+      });
+      this.batchRing = new THREE.Mesh(ringGeo, ringMat);
+      this.batchRing.lookAt(0, 0, 0);
+      this.batchGroup.add(this.batchRing);
+      const nodeGeo = new THREE.BufferGeometry();
+      const pts = new Float32Array(24 * 3);
+      for (let i = 0; i < 8; i++) {
+        const a = (i / 8) * Math.PI * 2;
+        pts[i * 3] = Math.cos(a) * 1.1;
+        pts[i * 3 + 1] = Math.sin(a) * 0.15;
+        pts[i * 3 + 2] = Math.sin(a) * 1.1;
+      }
+      nodeGeo.setAttribute('position', new THREE.BufferAttribute(pts, 3));
+      this.batchNodes = new THREE.Points(nodeGeo, new THREE.PointsMaterial({
+        size: 0.022,
+        color: 0x00ddff,
+        transparent: true,
+        opacity: 0.9,
+        blending: THREE.AdditiveBlending,
+        depthWrite: false
+      }));
+      this.batchGroup.add(this.batchNodes);
+    }
+    this.batchGroup.visible = on;
+    if (on && meta.lat != null) {
+      try {
+        const p = this._latLngToPos(meta.lat, meta.lng || 0, 1.08);
+        this.spawnEffect(new THREE.Vector3(p.x, p.y, p.z), 0xaa88ff, 40, 55);
+        this.spawnEffect(new THREE.Vector3(p.x * 0.9, p.y * 1.05, p.z * 0.9), 0x00ffcc, 28, 45);
+      } catch { /* */ }
+    }
+  },
+
+  pulseBatchMesh(peerCount) {
+    if (!this.batchRing) return;
+    this.batchRing.material.opacity = 0.45 + Math.min(peerCount, 8) * 0.04;
+    if (this.batchNodes) this.batchNodes.material.color.setHex(peerCount > 2 ? 0xc8a8ff : 0x00ddff);
+    try {
+      this.spawnEffect(new THREE.Vector3(0.5, 0.4, 1.05), 0xaa88ff, 18, 35);
+    } catch { /* */ }
+  },
+
   update() {
+    const t = Date.now() * 0.001;
+    if (this.batchRing && this.superBatchActive) {
+      this.batchRing.rotation.z = t * 0.35;
+      this.batchRing.material.opacity = 0.28 + Math.sin(t * 2.2) * 0.12;
+    }
+    if (this.batchNodes && this.superBatchActive) {
+      this.batchNodes.rotation.y = t * 0.5;
+    }
+    if (this.clouds && !this.shellDim) this.clouds.rotation.y += 0.00008;
+
     // Subtle city light pulse
     if (this.cityLights) {
       this.cityLights.material.opacity = 0.65 + Math.sin(Date.now() * 0.0015) * 0.1;

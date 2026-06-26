@@ -218,11 +218,90 @@
   #ge-hud-row { display:flex; gap:8px; }
   #ge-hud-action { flex:1; padding:10px; border:none; border-radius:10px; background:rgba(0,120,90,0.55); border:1px solid rgba(0,255,160,0.55); color:#fff; font-weight:700; cursor:pointer; font-size:11px; }
   #ge-hud-close { padding:10px 12px; border-radius:10px; border:1px solid #666; background:transparent; color:#aaa; cursor:pointer; font-size:11px; }
+  /* Astranov Identity modal */
+  #astranov-auth-modal { display:none; position:fixed; inset:0; z-index:200; align-items:center; justify-content:center; background:rgba(0,4,12,0.82); backdrop-filter:blur(8px); pointer-events:auto; }
+  #astranov-auth-modal.open { display:flex; }
+  .auth-sheet { width:min(380px,94vw); max-height:90vh; overflow:auto; padding:16px; border-radius:18px; border:1px solid rgba(73,183,255,0.55); background:linear-gradient(180deg,rgba(4,14,32,0.98),rgba(2,8,18,0.98)); color:#def; font:11px/1.45 system-ui; box-shadow:0 0 40px rgba(73,183,255,0.25); }
+  .auth-head { display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; }
+  .auth-head b { color:#9ef; font-size:13px; }
+  .auth-tabs { display:flex; gap:4px; margin-bottom:10px; }
+  .auth-tab { flex:1; padding:8px; border-radius:10px; border:1px solid rgba(73,183,255,0.25); background:rgba(0,0,0,0.25); color:#9bc; cursor:pointer; font-size:10px; }
+  .auth-tab.active { border-color:rgba(0,255,200,0.55); color:#fff; background:rgba(0,80,60,0.35); }
+  .auth-pane { display:none; }
+  .auth-pane.active { display:block; }
+  .auth-oauth-grid { display:grid; grid-template-columns:1fr 1fr; gap:6px; margin-bottom:10px; }
+  .auth-oauth-grid button { padding:10px; border-radius:10px; border:1px solid rgba(255,255,255,0.15); background:rgba(0,0,0,0.35); color:#def; cursor:pointer; font-size:11px; font-weight:600; }
+  .auth-oauth-grid button[data-oauth="google"] { border-color:rgba(66,133,244,0.5); }
+  .auth-oauth-grid button[data-oauth="facebook"] { border-color:rgba(24,119,242,0.5); }
+  .auth-field { margin-bottom:8px; }
+  .auth-field label { display:block; font-size:9px; color:#9ab; text-transform:uppercase; margin-bottom:4px; }
+  .auth-field input { width:100%; padding:9px 10px; border-radius:10px; border:1px solid rgba(73,183,255,0.3); background:rgba(0,0,0,0.4); color:#fff; font:inherit; box-sizing:border-box; }
+  .auth-actions { display:flex; gap:6px; margin-top:8px; }
+  .auth-actions button { flex:1; padding:10px; border-radius:10px; border:none; font-weight:700; cursor:pointer; font-size:11px; }
+  #auth-signin-btn { background:rgba(0,120,90,0.6); color:#fff; border:1px solid rgba(0,255,160,0.5); }
+  #auth-signup-btn { background:rgba(40,60,120,0.5); color:#cef; border:1px solid rgba(73,183,255,0.4); }
+  #auth-status { font-size:10px; color:#9bc; min-height:28px; margin-top:6px; }
+  /* Site shell — subdomain over Earth */
+  #astranov-site-shell { display:none; position:fixed; top:0; left:0; right:0; bottom:118px; z-index:110; flex-direction:column; pointer-events:auto; }
+  #astranov-site-shell.open { display:flex; }
+  body.site-shell-open #globe { opacity:0.42; filter:saturate(0.85) blur(0.3px); }
+  body.site-shell-open #super-add-fab { opacity:0.35; pointer-events:none; }
+  .as-shell-bar { display:flex; align-items:center; gap:8px; padding:6px 10px; background:linear-gradient(180deg,rgba(2,8,18,0.94),rgba(2,8,18,0.72)); border-bottom:1px solid rgba(73,183,255,0.35); font:11px system-ui; color:#9ef; }
+  #as-shell-domain { flex:1; font-weight:700; }
+  .as-shell-bar button { padding:6px 10px; border-radius:8px; border:1px solid rgba(73,183,255,0.35); background:rgba(0,0,0,0.35); color:#def; cursor:pointer; font-size:11px; }
+  #as-shell-frame { flex:1; width:100%; border:none; background:#02060d; border-radius:0 0 12px 12px; box-shadow:0 -8px 40px rgba(73,183,255,0.15); }
+  /* Super batch evolved graphics HUD */
+  #nb-mesh-viz { width:100%; height:52px; margin:8px 0; border-radius:10px; background:radial-gradient(ellipse at 50% 50%,rgba(100,80,255,0.25),rgba(0,20,40,0.9)); border:1px solid rgba(170,136,255,0.35); position:relative; overflow:hidden; }
+  #nb-mesh-viz::before { content:''; position:absolute; inset:0; background:repeating-linear-gradient(90deg,transparent,transparent 8px,rgba(73,183,255,0.06) 8px,rgba(73,183,255,0.06) 9px); animation:nb-scan 3s linear infinite; }
+  #nb-mesh-viz::after { content:'◎ neural mesh'; position:absolute; left:8px; bottom:4px; font-size:9px; color:rgba(200,168,255,0.85); letter-spacing:0.5px; }
+  @keyframes nb-scan { from { transform:translateX(0); } to { transform:translateX(18px); } }
+  #node-batch.nb-super-live { box-shadow:inset 0 0 24px rgba(100,80,255,0.2); border:1px solid rgba(170,136,255,0.35); border-radius:12px; }
+  #node-batch.nb-super-live #nb-launch { background:linear-gradient(135deg,rgba(80,40,180,0.7),rgba(0,120,200,0.6)); border-color:rgba(200,168,255,0.65); animation:nb-glow 2.4s ease-in-out infinite; }
+  @keyframes nb-glow { 50% { box-shadow:0 0 18px rgba(170,136,255,0.45); } }
 
 </style>
 </head>
 <body>
   <div id="globe"></div>
+  <div id="astranov-site-shell">
+    <div class="as-shell-bar">
+      <span id="as-shell-domain">astranov.eu site</span>
+      <button id="as-shell-external" type="button" title="Open in new tab">↗</button>
+      <button id="as-shell-close" type="button" title="Close site · back to Earth">✖</button>
+    </div>
+    <iframe id="as-shell-frame" title="Astranov Site" allow="camera; microphone; geolocation"></iframe>
+  </div>
+  <div id="astranov-auth-modal">
+    <div class="auth-sheet">
+      <div class="auth-head"><b>Astranov Identity</b><button id="auth-close" type="button" style="background:transparent;border:1px solid #666;color:#aaa;border-radius:8px;padding:4px 10px;cursor:pointer">✖</button></div>
+      <div class="auth-tabs">
+        <button class="auth-tab active" type="button" data-pane="auth-pane-social">Social</button>
+        <button class="auth-tab" type="button" data-pane="auth-pane-id">Email / user</button>
+        <button class="auth-tab" type="button" data-pane="auth-pane-phone">Phone</button>
+      </div>
+      <div id="auth-pane-social" class="auth-pane active">
+        <div class="auth-oauth-grid">
+          <button type="button" data-oauth="google">Google</button>
+          <button type="button" data-oauth="facebook">Facebook</button>
+          <button type="button" data-oauth="apple">Apple</button>
+          <button type="button" data-oauth="twitter">X / Twitter</button>
+          <button type="button" data-oauth="tiktok" title="Enable in Supabase OIDC">TikTok</button>
+        </div>
+        <div style="font-size:10px;color:#9ab">One login for the globe, your sites, and super batch.</div>
+      </div>
+      <div id="auth-pane-id" class="auth-pane">
+        <div class="auth-field"><label>Email, username, or phone</label><input id="auth-identifier" type="text" autocomplete="username" placeholder="you@email.com or my-shop" /></div>
+        <div class="auth-field"><label>Password (optional — magic link if empty)</label><input id="auth-password" type="password" autocomplete="current-password" /></div>
+        <div class="auth-actions"><button id="auth-signin-btn" type="button">Sign in</button><button id="auth-signup-btn" type="button">Create account</button></div>
+      </div>
+      <div id="auth-pane-phone" class="auth-pane">
+        <div class="auth-field"><label>Phone (+country code)</label><input id="auth-phone" type="tel" placeholder="+306971234567" /></div>
+        <div class="auth-field"><label>SMS code</label><input id="auth-otp" type="text" inputmode="numeric" placeholder="123456" /></div>
+        <div class="auth-actions"><button id="auth-phone-btn" type="button" style="flex:1;background:rgba(0,100,180,0.55);color:#fff;border:1px solid #6af;border-radius:10px;padding:10px;font-weight:700;cursor:pointer">Send / Verify</button></div>
+      </div>
+      <div id="auth-status"></div>
+    </div>
+  </div>
   <div id="superspace-hud"></div>
   <div id="city-life-chip"></div>
   <button id="super-add-fab" type="button" title="Super Add — post · vendor · Astranov Site · driver">+</button>
@@ -287,7 +366,8 @@
       <button id="nb-install-android" type="button">📲 Install Android / PWA node</button>
       <button id="nb-install-ios" type="button" style="display:none;width:100%;margin:6px 0;padding:10px;border-radius:12px;background:rgba(40,40,60,0.5);border:1px solid #88a;color:#cdf;cursor:pointer;font-weight:600">🍎 iOS install steps</button>
       <button id="nb-launch" type="button">🔗 Launch batch · work together</button>
-      <div style="margin:8px 0;font-size:10px;color:#9ab">Batch: <b id="nb-batch-id" style="color:#8cf">—</b> · Peers: <b id="nb-peers" style="color:#8cf">0</b></div>
+      <div id="nb-mesh-viz" aria-hidden="true"></div>
+      <div style="margin:8px 0;font-size:10px;color:#9ab">Super batch: <b id="nb-batch-id" style="color:#c8a8ff">—</b> · Peers: <b id="nb-peers" style="color:#8cf">0</b> · <span id="nb-mesh-status" style="color:#a88cff">idle</span></div>
       <button id="nb-join-comms" type="button">📡 Open comms channel (PMR/WebRTC)</button>
       <div id="nb-status" style="color:#9cb;font-size:10px;margin-top:6px">Install node to work together without browser babysitting</div>
     </div>

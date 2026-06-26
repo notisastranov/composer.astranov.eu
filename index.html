@@ -218,11 +218,90 @@
   #ge-hud-row { display:flex; gap:8px; }
   #ge-hud-action { flex:1; padding:10px; border:none; border-radius:10px; background:rgba(0,120,90,0.55); border:1px solid rgba(0,255,160,0.55); color:#fff; font-weight:700; cursor:pointer; font-size:11px; }
   #ge-hud-close { padding:10px 12px; border-radius:10px; border:1px solid #666; background:transparent; color:#aaa; cursor:pointer; font-size:11px; }
+  /* Astranov Identity modal */
+  #astranov-auth-modal { display:none; position:fixed; inset:0; z-index:200; align-items:center; justify-content:center; background:rgba(0,4,12,0.82); backdrop-filter:blur(8px); pointer-events:auto; }
+  #astranov-auth-modal.open { display:flex; }
+  .auth-sheet { width:min(380px,94vw); max-height:90vh; overflow:auto; padding:16px; border-radius:18px; border:1px solid rgba(73,183,255,0.55); background:linear-gradient(180deg,rgba(4,14,32,0.98),rgba(2,8,18,0.98)); color:#def; font:11px/1.45 system-ui; box-shadow:0 0 40px rgba(73,183,255,0.25); }
+  .auth-head { display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; }
+  .auth-head b { color:#9ef; font-size:13px; }
+  .auth-tabs { display:flex; gap:4px; margin-bottom:10px; }
+  .auth-tab { flex:1; padding:8px; border-radius:10px; border:1px solid rgba(73,183,255,0.25); background:rgba(0,0,0,0.25); color:#9bc; cursor:pointer; font-size:10px; }
+  .auth-tab.active { border-color:rgba(0,255,200,0.55); color:#fff; background:rgba(0,80,60,0.35); }
+  .auth-pane { display:none; }
+  .auth-pane.active { display:block; }
+  .auth-oauth-grid { display:grid; grid-template-columns:1fr 1fr; gap:6px; margin-bottom:10px; }
+  .auth-oauth-grid button { padding:10px; border-radius:10px; border:1px solid rgba(255,255,255,0.15); background:rgba(0,0,0,0.35); color:#def; cursor:pointer; font-size:11px; font-weight:600; }
+  .auth-oauth-grid button[data-oauth="google"] { border-color:rgba(66,133,244,0.5); }
+  .auth-oauth-grid button[data-oauth="facebook"] { border-color:rgba(24,119,242,0.5); }
+  .auth-field { margin-bottom:8px; }
+  .auth-field label { display:block; font-size:9px; color:#9ab; text-transform:uppercase; margin-bottom:4px; }
+  .auth-field input { width:100%; padding:9px 10px; border-radius:10px; border:1px solid rgba(73,183,255,0.3); background:rgba(0,0,0,0.4); color:#fff; font:inherit; box-sizing:border-box; }
+  .auth-actions { display:flex; gap:6px; margin-top:8px; }
+  .auth-actions button { flex:1; padding:10px; border-radius:10px; border:none; font-weight:700; cursor:pointer; font-size:11px; }
+  #auth-signin-btn { background:rgba(0,120,90,0.6); color:#fff; border:1px solid rgba(0,255,160,0.5); }
+  #auth-signup-btn { background:rgba(40,60,120,0.5); color:#cef; border:1px solid rgba(73,183,255,0.4); }
+  #auth-status { font-size:10px; color:#9bc; min-height:28px; margin-top:6px; }
+  /* Site shell — subdomain over Earth */
+  #astranov-site-shell { display:none; position:fixed; top:0; left:0; right:0; bottom:118px; z-index:110; flex-direction:column; pointer-events:auto; }
+  #astranov-site-shell.open { display:flex; }
+  body.site-shell-open #globe { opacity:0.42; filter:saturate(0.85) blur(0.3px); }
+  body.site-shell-open #super-add-fab { opacity:0.35; pointer-events:none; }
+  .as-shell-bar { display:flex; align-items:center; gap:8px; padding:6px 10px; background:linear-gradient(180deg,rgba(2,8,18,0.94),rgba(2,8,18,0.72)); border-bottom:1px solid rgba(73,183,255,0.35); font:11px system-ui; color:#9ef; }
+  #as-shell-domain { flex:1; font-weight:700; }
+  .as-shell-bar button { padding:6px 10px; border-radius:8px; border:1px solid rgba(73,183,255,0.35); background:rgba(0,0,0,0.35); color:#def; cursor:pointer; font-size:11px; }
+  #as-shell-frame { flex:1; width:100%; border:none; background:#02060d; border-radius:0 0 12px 12px; box-shadow:0 -8px 40px rgba(73,183,255,0.15); }
+  /* Super batch evolved graphics HUD */
+  #nb-mesh-viz { width:100%; height:52px; margin:8px 0; border-radius:10px; background:radial-gradient(ellipse at 50% 50%,rgba(100,80,255,0.25),rgba(0,20,40,0.9)); border:1px solid rgba(170,136,255,0.35); position:relative; overflow:hidden; }
+  #nb-mesh-viz::before { content:''; position:absolute; inset:0; background:repeating-linear-gradient(90deg,transparent,transparent 8px,rgba(73,183,255,0.06) 8px,rgba(73,183,255,0.06) 9px); animation:nb-scan 3s linear infinite; }
+  #nb-mesh-viz::after { content:'◎ neural mesh'; position:absolute; left:8px; bottom:4px; font-size:9px; color:rgba(200,168,255,0.85); letter-spacing:0.5px; }
+  @keyframes nb-scan { from { transform:translateX(0); } to { transform:translateX(18px); } }
+  #node-batch.nb-super-live { box-shadow:inset 0 0 24px rgba(100,80,255,0.2); border:1px solid rgba(170,136,255,0.35); border-radius:12px; }
+  #node-batch.nb-super-live #nb-launch { background:linear-gradient(135deg,rgba(80,40,180,0.7),rgba(0,120,200,0.6)); border-color:rgba(200,168,255,0.65); animation:nb-glow 2.4s ease-in-out infinite; }
+  @keyframes nb-glow { 50% { box-shadow:0 0 18px rgba(170,136,255,0.45); } }
 
 </style>
 </head>
 <body>
   <div id="globe"></div>
+  <div id="astranov-site-shell">
+    <div class="as-shell-bar">
+      <span id="as-shell-domain">astranov.eu site</span>
+      <button id="as-shell-external" type="button" title="Open in new tab">↗</button>
+      <button id="as-shell-close" type="button" title="Close site · back to Earth">✖</button>
+    </div>
+    <iframe id="as-shell-frame" title="Astranov Site" allow="camera; microphone; geolocation"></iframe>
+  </div>
+  <div id="astranov-auth-modal">
+    <div class="auth-sheet">
+      <div class="auth-head"><b>Astranov Identity</b><button id="auth-close" type="button" style="background:transparent;border:1px solid #666;color:#aaa;border-radius:8px;padding:4px 10px;cursor:pointer">✖</button></div>
+      <div class="auth-tabs">
+        <button class="auth-tab active" type="button" data-pane="auth-pane-social">Social</button>
+        <button class="auth-tab" type="button" data-pane="auth-pane-id">Email / user</button>
+        <button class="auth-tab" type="button" data-pane="auth-pane-phone">Phone</button>
+      </div>
+      <div id="auth-pane-social" class="auth-pane active">
+        <div class="auth-oauth-grid">
+          <button type="button" data-oauth="google">Google</button>
+          <button type="button" data-oauth="facebook">Facebook</button>
+          <button type="button" data-oauth="apple">Apple</button>
+          <button type="button" data-oauth="twitter">X / Twitter</button>
+          <button type="button" data-oauth="tiktok" title="Enable in Supabase OIDC">TikTok</button>
+        </div>
+        <div style="font-size:10px;color:#9ab">One login for the globe, your sites, and super batch.</div>
+      </div>
+      <div id="auth-pane-id" class="auth-pane">
+        <div class="auth-field"><label>Email, username, or phone</label><input id="auth-identifier" type="text" autocomplete="username" placeholder="you@email.com or my-shop" /></div>
+        <div class="auth-field"><label>Password (optional — magic link if empty)</label><input id="auth-password" type="password" autocomplete="current-password" /></div>
+        <div class="auth-actions"><button id="auth-signin-btn" type="button">Sign in</button><button id="auth-signup-btn" type="button">Create account</button></div>
+      </div>
+      <div id="auth-pane-phone" class="auth-pane">
+        <div class="auth-field"><label>Phone (+country code)</label><input id="auth-phone" type="tel" placeholder="+306971234567" /></div>
+        <div class="auth-field"><label>SMS code</label><input id="auth-otp" type="text" inputmode="numeric" placeholder="123456" /></div>
+        <div class="auth-actions"><button id="auth-phone-btn" type="button" style="flex:1;background:rgba(0,100,180,0.55);color:#fff;border:1px solid #6af;border-radius:10px;padding:10px;font-weight:700;cursor:pointer">Send / Verify</button></div>
+      </div>
+      <div id="auth-status"></div>
+    </div>
+  </div>
   <div id="superspace-hud"></div>
   <div id="city-life-chip"></div>
   <button id="super-add-fab" type="button" title="Super Add — post · vendor · Astranov Site · driver">+</button>
@@ -287,7 +366,8 @@
       <button id="nb-install-android" type="button">📲 Install Android / PWA node</button>
       <button id="nb-install-ios" type="button" style="display:none;width:100%;margin:6px 0;padding:10px;border-radius:12px;background:rgba(40,40,60,0.5);border:1px solid #88a;color:#cdf;cursor:pointer;font-weight:600">🍎 iOS install steps</button>
       <button id="nb-launch" type="button">🔗 Launch batch · work together</button>
-      <div style="margin:8px 0;font-size:10px;color:#9ab">Batch: <b id="nb-batch-id" style="color:#8cf">—</b> · Peers: <b id="nb-peers" style="color:#8cf">0</b></div>
+      <div id="nb-mesh-viz" aria-hidden="true"></div>
+      <div style="margin:8px 0;font-size:10px;color:#9ab">Super batch: <b id="nb-batch-id" style="color:#c8a8ff">—</b> · Peers: <b id="nb-peers" style="color:#8cf">0</b> · <span id="nb-mesh-status" style="color:#a88cff">idle</span></div>
       <button id="nb-join-comms" type="button">📡 Open comms channel (PMR/WebRTC)</button>
       <div id="nb-status" style="color:#9cb;font-size:10px;margin-top:6px">Install node to work together without browser babysitting</div>
     </div>
@@ -1034,35 +1114,183 @@ window.AstroGlyphs = AstroGlyphs;
 window.vendorIcon = vendorIcon;
 window.driverIcon = driverIcon;
 
-// === GOOGLE AUTH (Supabase) ===
-// Architect: notisastranov@gmail.com → profiles.is_owner (existing DB column)
+// === ASTRANOV IDENTITY — unified login (globe + all *.astranov.eu sites) ===
 const Auth = {
   client: null,
   user: null,
+  session: null,
   isOwner: false,
   isArchitect: false,
   OWNER_EMAIL: 'notisastranov@gmail.com',
+  OAUTH_PROVIDERS: ['google', 'facebook', 'apple', 'twitter'],
+  _siteOwners: new Map(),
 
   init() {
     if (typeof supabase === 'undefined') {
-      console.warn('[Auth] Supabase SDK missing — Google login unavailable');
+      console.warn('[Auth] Supabase SDK missing — login unavailable');
       return;
     }
     this.client = supabase.createClient(SB_URL, SB_KEY, {
-      auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true }
+      auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true, storageKey: 'astranov_auth_v2' }
     });
     this.client.auth.onAuthStateChange((_ev, session) => {
+      this.session = session;
       this.user = session?.user || null;
       this.applyUser();
       this.refreshAuthority();
+      this.broadcastToShell();
     });
     this.client.auth.getSession().then(({ data }) => {
+      this.session = data?.session || null;
       this.user = data?.session?.user || null;
       this.applyUser();
       this.refreshAuthority();
+      this.broadcastToShell();
     });
     const btn = document.getElementById('aci-login');
-    if (btn) btn.onclick = () => this.user ? this.signOut() : this.signInGoogle();
+    if (btn) btn.onclick = () => this.user ? this.signOut() : this.openLoginModal();
+    this.bindAuthModal();
+    window.addEventListener('message', e => this._onChildMessage(e));
+  },
+
+  bindAuthModal() {
+    const modal = document.getElementById('astranov-auth-modal');
+    if (!modal || modal.dataset.bound) return;
+    modal.dataset.bound = '1';
+    document.getElementById('auth-close')?.addEventListener('click', () => this.closeLoginModal());
+    document.getElementById('auth-signin-btn')?.addEventListener('click', () => this.signInIdentifier());
+    document.getElementById('auth-signup-btn')?.addEventListener('click', () => this.signUpIdentifier());
+    document.getElementById('auth-phone-btn')?.addEventListener('click', () => this.signInPhoneOtp());
+    modal.querySelectorAll('[data-oauth]').forEach(btn => {
+      btn.addEventListener('click', () => this.signInOAuth(btn.dataset.oauth));
+    });
+    modal.querySelectorAll('.auth-tab').forEach(tab => {
+      tab.addEventListener('click', () => {
+        modal.querySelectorAll('.auth-tab').forEach(t => t.classList.remove('active'));
+        modal.querySelectorAll('.auth-pane').forEach(p => p.classList.remove('active'));
+        tab.classList.add('active');
+        const pane = document.getElementById(tab.dataset.pane);
+        if (pane) pane.classList.add('active');
+      });
+    });
+  },
+
+  openLoginModal(hint) {
+    const modal = document.getElementById('astranov-auth-modal');
+    if (!modal) return this.signInOAuth('google');
+    const status = document.getElementById('auth-status');
+    if (status) status.textContent = hint || 'One Astranov account — globe, sites, batch.';
+    modal.classList.add('open');
+    GlobeDeck?.expand?.('Sign in · Astranov Identity');
+  },
+
+  closeLoginModal() {
+    document.getElementById('astranov-auth-modal')?.classList.remove('open');
+  },
+
+  async signInOAuth(provider) {
+    if (!this.client) return;
+    if (provider === 'tiktok') {
+      ACIControl?.reply('TikTok login — enable custom OIDC in Supabase, then wire provider tiktok.');
+      return;
+    }
+    if (!this.OAUTH_PROVIDERS.includes(provider)) return;
+    this.closeLoginModal();
+    GlobeDeck?.setPreview?.('Sign in · ' + provider);
+    ACIControl?.reply('Sign in with ' + provider + ' — secured by Astranov');
+    const redirectTo = window.location.origin + window.location.pathname;
+    await this.client.auth.signInWithOAuth({
+      provider,
+      options: { redirectTo, skipBrowserRedirect: false }
+    });
+  },
+
+  signInGoogle() { return this.signInOAuth('google'); },
+
+  _normalizeId(raw) {
+    return String(raw || '').trim();
+  },
+
+  _emailForUsername(username) {
+    return username.toLowerCase().replace(/[^a-z0-9._-]/g, '') + '@users.astranov.eu';
+  },
+
+  async signInIdentifier() {
+    if (!this.client) return;
+    const id = this._normalizeId(document.getElementById('auth-identifier')?.value);
+    const password = document.getElementById('auth-password')?.value || '';
+    const status = document.getElementById('auth-status');
+    if (!id) { if (status) status.textContent = 'Enter email, phone, or username.'; return; }
+    try {
+      if (/^\+?[\d][\d\s\-()]{7,}$/.test(id)) {
+        const { error } = await this.client.auth.signInWithOtp({ phone: id.replace(/\s/g, '') });
+        if (error) throw error;
+        if (status) status.textContent = 'SMS code sent — enter it when prompted.';
+        return;
+      }
+      const email = id.includes('@') ? id : this._emailForUsername(id);
+      if (!password) {
+        const { error } = await this.client.auth.signInWithOtp({ email });
+        if (error) throw error;
+        if (status) status.textContent = 'Magic link sent to ' + email;
+        return;
+      }
+      const { error } = await this.client.auth.signInWithPassword({ email, password });
+      if (error && !id.includes('@')) {
+        const { error: e2 } = await this.client.auth.signInWithPassword({ email: id, password });
+        if (e2) throw error;
+      } else if (error) throw error;
+      this.closeLoginModal();
+      ACIControl?.reply('Signed in — Astranov Identity active');
+    } catch (e) {
+      if (status) status.textContent = e.message || 'Sign in failed';
+    }
+  },
+
+  async signUpIdentifier() {
+    if (!this.client) return;
+    const id = this._normalizeId(document.getElementById('auth-identifier')?.value);
+    const password = document.getElementById('auth-password')?.value || '';
+    const status = document.getElementById('auth-status');
+    if (!id || password.length < 6) {
+      if (status) status.textContent = 'Username/email + password (6+ chars) required.';
+      return;
+    }
+    const email = id.includes('@') ? id : this._emailForUsername(id);
+    try {
+      const { error } = await this.client.auth.signUp({
+        email,
+        password,
+        options: { data: { username: id.includes('@') ? id.split('@')[0] : id, display_name: id } }
+      });
+      if (error) throw error;
+      if (status) status.textContent = 'Account created — check email if confirmation is on.';
+      this.closeLoginModal();
+    } catch (e) {
+      if (status) status.textContent = e.message || 'Sign up failed';
+    }
+  },
+
+  async signInPhoneOtp() {
+    if (!this.client) return;
+    const phone = this._normalizeId(document.getElementById('auth-phone')?.value).replace(/\s/g, '');
+    const code = this._normalizeId(document.getElementById('auth-otp')?.value);
+    const status = document.getElementById('auth-status');
+    if (!phone) { if (status) status.textContent = 'Enter phone with country code e.g. +3069…'; return; }
+    try {
+      if (!code) {
+        const { error } = await this.client.auth.signInWithOtp({ phone });
+        if (error) throw error;
+        if (status) status.textContent = 'Code sent — enter OTP and tap Verify.';
+        return;
+      }
+      const { error } = await this.client.auth.verifyOtp({ phone, token: code, type: 'sms' });
+      if (error) throw error;
+      this.closeLoginModal();
+      ACIControl?.reply('Phone verified — signed in');
+    } catch (e) {
+      if (status) status.textContent = e.message || 'Phone sign-in failed';
+    }
   },
 
   async ensureSession() {
@@ -1075,6 +1303,7 @@ const Auth = {
       const { data: refreshed, error } = await this.client.auth.refreshSession();
       if (!error && refreshed?.session) session = refreshed.session;
     }
+    this.session = session;
     return session;
   },
 
@@ -1083,6 +1312,50 @@ const Auth = {
     const session = await this.ensureSession();
     h.Authorization = session?.access_token ? 'Bearer ' + session.access_token : 'Bearer ' + SB_KEY;
     return h;
+  },
+
+  handoffPayload() {
+    const s = this.session;
+    if (!s?.access_token) return null;
+    return {
+      type: 'astranov-auth',
+      access_token: s.access_token,
+      refresh_token: s.refresh_token,
+      expires_at: s.expires_at,
+      user: {
+        id: this.user?.id,
+        email: this.user?.email,
+        name: this.user?.user_metadata?.full_name || this.user?.user_metadata?.name,
+        avatar: this.user?.user_metadata?.avatar_url || this.user?.user_metadata?.picture,
+      }
+    };
+  },
+
+  broadcastToShell() {
+    const frame = document.getElementById('as-shell-frame');
+    const payload = this.handoffPayload();
+    if (frame?.contentWindow && payload) {
+      try { frame.contentWindow.postMessage(payload, '*'); } catch { /* */ }
+    }
+  },
+
+  _onChildMessage(e) {
+    if (!e.data || e.data.type !== 'astranov-auth-request') return;
+    const payload = this.handoffPayload();
+    if (payload && e.source) e.source.postMessage(payload, '*');
+  },
+
+  async isSiteOwner(siteId) {
+    if (!this.user?.id || !siteId) return false;
+    if (this._siteOwners.has(siteId)) return this._siteOwners.get(siteId);
+    try {
+      const headers = await this.authHeaders();
+      const r = await fetch(SB_URL + '/rest/v1/booker_sites?select=owner_id&id=eq.' + encodeURIComponent(siteId) + '&limit=1', { headers });
+      const rows = r.ok ? await r.json() : [];
+      const ok = rows[0]?.owner_id === this.user.id;
+      this._siteOwners.set(siteId, ok);
+      return ok;
+    } catch { return false; }
   },
 
   async refreshAuthority() {
@@ -1130,27 +1403,18 @@ const Auth = {
     }
   },
 
-  async signInGoogle() {
-    if (!this.client) return;
-    GlobeDeck?.setPreview('Sign in to Astranov.eu · Google');
-    ACIControl?.reply('Sign in to Astranov.eu — secured by Google');
-    MapDepict?.action('think', { detail: 'Astranov sign-in' });
-    const redirectTo = window.location.origin + window.location.pathname;
-    await this.client.auth.signInWithOAuth({
-      provider: 'google',
-      options: { redirectTo, skipBrowserRedirect: false }
-    });
-  },
-
   async signOut() {
     if (!this.client) return;
     await this.client.auth.signOut();
     this.user = null;
+    this.session = null;
     this.isOwner = false;
     this.isArchitect = false;
+    this._siteOwners.clear();
     window._aciOwner = false;
     this.applyUser();
     this.updateOwnerUI();
+    this.broadcastToShell();
     if (Voice.maySpeak()) speak('Signed out.', () => {}, true);
   },
 
@@ -1171,6 +1435,7 @@ const Auth = {
           btn.textContent = '';
         } else {
           btn.textContent = name.charAt(0).toUpperCase();
+          btn.style.backgroundImage = '';
         }
       }
       if (chip && !this.isOwner) chip.textContent = name;
@@ -1184,7 +1449,7 @@ const Auth = {
       if (window.AciCli) AciCli.onAuthChange();
     } else {
       if (btn) {
-        btn.title = 'Sign in with Google';
+        btn.title = 'Sign in — Google · email · phone';
         btn.textContent = 'G';
         btn.style.backgroundImage = '';
       }
@@ -1215,7 +1480,7 @@ const GlobeDeck = {
     if (handle) handle.onclick = e => { e.stopPropagation(); this.toggle(); };
     if (hdr) hdr.onclick = () => this.toggle();
     this.bindDeckGestures();
-    ['sat-radio', 'node-batch', 'vendor-menu', 'globe-youtube', 'globe-super-add'].forEach(id => {
+    ['sat-radio', 'node-batch', 'vendor-menu', 'globe-youtube', 'globe-super-add', 'globe-site-browser'].forEach(id => {
       const el = document.getElementById(id);
       const stage = document.getElementById('globe-deck-stage');
       if (el && stage && el.parentElement !== stage) stage.appendChild(el);
@@ -3715,7 +3980,10 @@ const ACIControl = {
       say('Roles synced.');
       return { executed: true };
     }
-    if (/^(login|sign in|google)$/.test(low) || /^σύνδεση$/.test(low)) { Auth.signInGoogle(); return { executed: true }; }
+    if (/^(login|sign in|google|facebook|apple|twitter)$/.test(low) || /^σύνδεση$/.test(low)) {
+      Auth.openLoginModal?.('Sign in — one account for globe and sites') || Auth.signInGoogle();
+      return { executed: true };
+    }
     if (/^(logout|sign out|αποσύνδεση)$/.test(low)) { Auth.signOut(); return { executed: true }; }
     if (/telecom|sat radio|satellite radio|ασύρματος/.test(low)) { Comms.startTelecomms(); return { executed: true }; }
     if (/pitogyra|πιτογυρ|μπίρ|τσιγαρ|order|παραγγελ|goals|work|δουλειά|delivery|διανομ|mpiro|tsigar|beer|cigar/.test(low)) {
@@ -3754,7 +4022,7 @@ const ACIControl = {
       return { executed: true };
     }
     if (/astranov\s*sites?|superbook|booking site|web presence|my site|create.*site|make.*site|\.astranov\.eu|astranov subdomain/.test(low)) {
-      if (!Auth?.user) { Auth.signInGoogle(); this.reply('Sign in (G) — then ask again for your Astranov Site'); return { executed: true }; }
+      if (!Auth?.user) { Auth.openLoginModal?.('Sign in — then ask for your Astranov Site'); this.reply('Sign in — then ask again for your Astranov Site'); return { executed: true }; }
       try {
         const prov = window.AstranovSitesProvision || window.SuperBookingProvision;
         const parsed = prov.parseAsk(text);
@@ -4877,7 +5145,7 @@ const AstranovNode = {
     if (!Auth?.user) {
       this.showPanel();
       this.setStep(1, 'active', 'Σύνδεση απαιτείται — πάτα G');
-      Auth?.signInGoogle();
+      Auth?.openLoginModal?.('Sign in to launch super batch');
       ACIControl?.reply('Sign in with G — then launch batch again');
       return;
     }
@@ -4937,10 +5205,18 @@ const AstranovNode = {
 
     this.registerSuperBookingSync();
 
-    const msg = 'Batch ' + r.short_id + ' live · ' + this.peerCount + ' node(s) · δουλεύουμε μαζί';
+    const msg = 'Super batch ' + r.short_id + ' live · ' + this.peerCount + ' node(s) · evolved AI mesh active';
     ACIControl?.reply(msg);
     MapDepict?.action('batch', { lat: pos.lat, lng: pos.lng, detail: r.short_id + ' · ' + this.peerCount + ' nodes' });
     FieldBrain?.pulse('batch', r.short_id + ' · peers ' + this.peerCount, { role: 'client', props: { batch_id: r.batch_id, node_id: r.node_id } });
+
+    document.getElementById('node-batch')?.classList.add('nb-super-live');
+    const meshSt = document.getElementById('nb-mesh-status');
+    if (meshSt) meshSt.textContent = 'mesh live · ' + this.peerCount + ' peers';
+    if (window.AIGraphics?.setSuperBatchActive) {
+      AIGraphics.setSuperBatchActive(true, { batchId: r.short_id, peers: this.peerCount, lat: pos.lat, lng: pos.lng });
+    }
+    if (window.SuperSpaceHud?.showBatch) SuperSpaceHud.showBatch(r.short_id, this.peerCount);
 
     if (Voice.maySpeak()) speak(msg.slice(0, 120), () => resumeListening());
   },
@@ -4997,7 +5273,10 @@ const AstranovNode = {
       this.peerCount++;
       const peerEl = document.getElementById('nb-peers');
       if (peerEl) peerEl.textContent = String(this.peerCount);
-      MapDepict?.pulse(this.pos().lat, this.pos().lng, 0x88aaff, 'peer joined batch', 8000);
+      MapDepict?.pulse(this.pos().lat, this.pos().lng, 0xaa88ff, 'peer joined super batch', 8000);
+      if (window.AIGraphics?.pulseBatchMesh) AIGraphics.pulseBatchMesh(this.peerCount);
+      const meshSt = document.getElementById('nb-mesh-status');
+      if (meshSt) meshSt.textContent = 'mesh · ' + this.peerCount + ' peers';
     }
     if (payload.type === 'task' && payload.text) {
       AciCli?.print('batch task · ' + payload.text.slice(0, 100), 'dim');
@@ -5661,6 +5940,22 @@ const SuperSpace = {
 };
 window.SuperSpace = SuperSpace;
 
+const SuperSpaceHud = {
+  showBatch(shortId, peers) {
+    const hud = document.getElementById('superspace-hud');
+    if (!hud) return;
+    hud.innerHTML = '<div class="ss-title">◎ Super batch · evolved mesh</div>'
+      + '<div class="ss-row">Batch <b>' + (shortId || '—') + '</b></div>'
+      + '<div class="ss-row">Peers <b>' + (peers || 0) + '</b> · AI graphics linked</div>'
+      + '<div class="ss-tri">Earth browser · sites · collective CLI</div>';
+    hud.classList.add('open');
+  },
+  hide() {
+    document.getElementById('superspace-hud')?.classList.remove('open');
+  }
+};
+window.SuperSpaceHud = SuperSpaceHud;
+
 // === CITY LIFE — real-user scenarios: locate → city → shops · drivers · friends · news ===
 const CityLife = {
   CITY_ZOOM: 1.12,
@@ -6306,7 +6601,7 @@ const AstranovSitesProvision = {
       title,
       subtitle: result.domain,
       actionLabel: 'Open site',
-      onAction: () => window.open(url, '_blank', 'noopener'),
+      onTap: () => (window.AstranovSiteShell?.open ? AstranovSiteShell.open(url, { domain: result.domain, site_id: result.site_id, title }) : window.open(url, '_blank', 'noopener')),
       urgency: 2,
     });
 
@@ -6315,6 +6610,7 @@ const AstranovSitesProvision = {
     AciCli?.print('Astranov Site live → ' + url, 'ok');
     ACIControl?.reply('Your Astranov Site is live: ' + url);
     GlobeDeck?.setPreview?.('◎ ' + result.domain);
+    if (window.AstranovSiteShell?.open) AstranovSiteShell.open(url, { domain: result.domain, site_id: result.site_id, title });
   },
 
   async cli(parts) {
@@ -6326,6 +6622,12 @@ const AstranovSitesProvision = {
       const rows = r.ok ? await r.json() : [];
       return { sites: rows };
     }
+    if (sub === 'open' && parts[2]) {
+      const slug = this.slugify(parts[2]);
+      const url = 'https://' + slug + '.' + this.BASE_DOMAIN;
+      if (window.AstranovSiteShell?.open) AstranovSiteShell.open(url, { domain: slug + '.' + this.BASE_DOMAIN, title: slug });
+      return { url };
+    }
     if (sub === 'create' || sub === 'open' || sub === 'provision') {
       const slug = parts[2] || '';
       const name = parts.slice(3).join(' ') || slug;
@@ -6336,6 +6638,63 @@ const AstranovSitesProvision = {
 };
 window.SuperBookingProvision = AstranovSitesProvision;
 window.AstranovSitesProvision = AstranovSitesProvision;
+
+// === ASTRANOV SITE SHELL — subdomains open over the globe (Earth browser) ===
+const AstranovSiteShell = {
+  active: null,
+
+  init() {
+    document.getElementById('as-shell-close')?.addEventListener('click', () => this.close());
+    document.getElementById('as-shell-external')?.addEventListener('click', () => {
+      if (this.active?.url) window.open(this.active.url, '_blank', 'noopener');
+    });
+    document.addEventListener('keydown', e => {
+      if (e.key === 'Escape' && this.active) this.close();
+    });
+  },
+
+  shellUrl(url) {
+    const u = new URL(url, window.location.origin);
+    u.searchParams.set('shell', '1');
+    u.searchParams.set('embed', '1');
+    return u.toString();
+  },
+
+  open(url, meta = {}) {
+    const shell = document.getElementById('astranov-site-shell');
+    const frame = document.getElementById('as-shell-frame');
+    const domainEl = document.getElementById('as-shell-domain');
+    if (!shell || !frame) {
+      window.open(url, '_blank', 'noopener');
+      return;
+    }
+    const full = url.startsWith('http') ? url : 'https://' + url;
+    this.active = { url: full, ...meta };
+    if (domainEl) domainEl.textContent = meta.domain || meta.title || new URL(full).hostname;
+    frame.src = this.shellUrl(full);
+    shell.classList.add('open');
+    document.body.classList.add('site-shell-open');
+    if (window.AIGraphics?.setSiteShellMode) AIGraphics.setSiteShellMode(true);
+    GlobeDeck?.collapse?.();
+    GlobeDeck?.setPreview?.('◎ ' + (meta.domain || full));
+    AciCli?.print?.('site shell · ' + (meta.domain || full), 'ok');
+    setTimeout(() => Auth?.broadcastToShell?.(), 1200);
+  },
+
+  close() {
+    const shell = document.getElementById('astranov-site-shell');
+    const frame = document.getElementById('as-shell-frame');
+    if (shell) shell.classList.remove('open');
+    document.body.classList.remove('site-shell-open');
+    if (frame) frame.src = 'about:blank';
+    this.active = null;
+    if (window.AIGraphics?.setSiteShellMode) AIGraphics.setSiteShellMode(false);
+    GlobeDeck?.setPreview?.('');
+  },
+
+  isOpen() { return !!this.active; }
+};
+window.AstranovSiteShell = AstranovSiteShell;
 
 // === GLOBE ENTITIES — every map thing has a name, proximity label, tap action ===
 const GlobeEntity = {
@@ -6550,6 +6909,17 @@ const GlobeEntity = {
     if (entity.onTap) {
       entity.onTap(entity);
       return;
+    }
+    if (entity.onAction) {
+      entity.onAction(entity);
+      return;
+    }
+    if (entity.data?.url || entity.subtitle?.includes('.astranov.eu')) {
+      const url = entity.data?.url || ('https://' + entity.subtitle);
+      if (window.AstranovSiteShell?.open) {
+        AstranovSiteShell.open(url, { domain: entity.subtitle, title: entity.title });
+        return;
+      }
     }
     this._defaultTap(entity);
   },
@@ -7521,6 +7891,11 @@ const AIGraphics = {
   clouds: null,
   cityLights: null,
   activeEffects: [],
+  batchGroup: null,
+  batchRing: null,
+  batchNodes: null,
+  superBatchActive: false,
+  shellDim: false,
 
   init(parent, earthRadius = 1) {
     this._parent = parent;
@@ -7680,7 +8055,79 @@ const AIGraphics = {
     });
   },
 
+  setSiteShellMode(on) {
+    this.shellDim = !!on;
+    if (this.atmosphere) this.atmosphere.material.opacity = on ? 0.12 : 0.06;
+    if (this.idleNodes) this.idleNodes.material.opacity = on ? 0.55 : 0.35;
+  },
+
+  setSuperBatchActive(on, meta = {}) {
+    this.superBatchActive = !!on;
+    if (!this._parent) return;
+    if (!this.batchGroup) {
+      this.batchGroup = new THREE.Group();
+      this._parent.add(this.batchGroup);
+      const ringGeo = new THREE.RingGeometry(1.06, 1.14, 64);
+      const ringMat = new THREE.MeshBasicMaterial({
+        color: 0xaa88ff,
+        transparent: true,
+        opacity: 0.35,
+        side: THREE.DoubleSide,
+        blending: THREE.AdditiveBlending,
+        depthWrite: false
+      });
+      this.batchRing = new THREE.Mesh(ringGeo, ringMat);
+      this.batchRing.lookAt(0, 0, 0);
+      this.batchGroup.add(this.batchRing);
+      const nodeGeo = new THREE.BufferGeometry();
+      const pts = new Float32Array(24 * 3);
+      for (let i = 0; i < 8; i++) {
+        const a = (i / 8) * Math.PI * 2;
+        pts[i * 3] = Math.cos(a) * 1.1;
+        pts[i * 3 + 1] = Math.sin(a) * 0.15;
+        pts[i * 3 + 2] = Math.sin(a) * 1.1;
+      }
+      nodeGeo.setAttribute('position', new THREE.BufferAttribute(pts, 3));
+      this.batchNodes = new THREE.Points(nodeGeo, new THREE.PointsMaterial({
+        size: 0.022,
+        color: 0x00ddff,
+        transparent: true,
+        opacity: 0.9,
+        blending: THREE.AdditiveBlending,
+        depthWrite: false
+      }));
+      this.batchGroup.add(this.batchNodes);
+    }
+    this.batchGroup.visible = on;
+    if (on && meta.lat != null) {
+      try {
+        const p = this._latLngToPos(meta.lat, meta.lng || 0, 1.08);
+        this.spawnEffect(new THREE.Vector3(p.x, p.y, p.z), 0xaa88ff, 40, 55);
+        this.spawnEffect(new THREE.Vector3(p.x * 0.9, p.y * 1.05, p.z * 0.9), 0x00ffcc, 28, 45);
+      } catch { /* */ }
+    }
+  },
+
+  pulseBatchMesh(peerCount) {
+    if (!this.batchRing) return;
+    this.batchRing.material.opacity = 0.45 + Math.min(peerCount, 8) * 0.04;
+    if (this.batchNodes) this.batchNodes.material.color.setHex(peerCount > 2 ? 0xc8a8ff : 0x00ddff);
+    try {
+      this.spawnEffect(new THREE.Vector3(0.5, 0.4, 1.05), 0xaa88ff, 18, 35);
+    } catch { /* */ }
+  },
+
   update() {
+    const t = Date.now() * 0.001;
+    if (this.batchRing && this.superBatchActive) {
+      this.batchRing.rotation.z = t * 0.35;
+      this.batchRing.material.opacity = 0.28 + Math.sin(t * 2.2) * 0.12;
+    }
+    if (this.batchNodes && this.superBatchActive) {
+      this.batchNodes.rotation.y = t * 0.5;
+    }
+    if (this.clouds && !this.shellDim) this.clouds.rotation.y += 0.00008;
+
     // Subtle city light pulse
     if (this.cityLights) {
       this.cityLights.material.opacity = 0.65 + Math.sin(Date.now() * 0.0015) * 0.1;
@@ -8810,6 +9257,7 @@ CosmicZoom.init();
 SuperSpace.init();
 CityLife.init();
 SuperAdd.init();
+AstranovSiteShell.init();
 GlobeEntity.init();
 if (window.others?.length) GlobeEntity.syncFriends(others);
 if (window._lastPos) GlobeEntity.syncMe(_lastPos.lat, _lastPos.lng, me?.name || 'You');

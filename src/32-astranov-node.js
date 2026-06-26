@@ -215,7 +215,7 @@ const AstranovNode = {
     if (!Auth?.user) {
       this.showPanel();
       this.setStep(1, 'active', 'Σύνδεση απαιτείται — πάτα G');
-      Auth?.signInGoogle();
+      Auth?.openLoginModal?.('Sign in to launch super batch');
       ACIControl?.reply('Sign in with G — then launch batch again');
       return;
     }
@@ -275,10 +275,18 @@ const AstranovNode = {
 
     this.registerSuperBookingSync();
 
-    const msg = 'Batch ' + r.short_id + ' live · ' + this.peerCount + ' node(s) · δουλεύουμε μαζί';
+    const msg = 'Super batch ' + r.short_id + ' live · ' + this.peerCount + ' node(s) · evolved AI mesh active';
     ACIControl?.reply(msg);
     MapDepict?.action('batch', { lat: pos.lat, lng: pos.lng, detail: r.short_id + ' · ' + this.peerCount + ' nodes' });
     FieldBrain?.pulse('batch', r.short_id + ' · peers ' + this.peerCount, { role: 'client', props: { batch_id: r.batch_id, node_id: r.node_id } });
+
+    document.getElementById('node-batch')?.classList.add('nb-super-live');
+    const meshSt = document.getElementById('nb-mesh-status');
+    if (meshSt) meshSt.textContent = 'mesh live · ' + this.peerCount + ' peers';
+    if (window.AIGraphics?.setSuperBatchActive) {
+      AIGraphics.setSuperBatchActive(true, { batchId: r.short_id, peers: this.peerCount, lat: pos.lat, lng: pos.lng });
+    }
+    if (window.SuperSpaceHud?.showBatch) SuperSpaceHud.showBatch(r.short_id, this.peerCount);
 
     if (Voice.maySpeak()) speak(msg.slice(0, 120), () => resumeListening());
   },
@@ -335,7 +343,10 @@ const AstranovNode = {
       this.peerCount++;
       const peerEl = document.getElementById('nb-peers');
       if (peerEl) peerEl.textContent = String(this.peerCount);
-      MapDepict?.pulse(this.pos().lat, this.pos().lng, 0x88aaff, 'peer joined batch', 8000);
+      MapDepict?.pulse(this.pos().lat, this.pos().lng, 0xaa88ff, 'peer joined super batch', 8000);
+      if (window.AIGraphics?.pulseBatchMesh) AIGraphics.pulseBatchMesh(this.peerCount);
+      const meshSt = document.getElementById('nb-mesh-status');
+      if (meshSt) meshSt.textContent = 'mesh · ' + this.peerCount + ' peers';
     }
     if (payload.type === 'task' && payload.text) {
       AciCli?.print('batch task · ' + payload.text.slice(0, 100), 'dim');

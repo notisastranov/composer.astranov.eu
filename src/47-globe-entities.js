@@ -212,6 +212,17 @@ const GlobeEntity = {
       entity.onTap(entity);
       return;
     }
+    if (entity.onAction) {
+      entity.onAction(entity);
+      return;
+    }
+    if (entity.data?.url || entity.subtitle?.includes('.astranov.eu')) {
+      const url = entity.data?.url || ('https://' + entity.subtitle);
+      if (window.AstranovSiteShell?.open) {
+        AstranovSiteShell.open(url, { domain: entity.subtitle, title: entity.title });
+        return;
+      }
+    }
     this._defaultTap(entity);
   },
 

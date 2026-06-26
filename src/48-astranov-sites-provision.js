@@ -84,7 +84,7 @@ const AstranovSitesProvision = {
       title,
       subtitle: result.domain,
       actionLabel: 'Open site',
-      onAction: () => window.open(url, '_blank', 'noopener'),
+      onTap: () => (window.AstranovSiteShell?.open ? AstranovSiteShell.open(url, { domain: result.domain, site_id: result.site_id, title }) : window.open(url, '_blank', 'noopener')),
       urgency: 2,
     });
 
@@ -93,6 +93,7 @@ const AstranovSitesProvision = {
     AciCli?.print('Astranov Site live → ' + url, 'ok');
     ACIControl?.reply('Your Astranov Site is live: ' + url);
     GlobeDeck?.setPreview?.('◎ ' + result.domain);
+    if (window.AstranovSiteShell?.open) AstranovSiteShell.open(url, { domain: result.domain, site_id: result.site_id, title });
   },
 
   async cli(parts) {
@@ -103,6 +104,12 @@ const AstranovSitesProvision = {
       const r = await fetch(SB_URL + '/rest/v1/booker_sites?select=id,slug,domain,business_type,mode,active&owner_id=eq.' + Auth.user.id + '&order=created_at.desc', { headers });
       const rows = r.ok ? await r.json() : [];
       return { sites: rows };
+    }
+    if (sub === 'open' && parts[2]) {
+      const slug = this.slugify(parts[2]);
+      const url = 'https://' + slug + '.' + this.BASE_DOMAIN;
+      if (window.AstranovSiteShell?.open) AstranovSiteShell.open(url, { domain: slug + '.' + this.BASE_DOMAIN, title: slug });
+      return { url };
     }
     if (sub === 'create' || sub === 'open' || sub === 'provision') {
       const slug = parts[2] || '';

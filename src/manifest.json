@@ -25,6 +25,7 @@
     { "file": "45-city-life.js", "marker": "// === CITY LIFE" },
     { "file": "46-super-add.js", "marker": "// === SUPER ADD" },
     { "file": "48-astranov-sites-provision.js", "marker": "// === ASTRANOV SITES PROVISION" },
+    { "file": "49-astranov-site-shell.js", "marker": "// === ASTRANOV SITE SHELL" },
     { "file": "47-globe-entities.js", "marker": "// === GLOBE ENTITIES" },
     { "file": "43-youtube-globe.js", "marker": "// === YOUTUBE ON GLOBE" },
     { "file": "50-cosmic.js", "marker": "// ── COSMIC ZOOM:" },

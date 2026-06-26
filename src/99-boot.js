@@ -70,6 +70,7 @@ CosmicZoom.init();
 SuperSpace.init();
 CityLife.init();
 SuperAdd.init();
+AstranovSiteShell.init();
 GlobeEntity.init();
 if (window.others?.length) GlobeEntity.syncFriends(others);
 if (window._lastPos) GlobeEntity.syncMe(_lastPos.lat, _lastPos.lng, me?.name || 'You');

@@ -317,3 +317,19 @@ const SuperSpace = {
   },
 };
 window.SuperSpace = SuperSpace;
+
+const SuperSpaceHud = {
+  showBatch(shortId, peers) {
+    const hud = document.getElementById('superspace-hud');
+    if (!hud) return;
+    hud.innerHTML = '<div class="ss-title">◎ Super batch · evolved mesh</div>'
+      + '<div class="ss-row">Batch <b>' + (shortId || '—') + '</b></div>'
+      + '<div class="ss-row">Peers <b>' + (peers || 0) + '</b> · AI graphics linked</div>'
+      + '<div class="ss-tri">Earth browser · sites · collective CLI</div>';
+    hud.classList.add('open');
+  },
+  hide() {
+    document.getElementById('superspace-hud')?.classList.remove('open');
+  }
+};
+window.SuperSpaceHud = SuperSpaceHud;

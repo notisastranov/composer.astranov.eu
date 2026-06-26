@@ -249,7 +249,10 @@ const ACIControl = {
       say('Roles synced.');
       return { executed: true };
     }
-    if (/^(login|sign in|google)$/.test(low) || /^σύνδεση$/.test(low)) { Auth.signInGoogle(); return { executed: true }; }
+    if (/^(login|sign in|google|facebook|apple|twitter)$/.test(low) || /^σύνδεση$/.test(low)) {
+      Auth.openLoginModal?.('Sign in — one account for globe and sites') || Auth.signInGoogle();
+      return { executed: true };
+    }
     if (/^(logout|sign out|αποσύνδεση)$/.test(low)) { Auth.signOut(); return { executed: true }; }
     if (/telecom|sat radio|satellite radio|ασύρματος/.test(low)) { Comms.startTelecomms(); return { executed: true }; }
     if (/pitogyra|πιτογυρ|μπίρ|τσιγαρ|order|παραγγελ|goals|work|δουλειά|delivery|διανομ|mpiro|tsigar|beer|cigar/.test(low)) {
@@ -288,7 +291,7 @@ const ACIControl = {
       return { executed: true };
     }
     if (/astranov\s*sites?|superbook|booking site|web presence|my site|create.*site|make.*site|\.astranov\.eu|astranov subdomain/.test(low)) {
-      if (!Auth?.user) { Auth.signInGoogle(); this.reply('Sign in (G) — then ask again for your Astranov Site'); return { executed: true }; }
+      if (!Auth?.user) { Auth.openLoginModal?.('Sign in — then ask for your Astranov Site'); this.reply('Sign in — then ask again for your Astranov Site'); return { executed: true }; }
       try {
         const prov = window.AstranovSitesProvision || window.SuperBookingProvision;
         const parsed = prov.parseAsk(text);
