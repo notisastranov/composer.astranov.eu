@@ -31,46 +31,139 @@ try { initUser(); } catch(e){ console.warn('User init skipped:', e.message); }
 // Let user explore the globe freely first
 console.log('%c[Astranov] Globe UI: drag rotate · wheel/pinch zoom · tap/double-tap fly. 💻 CLI for tasks. 🎤 mic optional.', 'color:#00ddff');
 
-// Voice system - ask with voice, stop to listen, provoke answer. No delirium.
+// Voice → Astranov Command Line (live transcript in input, same path as typing)
+let _voiceBusy = false;
+
+function openVoiceCli() {
+  const title = window.SuperCli?.title || 'Astranov Command Line';
+  GlobeDeck?.expand(title);
+  if (window.AciCli) AciCli.open = true;
+  SuperCli?.setContext?.(SuperCli.inferContext?.() || 'idle');
+}
+
+function scheduleVoiceResume() {
+  if (!voiceSessionActive || !voiceEnabled || isListening || Voice.speaking || _voiceBusy) return;
+  setTimeout(() => {
+    if (!voiceSessionActive || !voiceEnabled || isListening || Voice.speaking || _voiceBusy) return;
+    startListeningForOptions();
+  }, 700);
+}
+
+function voiceWantsAciControl(line) {
+  const low = line.toLowerCase();
+  return /pitogyra|πιτογυρ|explore|εξερεύ|πήγαινε|go to|focus/.test(low)
+    || /video|βίντεο|orbital/.test(low)
+    || /telecom|sat radio|satellite radio|ασύρματος/.test(low)
+    || /αγγλικά|english|ελληνικά|greek|athenian|αθηναϊκ|spartan|σπαρτιατ|myrmidon|μυρμιδόν/.test(low)
+    || /^(remember|θυμήσου|να θυμάσαι)\b/.test(low)
+    || /evolve|neuron|collective|εξέλιξη|brain/.test(low)
+    || (/μπίρ|τσιγαρ|beer|cigar|delivery|διανομ|παραγγελ|goals|work|δουλειά/.test(low) && !/^order\b/i.test(line));
+}
+
+async function submitVoiceToCli(transcript) {
+  const line = (transcript || '').trim();
+  if (!line || _voiceBusy) return;
+  _voiceBusy = true;
+  openVoiceCli();
+  const input = document.getElementById('aci-cli-in');
+  if (input) { input.value = ''; if (AciCli) AciCli.buffer = ''; }
+
+  const low = line.toLowerCase();
+  if (/^(stop|σταμάτα|σταματα|pause|διακοπή|quiet|σιωπή|mute)\b/.test(low)) {
+    _voiceBusy = false;
+    userIntervene();
+    return;
+  }
+  if (/^(mic|voice|μίκροφωνο|ακού)\b/.test(low)) {
+    _voiceBusy = false;
+    startVoiceOptions();
+    return;
+  }
+
+  try {
+    if (voiceWantsAciControl(line)) {
+      AciCli?.print('🎤 ' + line, 'cmd');
+      await ACIControl.handle(line, { fromVoice: true });
+    } else if (window.AciCli) {
+      await AciCli.run(line);
+    } else {
+      await ACIControl.handle(line, { fromVoice: true });
+    }
+  } catch (e) {
+    AciCli?.print('voice error: ' + (e.message || e), 'err');
+  } finally {
+    _voiceBusy = false;
+    scheduleVoiceResume();
+  }
+}
+window.submitVoiceToCli = submitVoiceToCli;
+
 function initVoice() {
   if ('SpeechRecognition' in window || 'webkitSpeechRecognition' in window) {
     const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
     recognition = new SpeechRec();
     recognition.lang = Voice.preferredListenLang;
-    recognition.continuous = false;
-    recognition.interimResults = false;
+    recognition.continuous = true;
+    recognition.interimResults = true;
     recognition.onresult = handleVoiceCommand;
-    recognition.onerror = (e) => { isListening = false; console.log('Voice error', e); };
-    recognition.onend = () => { isListening = false; };
+    recognition.onerror = (e) => {
+      isListening = false;
+      console.log('Voice error', e);
+      if (voiceSessionActive && e.error !== 'aborted') scheduleVoiceResume();
+    };
+    recognition.onend = () => {
+      isListening = false;
+      if (voiceSessionActive && voiceEnabled) scheduleVoiceResume();
+    };
   } else {
     console.log('Voice not supported, using console fallback.');
   }
 }
 
 function startListeningForOptions() {
-  if (!recognition || isListening) return;
+  if (!recognition || isListening || _voiceBusy || Voice.speaking) return;
   isListening = true;
   try {
     recognition.start();
-  } catch(e) { isListening = false; }
+  } catch (e) {
+    isListening = false;
+    if (e?.name === 'InvalidStateError' && voiceSessionActive) scheduleVoiceResume();
+  }
 }
 
 function handleVoiceCommand(event) {
+  const input = document.getElementById('aci-cli-in');
+  let interim = '';
+  let final = '';
+
+  for (let i = event.resultIndex; i < event.results.length; i++) {
+    const t = event.results[i][0].transcript || '';
+    if (event.results[i].isFinal) final += t;
+    else interim += t;
+  }
+
+  const draft = (final || interim).trim();
+  if (draft) {
+    voiceSessionActive = true;
+    voiceEnabled = true;
+    openVoiceCli();
+    if (input) {
+      input.value = draft;
+      if (AciCli) AciCli.buffer = draft;
+    }
+    GlobeDeck?.setPreview('🎤 ' + draft.slice(0, 96));
+  }
+
+  if (!final.trim()) return;
+
   isListening = false;
-  const transcript = (event.results[0][0].transcript || '').trim();
-  if (!transcript) return;
-  console.log('User said:', transcript);
-  voiceSessionActive = true;
-  voiceEnabled = true;
-  ACIControl.handle(transcript, { fromVoice: true });
+  try { recognition.stop(); } catch (_) {}
+  console.log('User said:', final.trim());
+  submitVoiceToCli(final.trim());
 }
 
 function resumeListening() {
-  if (!voiceSessionActive || !voiceEnabled || isListening || Voice.speaking) return;
-  setTimeout(() => {
-    if (!voiceSessionActive || Voice.speaking) return;
-    startListeningForOptions();
-  }, 700);
+  scheduleVoiceResume();
 }
 window.resumeListening = resumeListening;
 
@@ -78,7 +171,11 @@ function startVoiceOptions() {
   Voice.flush();
   voiceSessionActive = true;
   voiceEnabled = true;
-  ACIControl.reply('Mic on — say order, explore, drive, stop');
+  openVoiceCli();
+  AciCli?.print('🎤 listening — speak commands (locate, order, batch, help, stop)', 'dim');
+  const input = document.getElementById('aci-cli-in');
+  if (input) input.placeholder = '🎤 listening…';
+  ACIControl.reply('Mic on — voice controls Astranov Command Line');
   speak('Listening.', () => startListeningForOptions(), true);
 }
 

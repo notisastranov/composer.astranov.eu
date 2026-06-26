@@ -410,6 +410,8 @@ function userIntervene() {
   Voice.flush();
   voiceSessionActive = false;
   voiceEnabled = false;
+  const cliIn = document.getElementById('aci-cli-in');
+  if (cliIn) cliIn.placeholder = 'type or tap 🎤 · Enter or ➡';
   GlobeControl?.userTookGlobe?.('stop');
   if (window.PmrRadio) PmrRadio.hide();
   if (window.DrivingView) DrivingView.deactivate();
