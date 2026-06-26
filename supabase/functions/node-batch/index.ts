@@ -52,6 +52,11 @@ serve(async (req) => {
       return new Response(JSON.stringify({ ok: true }), { headers: cors })
     }
 
+    if (action === 'session_purge') {
+      const result = await unifyOwnerSession(sb, userId)
+      return new Response(JSON.stringify({ ok: true, ...result }), { headers: cors })
+    }
+
     if (action === 'resume') {
       const batch = await findActiveBatch(sb, userId)
       if (!batch) {
@@ -201,13 +206,69 @@ serve(async (req) => {
 
     return new Response(JSON.stringify({
       error: 'unknown action',
-      actions: ['launch', 'resume', 'register', 'heartbeat', 'peers', 'session_get', 'session_save'],
+      actions: ['launch', 'resume', 'register', 'heartbeat', 'peers', 'session_get', 'session_save', 'session_purge'],
     }), { status: 400, headers: cors })
   } catch (e) {
     const err = e && typeof e === 'object' && 'message' in e ? String((e as { message?: string }).message) : String(e)
     return new Response(JSON.stringify({ ok: false, error: err }), { status: 500, headers: cors })
   }
 })
+
+async function unifyOwnerSession(sb: ReturnType<typeof createClient>, userId: string) {
+  const { data: openBatches } = await sb.from('astranov_batches')
+    .select('id, short_id, created_at')
+    .eq('owner_id', userId)
+    .eq('status', 'open')
+    .order('created_at', { ascending: false })
+
+  let canonical = (openBatches || []).find(b => b.short_id === COLLECTIVE_BATCH_SHORT_ID) || null
+
+  if (!canonical) {
+    const ins = await sb.from('astranov_batches').insert({
+      owner_id: userId,
+      status: 'open',
+      short_id: COLLECTIVE_BATCH_SHORT_ID,
+    }).select('id, short_id, created_at').single()
+    if (ins.error?.code === '23505') {
+      const retry = await sb.from('astranov_batches')
+        .select('id, short_id, created_at')
+        .eq('owner_id', userId)
+        .eq('short_id', COLLECTIVE_BATCH_SHORT_ID)
+        .eq('status', 'open')
+        .maybeSingle()
+      canonical = retry.data
+    } else {
+      canonical = ins.data
+    }
+  }
+
+  const closeIds = (openBatches || [])
+    .filter(b => canonical && b.id !== canonical.id)
+    .map(b => b.id)
+
+  if (closeIds.length) {
+    await sb.from('astranov_batches').update({ status: 'closed' }).in('id', closeIds)
+    await sb.from('astranov_nodes').update({ batch_id: canonical!.id }).in('batch_id', closeIds)
+  }
+
+  const { data: prof } = await sb.from('profiles').select('globe_session').eq('id', userId).maybeSingle()
+  const prev = prof?.globe_session && typeof prof.globe_session === 'object' ? prof.globe_session : {}
+  const session = {
+    ...prev,
+    sessionName: COLLECTIVE_SESSION_NAME,
+    shortId: COLLECTIVE_BATCH_SHORT_ID,
+    batchLabel: COLLECTIVE_SESSION_NAME,
+    updatedAt: Date.now(),
+  }
+  await sb.from('profiles').update({ globe_session: session, updated_at: new Date().toISOString() }).eq('id', userId)
+
+  return {
+    batch_id: canonical?.id,
+    short_id: canonical?.short_id || COLLECTIVE_BATCH_SHORT_ID,
+    session_name: COLLECTIVE_SESSION_NAME,
+    closed: closeIds.length,
+  }
+}
 
 async function findActiveBatch(sb: ReturnType<typeof createClient>, userId: string) {
   const since = new Date(Date.now() - 72 * 60 * 60 * 1000).toISOString()

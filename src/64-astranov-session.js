@@ -74,12 +74,48 @@ const AstranovSession = {
     }
     return {
       userId: 'guest-' + this.deviceId(),
-      name: 'Αξάς',
+      name: 'Guest',
       deviceId: this.deviceId(),
       isGuest: true,
       sessionName: this.SESSION_NAME,
       batchShortId: this.BATCH_SHORT_ID,
     };
+  },
+
+  purgeLocalForeignState() {
+    if (!Auth?.user) return;
+    try {
+      const drop = [];
+      for (let i = 0; i < localStorage.length; i++) {
+        const k = localStorage.key(i);
+        if (!k) continue;
+        if (k.startsWith(this.LOCAL_KEY + '_guest')) drop.push(k);
+        if (k.startsWith('astranov_session-hold-v1_guest')) drop.push(k);
+        if (k === 'astranov_node_id') drop.push(k);
+      }
+      drop.forEach(k => localStorage.removeItem(k));
+    } catch (_) {}
+  },
+
+  async unifyCollective() {
+    this._applyIdentity();
+    this.purgeLocalForeignState();
+    SessionHold?.clearForeignHold?.();
+    if (AstranovNode?.api) {
+      try {
+        const r = await AstranovNode.api({ action: 'session_purge' });
+        if (r.ok && r.closed > 0) {
+          AciCli?.print?.('◎ Closed ' + r.closed + ' old session(s) — one collective only', 'dim');
+        }
+      } catch (_) {}
+    }
+    showOtherUsers?.();
+    await this.pull();
+    await AstranovNode?.resumeSession?.();
+    await this.push(true);
+    GlobeDeck?.setTitle?.(this.SESSION_NAME);
+    const chip = document.getElementById('user-chip');
+    if (chip && this.isAstranov()) chip.textContent = 'ASTRANOV · OWNER';
   },
 
   nodeStorageKey() {
@@ -124,7 +160,7 @@ const AstranovSession = {
       updatedAt: Date.now(),
       lastPos: window._lastPos || null,
       batchId: AstranovNode?.batchId || null,
-      shortId: AstranovNode?.shortId || this.BATCH_SHORT_ID,
+      shortId: this.BATCH_SHORT_ID,
       batchLabel: this.SESSION_NAME,
       nodeId: AstranovNode?.nodeId || this.getDeviceNodeId(),
       theme: AstranovTheme?.mode || 'dark',
@@ -140,6 +176,9 @@ const AstranovSession = {
 
   applyRemote(session) {
     if (!session || typeof session !== 'object') return;
+    session.shortId = this.BATCH_SHORT_ID;
+    session.sessionName = this.SESSION_NAME;
+    session.batchLabel = this.SESSION_NAME;
     this._lastRemote = session;
     if (session.lastPos?.lat != null) {
       window._lastPos = session.lastPos;
@@ -167,14 +206,21 @@ const AstranovSession = {
   async onAuth() {
     this._applyIdentity();
     if (Auth?.user) {
-      SessionHold?.clearForeignHold?.();
-      await this.pull();
-      await AstranovNode?.resumeSession?.();
+      if (this.isAstranov()) {
+        await this.unifyCollective();
+      } else {
+        SessionHold?.clearForeignHold?.();
+        await this.pull();
+        await AstranovNode?.resumeSession?.();
+      }
       setTimeout(() => AstranovWishlist?.announceRecovered?.(), 900);
       if (this.isAstranov()) {
         GlobeDeck?.setTitle?.(this.SESSION_NAME);
         const chip = document.getElementById('user-chip');
-        if (chip) chip.textContent = 'ASTRANOV · OWNER';
+        if (chip) {
+          chip.textContent = 'ASTRANOV · OWNER';
+          chip.style.color = '#8f8';
+        }
       }
     } else {
       this._applyLocal();

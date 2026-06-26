@@ -286,7 +286,22 @@ const AstranovNode = {
     }
 
     this.showPanel();
-    this.setStep(1, 'done', 'Συνδεδεμένος · ' + (Auth.user.email?.split('@')[0] || 'user'));
+    const who = AstranovSession?.isAstranov?.() ? 'ASTRANOV' : (Auth.user.email?.split('@')[0] || 'user');
+    this.setStep(1, 'done', 'Συνδεδεμένος · ' + who);
+    this.setStep(3, 'active', 'Σύνδεση στη συλλογική συνεδρία…');
+
+    const existing = await this.resumeSession();
+    if (existing) {
+      const label = AstranovSession?.sessionLabel?.() || 'ASTRANOV COLLECTIVE INTELLIGENCE';
+      const peerEl = document.getElementById('nb-peers');
+      if (peerEl) peerEl.textContent = String(this.peerCount);
+      const idEl = document.getElementById('nb-batch-id');
+      if (idEl) idEl.textContent = label;
+      this.setStep(3, 'done', label + ' · ' + this.peerCount + ' device(s)');
+      ACIControl?.reply(label + ' · resumed on this device');
+      return existing;
+    }
+
     this.setStep(3, 'active', 'Preflight verify…');
 
     const pre = await this.preflightVerify();
@@ -339,14 +354,14 @@ const AstranovNode = {
     this.registerSuperBookingSync();
 
     const resumed = r.resumed ? ' — same session on all devices' : '';
-    const msg = label + ' live · ' + this.peerCount + ' node(s)' + resumed;
+    const msg = label + ' live · ' + this.peerCount + ' device(s)' + resumed;
     ACIControl?.reply(msg);
     MapDepict?.action('batch', { lat: pos.lat, lng: pos.lng, detail: r.short_id + ' · ' + this.peerCount + ' nodes' });
     FieldBrain?.pulse('batch', r.short_id + ' · peers ' + this.peerCount, { role: 'client', props: { batch_id: r.batch_id, node_id: r.node_id } });
 
     document.getElementById('node-batch')?.classList.add('nb-super-live');
     const meshSt = document.getElementById('nb-mesh-status');
-    if (meshSt) meshSt.textContent = 'mesh live · ' + this.peerCount + ' peers';
+    if (meshSt) meshSt.textContent = 'mesh live · ' + this.peerCount + ' device(s)';
     if (window.AIGraphics?.setSuperBatchActive) {
       AIGraphics.setSuperBatchActive(true, { batchId: r.short_id, peers: this.peerCount, lat: pos.lat, lng: pos.lng });
     }
@@ -388,7 +403,7 @@ const AstranovNode = {
       if (status === 'SUBSCRIBED') {
         await this.rtChannel.track({
           node_id: this.nodeId,
-          user: Auth.user?.email?.split('@')[0],
+          user: AstranovSession?.isAstranov?.() ? 'ASTRANOV' : (Auth.user?.email?.split('@')[0] || 'user'),
           platform: this.platform(),
           install: this.installMode(),
         });
@@ -410,7 +425,7 @@ const AstranovNode = {
       MapDepict?.pulse(this.pos().lat, this.pos().lng, 0xaa88ff, 'peer joined super batch', 8000);
       if (window.AIGraphics?.pulseBatchMesh) AIGraphics.pulseBatchMesh(this.peerCount);
       const meshSt = document.getElementById('nb-mesh-status');
-      if (meshSt) meshSt.textContent = 'mesh · ' + this.peerCount + ' peers';
+      if (meshSt) meshSt.textContent = 'mesh · ' + this.peerCount + ' device(s)';
     }
     if (payload.type === 'task' && payload.text) {
       AciCli?.print('batch task · ' + payload.text.slice(0, 100), 'dim');

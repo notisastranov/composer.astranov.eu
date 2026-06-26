@@ -79,7 +79,7 @@ CityLife.init();
 SuperAdd.init();
 AstranovSiteShell.init();
 GlobeEntity.init();
-if (window.others?.length) GlobeEntity.syncFriends(others);
+if (window.others?.length && !Auth?.user) GlobeEntity.syncFriends(others);
 if (window._lastPos) GlobeEntity.syncMe(_lastPos.lat, _lastPos.lng, me?.name || 'You');
 if (typeof orbitalSats !== 'undefined') CosmicZoom.registerOrbitalSats(orbitalSats);
 Commerce.loadVendors().then(() => Commerce.initUI());

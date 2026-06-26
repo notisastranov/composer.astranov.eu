@@ -15,10 +15,10 @@ try { Voice.init(); initVoice(); } catch(e){ console.warn('Voice init skipped:',
 function initUser() {
   AstranovSession?._applyIdentity?.();
   if (!me) {
-    me = { id: 'guest-pending', name: 'Αξάς', isGuest: true };
+    me = { id: 'guest-pending', name: 'Guest', isGuest: true };
     window.me = me;
   }
-  showOtherUsers();
+  setTimeout(() => showOtherUsers(), 1500);
 
   // Default position on globe (Greece area) - no geo yet
   placeMe(36.22, 28.12, { quiet: true, markerOnly: true });
@@ -320,6 +320,13 @@ function locateMe() {
 window.locateMe = locateMe;
 
 function showOtherUsers() {
+  if (Auth?.user || AstranovSession?.isAstranov?.()) {
+    others = [];
+    window.others = others;
+    GlobeEntity?.syncFriends?.([]);
+    window._friendMarkers = [];
+    return;
+  }
   const base = window._lastPos || { lat: 36.22, lng: 28.12 };
   others = [
     { id: 'o1', name: 'Αξαδίνα', lat: base.lat + 0.008, lng: base.lng + 0.006, hidden: false, emoji: '🛸' },

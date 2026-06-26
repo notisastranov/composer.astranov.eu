@@ -110,10 +110,11 @@ Object.assign(SuperCli, {
         codersEngine: AciCoders?.engine,
         cause: AciCoders?.CAUSE,
       },
-      batch: { id: AstranovNode?.shortId, peers: AstranovNode?.peerCount },
+      batch: { session: AstranovSession?.SESSION_NAME, id: AstranovSession?.BATCH_SHORT_ID, devices: AstranovNode?.peerCount },
       superspace: SuperSpace?.status?.(),
       globe: { level: CosmicZoom?.level, follow: GlobeControl?.followMode, exploring: GlobeControl?.userExploring },
-      user: Auth?.user ? (Auth.user.email?.split('@')[0] || 'user') : 'guest',
+      user: AstranovSession?.isAstranov?.() ? 'ASTRANOV' : (Auth?.user ? (Auth.user.email?.split('@')[0] || 'user') : 'guest'),
+      session: AstranovSession?.SESSION_NAME || 'ASTRANOV COLLECTIVE INTELLIGENCE',
       owner: !!Auth?.isOwner,
     };
   },
@@ -162,7 +163,7 @@ Object.assign(SuperCli, {
       return { ok: true };
     }
     if (sub === 'peers') {
-      this.out('batch ' + (AstranovNode?.shortId || '—') + ' · peers ' + (AstranovNode?.peerCount ?? 0), 'ok');
+      this.out((AstranovSession?.SESSION_NAME || 'collective') + ' · ' + (AstranovNode?.peerCount ?? 0) + ' device(s)', 'ok');
       GlobeDeck?.finishCliIfOneShot('dev');
       return { ok: true };
     }
@@ -437,10 +438,14 @@ Object.assign(SuperCli, {
         return { handled: true };
       }
       if (cmd === 'sync') {
-        await AstranovSession?.pull?.();
-        await AstranovSession?.push?.(true);
+        if (AstranovSession?.isAstranov?.()) await AstranovSession?.unifyCollective?.();
+        else {
+          await AstranovSession?.pull?.();
+          await AstranovNode?.resumeSession?.();
+          await AstranovSession?.push?.(true);
+        }
         AstranovWishlist?.announceRecovered?.();
-        this.out('◎ Session synced — ' + (AstranovSession?.SESSION_NAME || 'collective'), 'ok');
+        this.out('◎ ' + (AstranovSession?.SESSION_NAME || 'collective') + ' · synced across devices', 'ok');
         return { handled: true };
       }
       if (cmd === 'requests' || cmd === 'wishlist') {

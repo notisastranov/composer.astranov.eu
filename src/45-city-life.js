@@ -95,7 +95,7 @@ const CityLife = {
   },
 
   _tickFriends() {
-    const markers = window._friendMarkers || [];
+    if (Auth?.user || !(window.others || []).length) return;
     const friends = window.others || [];
     friends.forEach((u) => {
       u.lat += (Math.random() - 0.5) * 0.0012;

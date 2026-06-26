@@ -40,6 +40,12 @@ const FieldBrain = {
   updateChip() {
     const chip = document.getElementById('user-chip');
     if (!chip || !Auth?.user) return;
+    if (AstranovSession?.isAstranov?.() || Auth.isOwner) {
+      chip.textContent = 'ASTRANOV · OWNER';
+      chip.style.color = '#8f8';
+      chip.title = AstranovSession?.SESSION_NAME || 'ASTRANOV COLLECTIVE INTELLIGENCE';
+      return;
+    }
     const name = Auth.user.user_metadata?.full_name || Auth.user.email?.split('@')[0] || 'User';
     const g = AstroGlyphs || { driver: '🚚', vendor: '🏬', client: '🧑' };
     const hats = this.roles.map(r => r === 'driver' ? g.driver : r === 'vendor' ? g.vendor : g.client).join('');
