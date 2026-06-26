@@ -115,11 +115,13 @@ const AciCli = {
 
   async api(body) {
     const headers = { 'Content-Type': 'application/json', apikey: SB_KEY };
-    if (Auth?.client) {
+    if (Auth?.ensureSession) {
+      const session = await Auth.ensureSession();
+      headers.Authorization = session?.access_token ? 'Bearer ' + session.access_token : 'Bearer ' + SB_KEY;
+    } else if (Auth?.client) {
       const { data } = await Auth.client.auth.getSession();
       const token = data?.session?.access_token;
-      if (token) headers.Authorization = 'Bearer ' + token;
-      else headers.Authorization = 'Bearer ' + SB_KEY;
+      headers.Authorization = token ? 'Bearer ' + token : 'Bearer ' + SB_KEY;
     } else {
       headers.Authorization = 'Bearer ' + SB_KEY;
     }

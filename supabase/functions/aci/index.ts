@@ -354,8 +354,8 @@ serve(async (req) => {
         action = { type: 'probe', force, via: probe.via, ok: !!(probe.text || probe.response) }
       }
 
-      if (runBuild || (isBuildTask(message) && force === 'composer') || (isBuildTask(message) && !composer.ok)) {
-        const engine = force === 'grok' || force === 'xai' ? 'grok' : (force === 'composer' || composer.ok) ? 'composer' : 'grok'
+      if (runBuild || (isBuildTask(message) && force === 'composer')) {
+        const engine = force === 'composer' ? 'composer' : 'grok'
         const inner = await invokeFn(base, anon, caller.authToken, 'aci', {
           mode: 'coders',
           task: message,
@@ -366,14 +366,29 @@ serve(async (req) => {
         action = { type: 'summon', engine, summon_id: inner.summon_id, pending: inner.pending, via: inner.via }
       }
 
-      const text = String(result.text || result.response || 'Coders team listening.')
+      let text = String(result.text || result.response || '').trim()
+      if (!text || /^coders team listening\.?$/i.test(text)) {
+        const fb = await invokeFn(base, anon, caller.authToken, 'aicycle', {
+          prompt: message,
+          profile_id: caller.callerId,
+          mode: 'coders',
+          coder_engine: 'grok',
+          fallback: true,
+          fallback_prefs: prefs,
+          history: Array.isArray(body.history) ? body.history : [],
+          agent_system: 'Coders team sync fallback — answer immediately.',
+        })
+        text = String(fb.text || fb.response || '').trim()
+          || 'Coders online — no model responded; try again shortly.'
+      }
       const via = String(result.via || 'team')
       let full = text
       if (action?.type === 'probe') {
         full += `\n\n[Probe ${action.force}: ${action.ok ? 'online via ' + action.via : 'failed'}]`
       }
       if (action?.type === 'summon') {
-        full += `\n\n[Action: ${action.pending ? 'queued Composer' : 'ran coder'} #${action.summon_id || '?'} · ${action.via || action.engine}]`
+        const tag = action.pending ? 'Composer also queued' : 'coder ran'
+        full += `\n\n[Action: ${tag} #${action.summon_id || '?'} · ${action.via || action.engine}]`
       }
 
       return json({
@@ -387,7 +402,8 @@ serve(async (req) => {
         roster,
         fallback_prefs: prefs,
         action,
-        pending: action?.pending === true,
+        pending: false,
+        composer_queued: action?.pending === true ? action.summon_id : null,
         summon_id: action?.summon_id ?? null,
       })
     }
@@ -396,8 +412,8 @@ serve(async (req) => {
       if (!caller.callerId) return json({ error: 'login required — sign in to summon Astranov Coders' }, 401)
       const task = String(body.task || body.prompt || '').trim().slice(0, 2000)
       if (task.length < 3) return json({ error: 'task required — e.g. coders fix zoom on mobile' }, 400)
-      const coderEngine = String(body.coder_engine || 'composer').toLowerCase()
-      const engine = coderEngine === 'grok' ? 'grok' : 'composer'
+      const coderEngine = String(body.coder_engine || 'grok').toLowerCase()
+      const engine = coderEngine === 'composer' ? 'composer' : 'grok'
 
       const { data: qrow, error: qerr } = await sb.from('cic_queue').insert({
         user_id: caller.callerId,
@@ -467,29 +483,53 @@ serve(async (req) => {
           }
         }
 
+        const syncResult = await invokeFn(base, anon, caller.authToken, 'aicycle', {
+          prompt: task,
+          profile_id: caller.callerId,
+          mode: 'coders',
+          coder_engine: 'grok',
+          agent_system: `Coders summon #${summonId}. Answer immediately; Composer may also run async.`,
+          history: Array.isArray(body.history) ? body.history : [],
+        })
+        let text = String(syncResult.text || syncResult.response || '').trim()
+        const via = String(syncResult.via || 'grok')
+
         if (summonId && bridgeOk && !qerr) {
-          const text = `Summon #${summonId} queued for Cursor Composer. Poll: coders poll ${summonId}`
-          return json({
-            ok: true,
-            bridged: true,
-            pending: true,
-            summon_id: summonId,
-            text,
-            response: text,
-            label: 'Astranov Coders · Cursor Composer',
-            coder_engine: 'composer',
-            via: 'cursor/queue',
-            queued: true,
-            owner: caller.isOwner,
-          })
+          const queueNote = `\n\n[Composer #${summonId} also queued — coders poll ${summonId} for Cursor result]`
+          text = text ? text + queueNote : `Summon #${summonId} queued for Cursor Composer. Poll: coders poll ${summonId}`
         }
 
-        return await codersLlmFallback(
-          sb, base, anon, caller.authToken, caller, summonId, task,
-          Array.isArray(body.history) ? body.history : [],
-          downReasons.join('; ') || 'composer unavailable',
-          (body.fallback_prefs || {}) as FallbackPrefs,
-        )
+        if (!text) {
+          return await codersLlmFallback(
+            sb, base, anon, caller.authToken, caller, summonId, task,
+            Array.isArray(body.history) ? body.history : [],
+            downReasons.join('; ') || 'composer unavailable',
+            (body.fallback_prefs || {}) as FallbackPrefs,
+          )
+        }
+
+        if (summonId) {
+          await sb.from('cic_queue').update({
+            status: 'answered',
+            answer: text.slice(0, 8000),
+            answered_at: new Date().toISOString(),
+          }).eq('id', summonId).catch(() => {})
+        }
+
+        return json({
+          ok: true,
+          bridged: true,
+          pending: false,
+          composer_queued: (summonId && bridgeOk && !qerr) ? summonId : null,
+          summon_id: summonId,
+          text,
+          response: text,
+          label: bridgeOk ? 'Astranov Coders · Grok + Composer' : 'Astranov Coders · Grok',
+          coder_engine: 'grok',
+          via,
+          queued: !!(summonId && bridgeOk),
+          owner: caller.isOwner,
+        })
       }
 
       // Grok = xAI / Grok APIs (sync)
@@ -501,7 +541,15 @@ serve(async (req) => {
         agent_system: `Grok coders summon #${summonId}. Field CLI on astranov.eu.`,
         history: Array.isArray(body.history) ? body.history : [],
       })
-      const text = String(result.text || result.response || 'Grok coders received your summon.')
+      let text = String(result.text || result.response || '').trim()
+      if (!text) {
+        return await codersLlmFallback(
+          sb, base, anon, caller.authToken, caller, summonId, task,
+          Array.isArray(body.history) ? body.history : [],
+          'grok empty response',
+          (body.fallback_prefs || {}) as FallbackPrefs,
+        )
+      }
       const label = 'Astranov Coders · Grok'
 
       if (summonId && text) {

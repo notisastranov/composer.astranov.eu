@@ -29,15 +29,23 @@ const Auth = {
     if (btn) btn.onclick = () => this.user ? this.signOut() : this.signInGoogle();
   },
 
+  async ensureSession() {
+    if (!this.client) return null;
+    const { data } = await this.client.auth.getSession();
+    let session = data?.session || null;
+    if (!session?.access_token) return null;
+    const exp = session.expires_at ? session.expires_at * 1000 : 0;
+    if (exp && exp < Date.now() + 120000) {
+      const { data: refreshed, error } = await this.client.auth.refreshSession();
+      if (!error && refreshed?.session) session = refreshed.session;
+    }
+    return session;
+  },
+
   async authHeaders() {
     const h = { 'Content-Type': 'application/json', apikey: SB_KEY };
-    if (this.client) {
-      const { data } = await this.client.auth.getSession();
-      const t = data?.session?.access_token;
-      h.Authorization = t ? 'Bearer ' + t : 'Bearer ' + SB_KEY;
-    } else {
-      h.Authorization = 'Bearer ' + SB_KEY;
-    }
+    const session = await this.ensureSession();
+    h.Authorization = session?.access_token ? 'Bearer ' + session.access_token : 'Bearer ' + SB_KEY;
     return h;
   },
 

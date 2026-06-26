@@ -1,12 +1,11 @@
 // === ASTRANOV CODERS TEAM ===
-// coders → conversational team (Composer + fallback cycle control)
-// Normal text: ask why Composer is down, try XAI Grok, skip Anthropic, build tasks, etc.
+// coders → conversational team (Grok sync first; Composer async optional)
 const AciCoders = {
   ready: false,
   teamActive: false,
   history: [],
   lastSummonId: null,
-  engine: 'composer',
+  engine: 'grok',
   armed: false,
   fallbackPrefs: { force: null, skip: [] },
   _pollTimer: null,
@@ -24,12 +23,19 @@ const AciCoders = {
   },
 
   loadEngine() {
-    this.engine = 'composer';
+    this.engine = this.fallbackPrefs.force === 'composer' ? 'composer' : 'grok';
   },
 
   saveEngine() {},
-  setEngine() { return true; },
-  toggleEngine() { return true; },
+  setEngine(eng) {
+    this.engine = eng === 'composer' ? 'composer' : 'grok';
+    this.fallbackPrefs.force = eng === 'composer' ? 'composer' : 'xai';
+    this.savePrefs();
+    return true;
+  },
+  toggleEngine() {
+    return this.setEngine(this.engine === 'composer' ? 'grok' : 'composer');
+  },
 
   updateHud() {
     if (Auth?.user) {
@@ -39,9 +45,20 @@ const AciCoders = {
     }
   },
 
+  async ensureSession() {
+    if (!Auth?.user) return false;
+    const session = await Auth.ensureSession?.();
+    if (!session?.access_token) {
+      GlobeDeck?.showError('Session expired — tap G to sign in again');
+      return false;
+    }
+    return true;
+  },
+
   async ensureBridge() {
     if (!Auth?.user) return;
     this.loadPrefs();
+    this.loadEngine();
     if (this.ready) { this.updateHud(); return; }
     this.ready = true;
     window._aciCodersReady = true;
@@ -53,16 +70,16 @@ const AciCoders = {
       Auth?.signInGoogle();
       return;
     }
+    if (!(await this.ensureSession())) return;
     await this.ensureBridge();
     this.teamActive = true;
     if (GlobeDeck) GlobeDeck.activeTask = 'coders';
     this.armed = true;
-    this.engine = 'composer';
     this.updateHud();
-    if (AciCli) AciCli.print('Coders team ON — talk normally · coders exit to leave', 'ok');
+    if (AciCli) AciCli.print('Coders team ON — Grok answers now · coders exit to leave', 'ok');
     const msg = intro && intro.trim().length > 0
       ? intro.trim()
-      : 'Coders team online. Report Composer status, fallback roster, and await my instructions.';
+      : 'Coders team online. Report status and await my instructions.';
     return this.chat(msg);
   },
 
@@ -78,8 +95,19 @@ const AciCoders = {
       tries++;
       const r = await this.poll(summonId, true);
       if (r?.status === 'answered') this.stopPoll();
-      if (tries > 36) this.stopPoll();
+      if (tries > 36) {
+        this.stopPoll();
+        if (r?.status !== 'answered') this._pollTimeoutFallback(summonId);
+      }
     }, 5000);
+  },
+
+  async _pollTimeoutFallback(summonId) {
+    if (AciCli) AciCli.print('Composer poll timeout — asking Grok…', 'dim');
+    const last = this.history.filter(h => h.role === 'user').pop();
+    const task = last?.content || 'summon follow-up';
+    const q = await this.queueCoder(task, 'grok');
+    if (q.text && AciCli) AciCli.print('Grok fallback #' + (summonId || '?') + ': ' + q.text.slice(0, 500), 'out');
   },
 
   async poll(summonId, quiet) {
@@ -127,6 +155,7 @@ const AciCoders = {
     if (r.fallback_prefs) {
       this.fallbackPrefs = r.fallback_prefs;
       this.savePrefs();
+      this.loadEngine();
     }
     const text = r.text || r.response || r.error || '';
     if (r.summon_id) this.lastSummonId = r.summon_id;
@@ -138,10 +167,11 @@ const AciCoders = {
     }
 
     const reply = text.slice(0, 900);
-    ACIControl?.reply(reply.slice(0, 280));
-    if (r.pending && r.summon_id && AciCli) AciCli.print('Composer queued #' + r.summon_id, 'dim');
+    if (reply) ACIControl?.reply(reply.slice(0, 280));
 
-    if (r.pending && r.summon_id) this.startPoll(r.summon_id);
+    const composerQueued = r.composer_queued || (r.pending && r.summon_id);
+    if (composerQueued && AciCli) AciCli.print('Composer also queued #' + composerQueued, 'dim');
+    if (composerQueued) this.startPoll(composerQueued);
     else this.stopPoll();
 
     if (!r.pending && Voice.maySpeak() && Voice.shouldSpeak(text)) {
@@ -156,23 +186,28 @@ const AciCoders = {
     return /fix|build|implement|add|create|remove|button|locate|globe|vendor|order|mobile|φτιάξε|πρόσθεσε/.test(s) && s.length >= 8;
   },
 
-  async queueComposer(task) {
-    if (AciCli) AciCli.print('queuing Composer…', 'dim');
+  wantsComposer(m) {
+    return this.fallbackPrefs.force === 'composer'
+      || /^use\s+composer|queue\s+composer|back\s+to\s+composer/i.test(String(m || ''));
+  },
+
+  async queueCoder(task, engine) {
+    const eng = engine || (this.wantsComposer(task) ? 'composer' : 'grok');
+    if (AciCli) AciCli.print('coders ' + eng + '…', 'dim');
     const q = await AciCli.api({
       mode: 'coders',
       task: task,
-      coder_engine: 'composer',
+      coder_engine: eng,
       history: this.history.slice(-6),
       fallback_prefs: this.fallbackPrefs,
     });
-    if (q.error && AciCli) AciCli.print('queue error: ' + q.error, 'err');
+    if (q.error && AciCli) AciCli.print('coders error: ' + q.error, 'err');
     if (q.summon_id) {
       this.lastSummonId = q.summon_id;
       if (AciCli) {
-        AciCli.print('summon #' + q.summon_id + (q.pending ? ' · Composer queued' : ' · ' + (q.via || 'answered')), q.pending ? 'ok' : 'out');
-        if (q.pending) AciCli.print('polling… coders poll ' + q.summon_id, 'dim');
+        AciCli.print('summon #' + q.summon_id + ' · ' + (q.via || eng), q.text ? 'out' : 'ok');
       }
-      if (q.pending) this.startPoll(q.summon_id);
+      if (q.composer_queued) this.startPoll(q.composer_queued);
     }
     return q;
   },
@@ -184,6 +219,8 @@ const AciCoders = {
       Auth?.signInGoogle();
       return { error: 'login required' };
     }
+    if (!(await this.ensureSession())) return { error: 'session expired' };
+
     const m = String(message || '').trim();
     if (m.length < 1) return { error: 'empty' };
 
@@ -202,11 +239,11 @@ const AciCoders = {
         return { ok: true, located: true };
       }
 
-      let q = null;
-      if (this.isBuildTask(m)) {
-        q = await this.queueComposer(m);
+      if (this.wantsComposer(m) && this.isBuildTask(m)) {
+        const q = await this.queueCoder(m, 'composer');
+        GlobeDeck?.setThinking(false);
         if (q.text && !q.error) {
-          return this._applyResponse({ ...q, label: q.label || 'Astranov Coders · Composer', team: true }, m);
+          return this._applyResponse({ ...q, label: q.label || 'Astranov Coders', team: true }, m);
         }
       }
 
@@ -218,13 +255,11 @@ const AciCoders = {
         fallback_prefs: this.fallbackPrefs,
       });
 
-      if (r.error && !q) {
-        if (this.isBuildTask(m)) {
-          q = await this.queueComposer(m);
-          if (q.summon_id) {
-            GlobeDeck?.setThinking(false);
-            return this._applyResponse({ ...q, text: (q.text || '') + '\n(chat fallback → Composer queue)', team: true }, m);
-          }
+      if (r.error) {
+        const q = await this.queueCoder(m, 'grok');
+        if (q.text && !q.error) {
+          GlobeDeck?.setThinking(false);
+          return this._applyResponse({ ...q, text: q.text, team: true }, m);
         }
         GlobeDeck?.setThinking(false);
         if (AciCli) AciCli.print('coders error: ' + r.error, 'err');
@@ -232,13 +267,13 @@ const AciCoders = {
         return r;
       }
 
-      if (this.isBuildTask(m) && !r.summon_id && !q) {
-        q = await this.queueComposer(m);
-        if (q.summon_id) {
+      if (!r.text && !r.response && this.isBuildTask(m)) {
+        const q = await this.queueCoder(m, 'grok');
+        if (q.text) {
+          r.text = q.text;
+          r.response = q.text;
           r.summon_id = q.summon_id;
-          r.pending = q.pending;
-          r.text = (r.text || r.response || '') + '\n\n[Queued Composer #' + q.summon_id + ']';
-          r.response = r.text;
+          r.composer_queued = q.composer_queued;
         }
       }
 
@@ -249,7 +284,8 @@ const AciCoders = {
       const msg = String(e.message || e);
       if (AciCli) AciCli.print('coders failed: ' + msg, 'err');
       GlobeDeck?.showError('Coders failed: ' + msg);
-      if (this.isBuildTask(m)) return this.queueComposer(m);
+      const q = await this.queueCoder(m, 'grok');
+      if (q.text) return this._applyResponse({ ...q, team: true }, m);
       return { error: msg };
     }
   },
@@ -260,6 +296,7 @@ const AciCoders = {
       Auth?.signInGoogle();
       return { error: 'login required' };
     }
+    if (!(await this.ensureSession())) return { error: 'session expired' };
     await this.ensureBridge();
     const parts = String(rest || '').trim().split(/\s+/);
     const sub = (parts[0] || '').toLowerCase();
@@ -281,8 +318,7 @@ const AciCoders = {
 
     const task = sub === 'grok' || sub === 'composer' ? parts.slice(1).join(' ') : rest;
     if ((sub === 'grok' || sub === 'composer') && task.length < 3) {
-      this.fallbackPrefs.force = sub === 'grok' ? 'xai' : 'composer';
-      this.savePrefs();
+      this.setEngine(sub);
       return this.chat('use ' + sub + ' from now on');
     }
 
