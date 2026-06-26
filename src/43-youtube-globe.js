@@ -2,7 +2,7 @@
 const GlobeVideo = {
   _results: [],
   _currentId: null,
-  _marker: null,
+  _lastQuery: '',
 
   PIPED: [
     'https://pipedapi.kavin.rocks',
@@ -73,8 +73,7 @@ const GlobeVideo = {
     const frame = document.getElementById('yt-frame');
     if (frame) frame.src = 'about:blank';
     this._currentId = null;
-    if (this._marker?.parent) this._marker.parent.remove(this._marker);
-    this._marker = null;
+    SuperSpace?.stop?.();
   },
 
   renderResults(items, query) {
@@ -89,7 +88,7 @@ const GlobeVideo = {
       row.innerHTML = '<span class="yt-n">' + (i + 1) + '</span>'
         + '<span class="yt-meta"><b>' + this.esc(v.title) + '</b>'
         + '<small>' + this.esc(v.channel) + (mins ? ' · ' + mins : '') + '</small></span>';
-      row.onclick = () => this.play(v.id, v);
+      row.onclick = () => this.play(v.id, v, this._lastQuery);
       list.appendChild(row);
     });
     const hint = document.getElementById('yt-hint');
@@ -102,47 +101,33 @@ const GlobeVideo = {
     return String(s || '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
   },
 
-  play(videoId, meta) {
+  async play(videoId, meta, searchQuery) {
     const id = this.parseId(videoId);
     if (!id) {
       AciCli?.print('invalid video id', 'err');
       return;
     }
     this._currentId = id;
-    this.showPanel((meta?.title || 'YouTube').slice(0, 48));
+    const title = meta?.title || id;
+    await SuperSpace?.locateForMedia?.(searchQuery || title, meta);
+    this.showPanel(title.slice(0, 48));
     const frame = document.getElementById('yt-frame');
-    const title = document.getElementById('yt-now-title');
-    if (title) title.textContent = meta?.title || id;
+    const titleEl = document.getElementById('yt-now-title');
+    if (titleEl) titleEl.textContent = title;
     if (frame) {
       frame.src = 'https://www.youtube-nocookie.com/embed/' + id
         + '?autoplay=1&rel=0&modestbranding=1&playsinline=1';
     }
-    GlobeDeck?.expand('YouTube · ' + (meta?.title || id).slice(0, 40));
-    AciCli?.print('▶ ' + (meta?.title || id), 'ok');
-    ACIControl?.reply('Playing on globe — ' + (meta?.title || id).slice(0, 80));
-    MapDepict?.action('video', { detail: (meta?.title || id).slice(0, 40) });
-    this.pulseOnGlobe();
-    AciCoders?.observeActivity?.('youtube', (meta?.title || id).slice(0, 80));
-    FieldBrain?.pulse?.('media', 'youtube · ' + (meta?.title || id).slice(0, 60), { role: 'client' });
-  },
-
-  pulseOnGlobe() {
-    const u = window._lastPos || { lat: 36.22, lng: 28.12 };
-    MapDepict?.pulse?.(u.lat, u.lng, 0xff4466, '▶ YouTube', 12000);
-    if (this._marker?.parent) this._marker.parent.remove(this._marker);
-    const pos = latLngToPos(u.lat, u.lng, 1.06);
-    const plane = new THREE.Mesh(
-      new THREE.PlaneGeometry(0.14, 0.08),
-      new THREE.MeshBasicMaterial({ color: 0xff2244, transparent: true, opacity: 0.75, side: THREE.DoubleSide })
-    );
-    plane.position.set(pos.x, pos.y, pos.z);
-    plane.lookAt(0, 0, 0);
-    plane.userData = { type: 'yt-screen' };
-    globePivot.add(plane);
-    this._marker = plane;
+    GlobeDeck?.expand('YouTube · ' + title.slice(0, 40));
+    AciCli?.print('▶ ' + title, 'ok');
+    ACIControl?.reply('SuperSpace + SuperCli — ' + title.slice(0, 80));
+    MapDepict?.action('video', { detail: title.slice(0, 40) });
+    AciCoders?.observeActivity?.('youtube', title.slice(0, 80));
+    FieldBrain?.pulse?.('media', 'youtube · ' + title.slice(0, 60), { role: 'client' });
   },
 
   async find(query) {
+    this._lastQuery = String(query || '').trim();
     const q = String(query || '').trim();
     if (!q) {
       ACIControl?.reply('usage: youtube <search> · watch <url> · find video about …');
@@ -150,7 +135,7 @@ const GlobeVideo = {
     }
     const direct = this.parseId(q);
     if (direct) {
-      this.play(direct, { title: q });
+      await this.play(direct, { title: q }, q);
       return { ok: true, id: direct };
     }
 
@@ -170,8 +155,8 @@ const GlobeVideo = {
       items.forEach((v, i) => {
         AciCli?.print((i + 1) + '. ' + v.title.slice(0, 70) + (v.channel ? ' · ' + v.channel : ''), 'dim');
       });
-      ACIControl?.reply('Found ' + items.length + ' — playing #1 · tap others in deck');
-      this.play(items[0].id, items[0]);
+      ACIControl?.reply('Found ' + items.length + ' — brain locating #1 on globe');
+      await this.play(items[0].id, items[0], q);
       return { ok: true, count: items.length };
     } catch (e) {
       GlobeDeck?.setThinking(false);
@@ -182,14 +167,14 @@ const GlobeVideo = {
     }
   },
 
-  playIndex(n) {
+  async playIndex(n) {
     const idx = parseInt(n, 10) - 1;
     const v = this._results[idx];
     if (!v) {
       AciCli?.print('no result #' + n + ' — search first', 'err');
       return;
     }
-    this.play(v.id, v);
+    await this.play(v.id, v, this._lastQuery);
   },
 
   wantsYoutube(text) {

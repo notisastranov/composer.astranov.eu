@@ -270,7 +270,7 @@ const GlobeDeck = {
       'think', 'evolve', 'teach', 'stats', 'owner', 'seed', 'distill', 'council',
       'mode', 'locate', 'gps', 'me', 'drive', 'news', 'roles', 'claim', 'field_stats',
       'deploy', 'help', '?', 'clear', 'logout', 'connect', 'open', 'vendor',
-      'dev', 'ui', 'brain', 'status',
+      'dev', 'ui', 'brain', 'status', 'space', 'superspace',
     ]);
     return one.has((cmd || '').toLowerCase());
   },

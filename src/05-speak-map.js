@@ -413,6 +413,7 @@ function userIntervene() {
   SessionHold?.release?.();
   GlobeVideo?.stop?.();
   GlobeVideo?.hide?.();
+  SuperSpace?.stop?.();
   const cliIn = document.getElementById('aci-cli-in');
   if (cliIn) cliIn.placeholder = 'type or tap 🎤 · Enter or ➡';
   GlobeControl?.userTookGlobe?.('stop');

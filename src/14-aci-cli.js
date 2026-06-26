@@ -358,11 +358,20 @@ const AciCli = {
         return;
       }
       if (cmd === 'watch' || cmd === 'play') {
-        if (/^\d+$/.test(rest)) { GlobeVideo?.playIndex?.(rest); return; }
+        if (/^\d+$/.test(rest)) { await GlobeVideo?.playIndex?.(rest); return; }
         const id = GlobeVideo?.parseId?.(rest);
-        if (id) { GlobeVideo?.play?.(id, { title: rest }); return; }
-        if (rest) await GlobeVideo?.find?.(rest);
-        else this.print('usage: watch <url|#> · play 2', 'err');
+        if (id) { await GlobeVideo?.play?.(id, { title: rest }); return; }
+      }
+      if (cmd === 'space' || cmd === 'superspace') {
+        const sub = (parts[1] || 'status').toLowerCase();
+        if (sub === 'status') {
+          this.print(JSON.stringify(SuperSpace?.status?.(), null, 0), 'out');
+          GlobeDeck?.finishCliIfOneShot('space');
+          return;
+        }
+        const topic = parts.slice(/^(locate|find|place)$/.test(sub) ? 2 : 1).join(' ') || rest;
+        if (topic) await SuperSpace?.locateText?.(topic);
+        else this.print(JSON.stringify(SuperSpace?.status?.(), null, 0), 'out');
         return;
       }
       if (cmd === 'roles') {

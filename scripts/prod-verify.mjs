@@ -53,7 +53,8 @@ await check('assemble + syntax', () => {
   const superCli = [
     'super-cli-bar', 'globe-deck-stage', 'SuperCli', 'superAction',
     'SessionHold', 'initBrain', 'aci-hold', 'preflightVerify',
-    'cmdDev', 'cmdUi', 'cmdBrain', 'submitVoiceToCli', 'async exec',
+    'cmdDev', 'cmdUi', 'cmdBrain', 'cmdSpace', 'submitVoiceToCli', 'async exec',
+    'SuperSpace', 'superspace-hud', 'locateForMedia', 'GlobeVideo',
   ];
   const missing = superCli.filter(m => !html.includes(m));
   if (missing.length) throw new Error('Super CLI missing: ' + missing.join(', '));

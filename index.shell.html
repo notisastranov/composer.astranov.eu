@@ -164,11 +164,18 @@
   #nb-join-comms { background:rgba(60,50,0,0.45); border:2px solid #da4; color:#fda; }
   #nb-ios-steps { display:none; color:#9cb; font-size:10px; margin:8px 0; line-height:1.5; }
   #nb-close { background:transparent; border:1px solid #666; color:#aaa; border-radius:8px; padding:2px 8px; cursor:pointer; }
+  #superspace-hud { display:none; position:fixed; top:12px; right:12px; z-index:120; max-width:220px; padding:10px 12px; border-radius:12px; background:rgba(8,0,24,0.82); border:1px solid rgba(170,136,255,0.45); font:10px/1.45 system-ui; color:#e8e0ff; pointer-events:none; backdrop-filter:blur(6px); }
+  #superspace-hud.open { display:block; }
+  #superspace-hud .ss-title { font-weight:700; color:#c8a8ff; margin-bottom:6px; font-size:11px; }
+  #superspace-hud .ss-row { margin:2px 0; color:#dde; }
+  #superspace-hud .ss-row b { color:#a88cff; font-weight:600; }
+  #superspace-hud .ss-tri { margin-top:8px; padding-top:6px; border-top:1px solid rgba(170,136,255,0.25); color:#9ab; font-size:9px; }
 
 </style>
 </head>
 <body>
   <div id="globe"></div>
+  <div id="superspace-hud"></div>
   <div id="zoom-label">EARTH</div>
   <div id="cosmic-guide"></div>
   <div id="user-chip"></div>
@@ -233,7 +240,7 @@
         <button id="yt-close" type="button">✖</button>
       </div>
       <div id="yt-player-wrap"><iframe id="yt-frame" title="YouTube player" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe></div>
-      <div id="yt-hint">CLI: youtube rhodes travel · play 2 · watch URL</div>
+      <div id="yt-hint">CLI: youtube mars doc · play 2 · space locate ISS · brain places on globe</div>
       <div id="yt-results"></div>
     </div>
     <div id="vendor-menu">

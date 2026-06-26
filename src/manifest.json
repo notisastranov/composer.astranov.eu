@@ -21,6 +21,7 @@
     { "file": "32-astranov-node.js", "marker": "// === ASTRANOV NODE" },
     { "file": "40-comms-news.js", "marker": "// ── COMMS:" },
     { "file": "42-satradio.js", "marker": "// === SAT RADIO HANDHELD" },
+    { "file": "44-superspace.js", "marker": "// === SUPER SPACE UI" },
     { "file": "43-youtube-globe.js", "marker": "// === YOUTUBE ON GLOBE" },
     { "file": "50-cosmic.js", "marker": "// ── COSMIC ZOOM:" },
     { "file": "10-trackball.js", "marker": "// Trackball — rotate entire globe pivot" },

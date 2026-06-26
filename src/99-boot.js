@@ -44,6 +44,7 @@ function animate() {
   }
 
   if (window.MapDepict) MapDepict.tick();
+  SuperSpace?.tick?.();
   CosmicZoom.update(camera.position.z);
   renderer.render(scene, camera);
 }
@@ -65,6 +66,7 @@ PmrRadio.bindUI();
 GlobeVideo.init();
 DrivingView.init();
 CosmicZoom.init();
+SuperSpace.init();
 if (typeof orbitalSats !== 'undefined') CosmicZoom.registerOrbitalSats(orbitalSats);
 Commerce.loadVendors().then(() => Commerce.initUI());
 NewsFeed.fetch();

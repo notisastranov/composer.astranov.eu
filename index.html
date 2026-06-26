@@ -164,11 +164,18 @@
   #nb-join-comms { background:rgba(60,50,0,0.45); border:2px solid #da4; color:#fda; }
   #nb-ios-steps { display:none; color:#9cb; font-size:10px; margin:8px 0; line-height:1.5; }
   #nb-close { background:transparent; border:1px solid #666; color:#aaa; border-radius:8px; padding:2px 8px; cursor:pointer; }
+  #superspace-hud { display:none; position:fixed; top:12px; right:12px; z-index:120; max-width:220px; padding:10px 12px; border-radius:12px; background:rgba(8,0,24,0.82); border:1px solid rgba(170,136,255,0.45); font:10px/1.45 system-ui; color:#e8e0ff; pointer-events:none; backdrop-filter:blur(6px); }
+  #superspace-hud.open { display:block; }
+  #superspace-hud .ss-title { font-weight:700; color:#c8a8ff; margin-bottom:6px; font-size:11px; }
+  #superspace-hud .ss-row { margin:2px 0; color:#dde; }
+  #superspace-hud .ss-row b { color:#a88cff; font-weight:600; }
+  #superspace-hud .ss-tri { margin-top:8px; padding-top:6px; border-top:1px solid rgba(170,136,255,0.25); color:#9ab; font-size:9px; }
 
 </style>
 </head>
 <body>
   <div id="globe"></div>
+  <div id="superspace-hud"></div>
   <div id="zoom-label">EARTH</div>
   <div id="cosmic-guide"></div>
   <div id="user-chip"></div>
@@ -233,7 +240,7 @@
         <button id="yt-close" type="button">✖</button>
       </div>
       <div id="yt-player-wrap"><iframe id="yt-frame" title="YouTube player" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe></div>
-      <div id="yt-hint">CLI: youtube rhodes travel · play 2 · watch URL</div>
+      <div id="yt-hint">CLI: youtube mars doc · play 2 · space locate ISS · brain places on globe</div>
       <div id="yt-results"></div>
     </div>
     <div id="vendor-menu">
@@ -820,6 +827,7 @@ function userIntervene() {
   SessionHold?.release?.();
   GlobeVideo?.stop?.();
   GlobeVideo?.hide?.();
+  SuperSpace?.stop?.();
   const cliIn = document.getElementById('aci-cli-in');
   if (cliIn) cliIn.placeholder = 'type or tap 🎤 · Enter or ➡';
   GlobeControl?.userTookGlobe?.('stop');
@@ -1346,7 +1354,7 @@ const GlobeDeck = {
       'think', 'evolve', 'teach', 'stats', 'owner', 'seed', 'distill', 'council',
       'mode', 'locate', 'gps', 'me', 'drive', 'news', 'roles', 'claim', 'field_stats',
       'deploy', 'help', '?', 'clear', 'logout', 'connect', 'open', 'vendor',
-      'dev', 'ui', 'brain', 'status',
+      'dev', 'ui', 'brain', 'status', 'space', 'superspace',
     ]);
     return one.has((cmd || '').toLowerCase());
   },
@@ -1574,7 +1582,7 @@ Object.assign(SuperCli, {
       'teach', 'stats', 'owner', 'seed', 'distill', 'council', 'mode', 'batch', 'vendors',
       'shops', 'order', 'vendor', 'ping', 'locate', 'gps', 'me', 'vhf', 'call', 'phone',
       'drive', 'news', 'roles', 'claim', 'field_stats', 'hold', 'resume', 'stop',
-      'youtube', 'yt', 'watch', 'play',
+      'youtube', 'yt', 'watch', 'play', 'space',
     ]);
     return known.has(c);
   },
@@ -1618,6 +1626,7 @@ Object.assign(SuperCli, {
         cause: AciCoders?.CAUSE,
       },
       batch: { id: AstranovNode?.shortId, peers: AstranovNode?.peerCount },
+      superspace: SuperSpace?.status?.(),
       globe: { level: CosmicZoom?.level, follow: GlobeControl?.followMode, exploring: GlobeControl?.userExploring },
       user: Auth?.user ? (Auth.user.email?.split('@')[0] || 'user') : 'guest',
       owner: !!Auth?.isOwner,
@@ -1630,6 +1639,8 @@ Object.assign(SuperCli, {
     this.out('dev on|off · dev task <msg> · dev peers · dev deploy · dev status', 'ok');
     this.out('ui show batch|radio|vendor|youtube · ui hide · ui fly athens · ui zoom galaxy', 'ok');
     this.out('youtube <search> · watch <url> · play 2 (pick result)', 'ok');
+    this.out('space locate <topic> · space status — brain places media on globe/cosmos', 'ok');
+    this.out('Tri-UI: SuperCli + SuperVoice + SuperSpace work together', 'dim');
     this.out('brain think|evolve|teach|coders|listen on|off|status · brain order <task>', owner ? 'ok' : 'dim');
     this.out('locate · order · batch · vhf · coders · deploy · think · type anything', 'ok');
     if (owner) this.out('Owner: brain order <task> = execute · coders <task> = explicit order', 'dim');
@@ -1843,6 +1854,31 @@ Object.assign(SuperCli, {
     return { error: 'unknown brain subcommand' };
   },
 
+  async cmdSpace(parts, rest) {
+    const sub = (parts[1] || 'status').toLowerCase();
+    if (sub === 'status') {
+      this.out(JSON.stringify(SuperSpace?.status?.(), null, 0), 'out');
+      GlobeDeck?.finishCliIfOneShot('space');
+      return { ok: true };
+    }
+    if (sub === 'locate' || sub === 'find' || sub === 'place') {
+      const topic = parts.slice(2).join(' ') || rest.replace(/^locate\s*/i, '');
+      if (!topic) { this.out('usage: space locate mars documentary', 'err'); return { error: 'empty' }; }
+      await SuperSpace?.locateText?.(topic);
+      return { ok: true };
+    }
+    if (sub === 'zoom') {
+      SuperSpace?.zoomTo?.(parts[2] || 'earth');
+      return { ok: true };
+    }
+    if (rest) {
+      await SuperSpace?.locateText?.(rest);
+      return { ok: true };
+    }
+    this.out('usage: space locate <topic> · space status · space zoom galaxy', 'err');
+    return { error: 'unknown' };
+  },
+
   async devBrain(line) {
     GlobeDeck.activeTask = 'coders';
     AciCoders?.observeActivity?.('dev', line.slice(0, 120));
@@ -1875,6 +1911,10 @@ Object.assign(SuperCli, {
         await this.cmdBrain(parts);
         return { handled: true };
       }
+      if (cmd === 'space' || cmd === 'superspace') {
+        await this.cmdSpace(parts, rest);
+        return { handled: true };
+      }
       if (cmd === 'status') {
         this.out(JSON.stringify(this.statusSnapshot(), null, 0).slice(0, 800), 'out');
         GlobeDeck?.finishCliIfOneShot('status');
@@ -1898,9 +1938,9 @@ Object.assign(SuperCli, {
       }
       if (cmd === 'watch' || cmd === 'play') {
         const arg = rest || parts[1] || '';
-        if (/^\d+$/.test(arg)) { GlobeVideo?.playIndex?.(arg); return { handled: true }; }
+        if (/^\d+$/.test(arg)) { await GlobeVideo?.playIndex?.(arg); return { handled: true }; }
         const id = GlobeVideo?.parseId?.(arg);
-        if (id) { GlobeVideo?.play?.(id, { title: arg }); return { handled: true }; }
+        if (id) { await GlobeVideo?.play?.(id, { title: arg }); return { handled: true }; }
         if (arg) await GlobeVideo?.find?.(arg);
         else ACIControl?.reply('usage: watch <url|#> · play 2');
         return { handled: true };
@@ -2293,11 +2333,20 @@ const AciCli = {
         return;
       }
       if (cmd === 'watch' || cmd === 'play') {
-        if (/^\d+$/.test(rest)) { GlobeVideo?.playIndex?.(rest); return; }
+        if (/^\d+$/.test(rest)) { await GlobeVideo?.playIndex?.(rest); return; }
         const id = GlobeVideo?.parseId?.(rest);
-        if (id) { GlobeVideo?.play?.(id, { title: rest }); return; }
-        if (rest) await GlobeVideo?.find?.(rest);
-        else this.print('usage: watch <url|#> · play 2', 'err');
+        if (id) { await GlobeVideo?.play?.(id, { title: rest }); return; }
+      }
+      if (cmd === 'space' || cmd === 'superspace') {
+        const sub = (parts[1] || 'status').toLowerCase();
+        if (sub === 'status') {
+          this.print(JSON.stringify(SuperSpace?.status?.(), null, 0), 'out');
+          GlobeDeck?.finishCliIfOneShot('space');
+          return;
+        }
+        const topic = parts.slice(/^(locate|find|place)$/.test(sub) ? 2 : 1).join(' ') || rest;
+        if (topic) await SuperSpace?.locateText?.(topic);
+        else this.print(JSON.stringify(SuperSpace?.status?.(), null, 0), 'out');
         return;
       }
       if (cmd === 'roles') {
@@ -5086,11 +5135,331 @@ const PmrRadio = {
 window.PmrRadio = PmrRadio;
 window.SatRadio = PmrRadio;
 
+// === SUPER SPACE UI — brain-located media on Earth · orbit · planets · galaxy ===
+// Works with SuperCli (deck) + SuperVoice (mic) as the third UI layer.
+const SuperSpace = {
+  realm: 'earth',
+  placement: null,
+  _screen: null,
+  _halo: null,
+  _lastQuery: '',
+
+  ZOOM: { earth: 2.2, orbit: 4.4, leo: 4.4, solar: 8, system: 8, galaxy: 16 },
+
+  PLANET_KEYS: {
+    mercury: 'Mercury', ερμής: 'Mercury', ερμης: 'Mercury',
+    venus: 'Venus', αφροδίτη: 'Venus', αφροδιτη: 'Venus',
+    mars: 'Mars', άρης: 'Mars', αρης: 'Mars',
+    jupiter: 'Jupiter', δίας: 'Jupiter', διας: 'Jupiter',
+    saturn: 'Saturn', κρόνος: 'Saturn', κρονος: 'Saturn',
+  },
+
+  init() {
+    this.syncHud();
+  },
+
+  syncTriUi(kind, detail) {
+    const d = (detail || '').slice(0, 120);
+    if (kind === 'locate') {
+      GlobeDeck?.setPreview('SuperSpace · ' + d);
+      AciCli?.print('◎ SuperSpace · ' + d, 'map');
+    }
+    if (kind === 'video') {
+      SuperCli?.setContext?.(SuperCli.inferContext?.() || 'idle');
+    }
+    AciCoders?.observeActivity?.('superspace', kind + ':' + d);
+  },
+
+  parseBrainJson(text) {
+    const s = String(text || '');
+    const m = s.match(/\{[\s\S]*?\}/);
+    if (!m) return null;
+    try {
+      const j = JSON.parse(m[0]);
+      if (!j.realm) return null;
+      return {
+        realm: String(j.realm).toLowerCase(),
+        lat: typeof j.lat === 'number' ? j.lat : parseFloat(j.lat),
+        lng: typeof j.lng === 'number' ? j.lng : parseFloat(j.lng),
+        planet: j.planet || '',
+        label: j.label || j.planet || j.realm,
+        zoom: j.zoom || j.realm,
+        source: 'brain',
+        confidence: 0.92,
+      };
+    } catch { return null; }
+  },
+
+  heuristicPlace(text) {
+    const low = String(text || '').toLowerCase();
+    if (/galaxy|milky way|galax|universe|cosmos|deep space|black hole|σύμπαν|συμπαν|galactic/.test(low)) {
+      return { realm: 'galaxy', zoom: 'galaxy', label: 'Galaxy · deep space', confidence: 0.92 };
+    }
+    for (const [key, name] of Object.entries(this.PLANET_KEYS)) {
+      if (low.includes(key)) {
+        return { realm: 'system', planet: name, zoom: 'system', label: name, confidence: 0.88 };
+      }
+    }
+    if (/moon|σελήνη|σεληνη|lunar|apollo/.test(low)) {
+      return { realm: 'orbit', zoom: 'orbit', label: 'Moon · near-Earth', useMoon: true, confidence: 0.86 };
+    }
+    if (/iss|space station|starlink|satellite|δορυφόρο|δορυφορο|orbital|leo\b|nasa\s+live|spacex|διεθνής διαστημικός/.test(low)) {
+      return {
+        realm: 'orbit', zoom: 'orbit', label: /iss/.test(low) ? 'ISS' : 'Low Earth orbit',
+        useIss: /iss|space station|διεθνής/.test(low), confidence: 0.86,
+      };
+    }
+    if (/sun\b|solar flare|ηλιος|ήλιος|helios/.test(low)) {
+      return { realm: 'system', planet: 'Sun', zoom: 'system', label: 'Sun', confidence: 0.84 };
+    }
+    const cities = SuperCli?.CITIES || {};
+    for (const [name, c] of Object.entries(cities)) {
+      if (low.includes(name)) {
+        return { realm: 'earth', lat: c[0], lng: c[1], zoom: 'earth', label: name, confidence: 0.82 };
+      }
+    }
+    if (/greece|ελλάδ|ελλαδ|rhodes|ρόδο|ροδο|athens|αθήνα|αθηνα|crete|κρήτη/.test(low)) {
+      return { realm: 'earth', lat: 36.44, lng: 28.22, zoom: 'earth', label: 'Greece', confidence: 0.75 };
+    }
+    if (/africa|asia|europe|america|australia|antarctica/.test(low)) {
+      const zones = {
+        africa: [0, 20], asia: [34, 100], europe: [50, 10],
+        america: [40, -100], australia: [-25, 135], antarctica: [-80, 0],
+      };
+      for (const [z, ll] of Object.entries(zones)) {
+        if (low.includes(z)) return { realm: 'earth', lat: ll[0], lng: ll[1], zoom: 'earth', label: z, confidence: 0.7 };
+      }
+    }
+    const u = window._lastPos || { lat: 36.22, lng: 28.12 };
+    return { realm: 'earth', lat: u.lat, lng: u.lng, zoom: 'earth', label: 'Earth · you', confidence: 0.35, source: 'default' };
+  },
+
+  async brainPlace(text) {
+    if (!ACI?.think) return null;
+    const prompt = 'Locate this media in the cosmos. Text: "' + String(text).slice(0, 220)
+      + '". Reply ONLY compact JSON keys: realm (earth|orbit|system|galaxy), lat, lng, planet, label, zoom. No prose.';
+    try {
+      const r = await ACI.think(prompt);
+      return this.parseBrainJson(r);
+    } catch { return null; }
+  },
+
+  async decidePlacement(query, meta) {
+    const text = [query, meta?.title, meta?.channel].filter(Boolean).join(' · ');
+    this._lastQuery = text;
+    let p = this.heuristicPlace(text);
+    if (p.confidence < 0.72) {
+      GlobeDeck?.setThinking(true, 'Brain locating in space…');
+      const brain = await this.brainPlace(text);
+      GlobeDeck?.setThinking(false);
+      if (brain) p = { ...p, ...brain };
+      else p.source = p.source || 'heuristic';
+    } else {
+      p.source = 'heuristic';
+    }
+    return p;
+  },
+
+  zoomTo(level) {
+    const z = this.ZOOM[(level || 'earth').toLowerCase()] || this.ZOOM.earth;
+    window._globeFly = {
+      fromY: globePivot.rotation.y,
+      fromX: globePivot.rotation.x,
+      fromZ: camera.position.z,
+      toY: globePivot.rotation.y,
+      toX: globePivot.rotation.x,
+      toZ: z,
+      t0: performance.now(),
+      dur: 1100,
+    };
+    CosmicZoom?.update(z);
+    this.realm = level;
+    return z;
+  },
+
+  clearScreen() {
+    if (this._screen?.parent) this._screen.parent.remove(this._screen);
+    if (this._halo?.parent) this._halo.parent.remove(this._halo);
+    this._screen = null;
+    this._halo = null;
+  },
+
+  _makeScreen(color) {
+    this.clearScreen();
+    const group = new THREE.Group();
+    const plane = new THREE.Mesh(
+      new THREE.PlaneGeometry(0.16, 0.09),
+      new THREE.MeshBasicMaterial({ color: color || 0xff3355, transparent: true, opacity: 0.88, side: THREE.DoubleSide })
+    );
+    const frame = new THREE.Mesh(
+      new THREE.PlaneGeometry(0.17, 0.1),
+      new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.25, side: THREE.DoubleSide })
+    );
+    frame.position.z = -0.002;
+    group.add(frame);
+    group.add(plane);
+    group.userData = { type: 'superspace-screen', billboard: true };
+    this._screen = group;
+    return group;
+  },
+
+  placeScreenAtVector(vec, label, color) {
+    const g = this._makeScreen(color);
+    g.position.copy(vec);
+    g.lookAt(0, 0, 0);
+    globePivot.add(g);
+    MapDepict?.pulse?.(0, 0, color || 0xff4466, '▶ ' + (label || 'media'), 10000);
+    if (label && vec) {
+      const lat = Math.asin(Math.max(-1, Math.min(1, vec.y / vec.length()))) * 180 / Math.PI;
+      const lng = Math.atan2(vec.z, -vec.x) * 180 / Math.PI - 180;
+      if (Math.abs(lat) <= 90) MapDepict?.pulse?.(lat, lng, color || 0xff4466, label, 10000);
+    }
+  },
+
+  placeScreenAtLatLng(lat, lng, label, r) {
+    const rad = r || 1.065;
+    const pos = latLngToPos(lat, lng, rad);
+    this.placeScreenAtVector(new THREE.Vector3(pos.x, pos.y, pos.z), label, 0xff4466);
+  },
+
+  placeScreenAtPlanet(planetName) {
+    const name = String(planetName || '');
+    let target = null;
+    if (CosmicZoom?.planets) {
+      target = CosmicZoom.planets.find(p => (p.userData?.name || '').toLowerCase() === name.toLowerCase());
+    }
+    if (target && CosmicZoom.solarGroup) {
+      const world = new THREE.Vector3();
+      target.getWorldPosition(world);
+      this.placeScreenAtVector(world.clone().multiplyScalar(1.05), name, 0xffaa44);
+      return;
+    }
+    if (name === 'Sun' && CosmicZoom?.solarGroup?.children?.[0]) {
+      const sun = CosmicZoom.solarGroup.children[0];
+      this.placeScreenAtVector(sun.position.clone(), 'Sun', 0xffdd44);
+    }
+  },
+
+  placeScreenOrbit(opts) {
+    if (opts?.useIss && CosmicZoom?.issMarker) {
+      const v = CosmicZoom.issMarker.position.clone();
+      this.placeScreenAtVector(v, 'ISS', 0x44ffcc);
+      return;
+    }
+    if (opts?.useMoon) {
+      const u = window._lastPos || { lat: 0, lng: 0 };
+      this.placeScreenAtLatLng(u.lat + 2, u.lng + 2, 'Moon', 1.07);
+      return;
+    }
+    const u = window._lastPos || { lat: 36.22, lng: 28.12 };
+    this.placeScreenAtLatLng(u.lat, u.lng, opts?.label || 'LEO', 1.08);
+  },
+
+  placeScreenGalaxy() {
+    this.clearScreen();
+    const halo = new THREE.Mesh(
+      new THREE.RingGeometry(0.2, 0.35, 32),
+      new THREE.MeshBasicMaterial({ color: 0xaa88ff, transparent: true, opacity: 0.45, side: THREE.DoubleSide })
+    );
+    halo.position.set(0, 0.5, -2);
+    halo.lookAt(camera.position);
+    scene.add(halo);
+    this._halo = halo;
+  },
+
+  updateHud(p) {
+    const el = document.getElementById('superspace-hud');
+    if (!el) return;
+    if (!p) { el.innerHTML = ''; el.classList.remove('open'); return; }
+    el.classList.add('open');
+    const src = p.source === 'brain' ? 'brain' : (p.source || 'heuristic');
+    el.innerHTML = '<div class="ss-title">SuperSpace UI</div>'
+      + '<div class="ss-row"><b>Realm</b> ' + this.esc(p.realm) + '</div>'
+      + '<div class="ss-row"><b>Locate</b> ' + this.esc(p.label || '—') + '</div>'
+      + '<div class="ss-row"><b>Brain</b> ' + src + (p.confidence ? ' · ' + Math.round(p.confidence * 100) + '%' : '') + '</div>'
+      + '<div class="ss-tri">SuperCli + SuperVoice + SuperSpace</div>';
+  },
+
+  esc(s) {
+    return String(s || '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  },
+
+  syncHud() {
+    this.updateHud(this.placement);
+  },
+
+  async applyPlacement(p, meta) {
+    if (!p) return;
+    this.placement = p;
+    this.realm = p.realm;
+    this.updateHud(p);
+    this.zoomTo(p.zoom || p.realm);
+
+    if (p.realm === 'earth' && Number.isFinite(p.lat) && Number.isFinite(p.lng)) {
+      const pos = latLngToPos(p.lat, p.lng, 1.04);
+      if (typeof flyToPoint === 'function') flyToPoint(new THREE.Vector3(pos.x, pos.y, pos.z), 1.5);
+      GlobeControl?.noteAutoFly?.();
+      this.placeScreenAtLatLng(p.lat, p.lng, p.label);
+    } else if (p.realm === 'orbit') {
+      this.placeScreenOrbit(p);
+    } else if (p.realm === 'system') {
+      this.placeScreenAtPlanet(p.planet || p.label);
+    } else if (p.realm === 'galaxy') {
+      this.placeScreenGalaxy();
+    }
+
+    const msg = (p.label || p.realm) + ' · ' + p.realm + (p.source === 'brain' ? ' · brain' : '');
+    this.syncTriUi('locate', msg);
+    if (meta?.title) this.syncTriUi('video', meta.title);
+    FieldBrain?.pulse?.('superspace', msg, { role: 'client', props: { realm: p.realm, source: p.source } });
+    if (voiceSessionActive && Voice.maySpeak()) {
+      speak('Located in ' + (p.label || p.realm) + '.', () => resumeListening?.());
+    }
+    return p;
+  },
+
+  async locateForMedia(query, meta) {
+    const p = await this.decidePlacement(query, meta);
+    await this.applyPlacement(p, meta);
+    AciCli?.print('brain placed video · ' + (p.label || p.realm) + ' [' + p.realm + ']', 'ok');
+    return p;
+  },
+
+  async locateText(text) {
+    const p = await this.decidePlacement(text, { title: text });
+    await this.applyPlacement(p, { title: text });
+    return p;
+  },
+
+  stop() {
+    this.clearScreen();
+    this.placement = null;
+    this.updateHud(null);
+  },
+
+  tick() {
+    if (this._screen?.userData?.billboard) {
+      this._screen.lookAt(camera.position);
+    }
+    if (this._halo) this._halo.lookAt(camera.position);
+  },
+
+  status() {
+    return {
+      realm: this.realm,
+      placement: this.placement,
+      query: this._lastQuery,
+      triUi: ['SuperCli', 'SuperVoice', 'SuperSpace'],
+    };
+  },
+};
+window.SuperSpace = SuperSpace;
+
 // === YOUTUBE ON GLOBE — search + watch in Astranov Command Line deck ===
 const GlobeVideo = {
   _results: [],
   _currentId: null,
-  _marker: null,
+  _lastQuery: '',
 
   PIPED: [
     'https://pipedapi.kavin.rocks',
@@ -5161,8 +5530,7 @@ const GlobeVideo = {
     const frame = document.getElementById('yt-frame');
     if (frame) frame.src = 'about:blank';
     this._currentId = null;
-    if (this._marker?.parent) this._marker.parent.remove(this._marker);
-    this._marker = null;
+    SuperSpace?.stop?.();
   },
 
   renderResults(items, query) {
@@ -5177,7 +5545,7 @@ const GlobeVideo = {
       row.innerHTML = '<span class="yt-n">' + (i + 1) + '</span>'
         + '<span class="yt-meta"><b>' + this.esc(v.title) + '</b>'
         + '<small>' + this.esc(v.channel) + (mins ? ' · ' + mins : '') + '</small></span>';
-      row.onclick = () => this.play(v.id, v);
+      row.onclick = () => this.play(v.id, v, this._lastQuery);
       list.appendChild(row);
     });
     const hint = document.getElementById('yt-hint');
@@ -5190,47 +5558,33 @@ const GlobeVideo = {
     return String(s || '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
   },
 
-  play(videoId, meta) {
+  async play(videoId, meta, searchQuery) {
     const id = this.parseId(videoId);
     if (!id) {
       AciCli?.print('invalid video id', 'err');
       return;
     }
     this._currentId = id;
-    this.showPanel((meta?.title || 'YouTube').slice(0, 48));
+    const title = meta?.title || id;
+    await SuperSpace?.locateForMedia?.(searchQuery || title, meta);
+    this.showPanel(title.slice(0, 48));
     const frame = document.getElementById('yt-frame');
-    const title = document.getElementById('yt-now-title');
-    if (title) title.textContent = meta?.title || id;
+    const titleEl = document.getElementById('yt-now-title');
+    if (titleEl) titleEl.textContent = title;
     if (frame) {
       frame.src = 'https://www.youtube-nocookie.com/embed/' + id
         + '?autoplay=1&rel=0&modestbranding=1&playsinline=1';
     }
-    GlobeDeck?.expand('YouTube · ' + (meta?.title || id).slice(0, 40));
-    AciCli?.print('▶ ' + (meta?.title || id), 'ok');
-    ACIControl?.reply('Playing on globe — ' + (meta?.title || id).slice(0, 80));
-    MapDepict?.action('video', { detail: (meta?.title || id).slice(0, 40) });
-    this.pulseOnGlobe();
-    AciCoders?.observeActivity?.('youtube', (meta?.title || id).slice(0, 80));
-    FieldBrain?.pulse?.('media', 'youtube · ' + (meta?.title || id).slice(0, 60), { role: 'client' });
-  },
-
-  pulseOnGlobe() {
-    const u = window._lastPos || { lat: 36.22, lng: 28.12 };
-    MapDepict?.pulse?.(u.lat, u.lng, 0xff4466, '▶ YouTube', 12000);
-    if (this._marker?.parent) this._marker.parent.remove(this._marker);
-    const pos = latLngToPos(u.lat, u.lng, 1.06);
-    const plane = new THREE.Mesh(
-      new THREE.PlaneGeometry(0.14, 0.08),
-      new THREE.MeshBasicMaterial({ color: 0xff2244, transparent: true, opacity: 0.75, side: THREE.DoubleSide })
-    );
-    plane.position.set(pos.x, pos.y, pos.z);
-    plane.lookAt(0, 0, 0);
-    plane.userData = { type: 'yt-screen' };
-    globePivot.add(plane);
-    this._marker = plane;
+    GlobeDeck?.expand('YouTube · ' + title.slice(0, 40));
+    AciCli?.print('▶ ' + title, 'ok');
+    ACIControl?.reply('SuperSpace + SuperCli — ' + title.slice(0, 80));
+    MapDepict?.action('video', { detail: title.slice(0, 40) });
+    AciCoders?.observeActivity?.('youtube', title.slice(0, 80));
+    FieldBrain?.pulse?.('media', 'youtube · ' + title.slice(0, 60), { role: 'client' });
   },
 
   async find(query) {
+    this._lastQuery = String(query || '').trim();
     const q = String(query || '').trim();
     if (!q) {
       ACIControl?.reply('usage: youtube <search> · watch <url> · find video about …');
@@ -5238,7 +5592,7 @@ const GlobeVideo = {
     }
     const direct = this.parseId(q);
     if (direct) {
-      this.play(direct, { title: q });
+      await this.play(direct, { title: q }, q);
       return { ok: true, id: direct };
     }
 
@@ -5258,8 +5612,8 @@ const GlobeVideo = {
       items.forEach((v, i) => {
         AciCli?.print((i + 1) + '. ' + v.title.slice(0, 70) + (v.channel ? ' · ' + v.channel : ''), 'dim');
       });
-      ACIControl?.reply('Found ' + items.length + ' — playing #1 · tap others in deck');
-      this.play(items[0].id, items[0]);
+      ACIControl?.reply('Found ' + items.length + ' — brain locating #1 on globe');
+      await this.play(items[0].id, items[0], q);
       return { ok: true, count: items.length };
     } catch (e) {
       GlobeDeck?.setThinking(false);
@@ -5270,14 +5624,14 @@ const GlobeVideo = {
     }
   },
 
-  playIndex(n) {
+  async playIndex(n) {
     const idx = parseInt(n, 10) - 1;
     const v = this._results[idx];
     if (!v) {
       AciCli?.print('no result #' + n + ' — search first', 'err');
       return;
     }
-    this.play(v.id, v);
+    await this.play(v.id, v, this._lastQuery);
   },
 
   wantsYoutube(text) {
@@ -7097,6 +7451,7 @@ function animate() {
   }
 
   if (window.MapDepict) MapDepict.tick();
+  SuperSpace?.tick?.();
   CosmicZoom.update(camera.position.z);
   renderer.render(scene, camera);
 }
@@ -7118,6 +7473,7 @@ PmrRadio.bindUI();
 GlobeVideo.init();
 DrivingView.init();
 CosmicZoom.init();
+SuperSpace.init();
 if (typeof orbitalSats !== 'undefined') CosmicZoom.registerOrbitalSats(orbitalSats);
 Commerce.loadVendors().then(() => Commerce.initUI());
 NewsFeed.fetch();

@@ -56,7 +56,7 @@ Object.assign(SuperCli, {
       'teach', 'stats', 'owner', 'seed', 'distill', 'council', 'mode', 'batch', 'vendors',
       'shops', 'order', 'vendor', 'ping', 'locate', 'gps', 'me', 'vhf', 'call', 'phone',
       'drive', 'news', 'roles', 'claim', 'field_stats', 'hold', 'resume', 'stop',
-      'youtube', 'yt', 'watch', 'play',
+      'youtube', 'yt', 'watch', 'play', 'space',
     ]);
     return known.has(c);
   },
@@ -100,6 +100,7 @@ Object.assign(SuperCli, {
         cause: AciCoders?.CAUSE,
       },
       batch: { id: AstranovNode?.shortId, peers: AstranovNode?.peerCount },
+      superspace: SuperSpace?.status?.(),
       globe: { level: CosmicZoom?.level, follow: GlobeControl?.followMode, exploring: GlobeControl?.userExploring },
       user: Auth?.user ? (Auth.user.email?.split('@')[0] || 'user') : 'guest',
       owner: !!Auth?.isOwner,
@@ -112,6 +113,8 @@ Object.assign(SuperCli, {
     this.out('dev on|off · dev task <msg> · dev peers · dev deploy · dev status', 'ok');
     this.out('ui show batch|radio|vendor|youtube · ui hide · ui fly athens · ui zoom galaxy', 'ok');
     this.out('youtube <search> · watch <url> · play 2 (pick result)', 'ok');
+    this.out('space locate <topic> · space status — brain places media on globe/cosmos', 'ok');
+    this.out('Tri-UI: SuperCli + SuperVoice + SuperSpace work together', 'dim');
     this.out('brain think|evolve|teach|coders|listen on|off|status · brain order <task>', owner ? 'ok' : 'dim');
     this.out('locate · order · batch · vhf · coders · deploy · think · type anything', 'ok');
     if (owner) this.out('Owner: brain order <task> = execute · coders <task> = explicit order', 'dim');
@@ -325,6 +328,31 @@ Object.assign(SuperCli, {
     return { error: 'unknown brain subcommand' };
   },
 
+  async cmdSpace(parts, rest) {
+    const sub = (parts[1] || 'status').toLowerCase();
+    if (sub === 'status') {
+      this.out(JSON.stringify(SuperSpace?.status?.(), null, 0), 'out');
+      GlobeDeck?.finishCliIfOneShot('space');
+      return { ok: true };
+    }
+    if (sub === 'locate' || sub === 'find' || sub === 'place') {
+      const topic = parts.slice(2).join(' ') || rest.replace(/^locate\s*/i, '');
+      if (!topic) { this.out('usage: space locate mars documentary', 'err'); return { error: 'empty' }; }
+      await SuperSpace?.locateText?.(topic);
+      return { ok: true };
+    }
+    if (sub === 'zoom') {
+      SuperSpace?.zoomTo?.(parts[2] || 'earth');
+      return { ok: true };
+    }
+    if (rest) {
+      await SuperSpace?.locateText?.(rest);
+      return { ok: true };
+    }
+    this.out('usage: space locate <topic> · space status · space zoom galaxy', 'err');
+    return { error: 'unknown' };
+  },
+
   async devBrain(line) {
     GlobeDeck.activeTask = 'coders';
     AciCoders?.observeActivity?.('dev', line.slice(0, 120));
@@ -357,6 +385,10 @@ Object.assign(SuperCli, {
         await this.cmdBrain(parts);
         return { handled: true };
       }
+      if (cmd === 'space' || cmd === 'superspace') {
+        await this.cmdSpace(parts, rest);
+        return { handled: true };
+      }
       if (cmd === 'status') {
         this.out(JSON.stringify(this.statusSnapshot(), null, 0).slice(0, 800), 'out');
         GlobeDeck?.finishCliIfOneShot('status');
@@ -380,9 +412,9 @@ Object.assign(SuperCli, {
       }
       if (cmd === 'watch' || cmd === 'play') {
         const arg = rest || parts[1] || '';
-        if (/^\d+$/.test(arg)) { GlobeVideo?.playIndex?.(arg); return { handled: true }; }
+        if (/^\d+$/.test(arg)) { await GlobeVideo?.playIndex?.(arg); return { handled: true }; }
         const id = GlobeVideo?.parseId?.(arg);
-        if (id) { GlobeVideo?.play?.(id, { title: arg }); return { handled: true }; }
+        if (id) { await GlobeVideo?.play?.(id, { title: arg }); return { handled: true }; }
         if (arg) await GlobeVideo?.find?.(arg);
         else ACIControl?.reply('usage: watch <url|#> · play 2');
         return { handled: true };
