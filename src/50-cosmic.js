@@ -204,7 +204,7 @@ const CosmicZoom = {
     let level = 'earth', label = 'EARTH';
     if (camZ > 14) { level = 'galaxy'; label = 'GALAXY'; }
     else if (camZ > 6) { level = 'system'; label = 'SOLAR SYSTEM'; }
-    else if (camZ > 3.5) { level = 'orbit'; label = 'ORBIT'; }
+    else if (camZ > 4.8) { level = 'orbit'; label = 'ORBIT'; }
     if (level !== this.level) this.level = level;
     const zl = document.getElementById('zoom-label');
     if (zl && !DrivingView?.active) {
