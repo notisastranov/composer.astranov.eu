@@ -152,6 +152,7 @@ const DrivingView = {
       new THREE.LineBasicMaterial({ color: 0x44aaff, transparent: true, opacity: 0.85 })
     );
     globePivot.add(this.routeLine);
+    CityMap?.setRoute?.(this.routeCoords);
     MapDepict?.pulse(window._lastPos.lat, window._lastPos.lng, 0x44aaff, 'road route', 6000);
   },
 

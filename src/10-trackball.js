@@ -1,7 +1,7 @@
 // Globe gestures — primary UI (Google Earth / Maps style). CLI is secondary.
 const canvas = renderer.domElement;
 const TRACK_SENS = 0.0028;
-const ZOOM_MIN = 1.35;
+const ZOOM_MIN = 1.05;
 const ZOOM_MAX = 18;
 const ZOOM_SMOOTH = 0.09;
 
@@ -73,6 +73,7 @@ function zoomBy(delta) {
   camera.position.z = next;
   camera.lookAt(0, 0, 0);
   CosmicZoom.update(camera.position.z);
+  CityMap?.onCamera?.(camera.position.z, CosmicZoom?.level);
 }
 
 function zoomAt(clientX, clientY, delta, opts) {
@@ -278,6 +279,7 @@ function tickGlobeFly() {
   camera.position.z = f.fromZ + (f.toZ - f.fromZ) * ease;
   camera.lookAt(0, 0, 0);
   CosmicZoom.update(camera.position.z);
+  CityMap?.onCamera?.(camera.position.z, CosmicZoom?.level);
   if (p >= 1) window._globeFly = null;
 }
 window.tickGlobeFly = tickGlobeFly;

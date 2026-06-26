@@ -39,6 +39,7 @@ const CityLife = {
     userLocated = true;
     this._lastDrop = { lat, lng, t: Date.now() };
     this.flyToCity(lat, lng, opts.label || 'Your city');
+    CityMap?.flyTo?.(lat, lng, CityMap?.camZToZoom?.(this.CITY_ZOOM));
 
     if (Commerce?.loadVendors) await Commerce.loadVendors();
     const nearby = this.nearbyVendors(lat, lng);

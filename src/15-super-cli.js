@@ -6,7 +6,7 @@ const SuperCli = {
   _context: 'idle',
   title: ACL_TITLE,
 
-  CORE: ['aci-login', 'aci-cli-toggle', 'aci-stop', 'aci-hold'],
+  CORE: ['aci-login', 'aci-cli-toggle', 'aci-stop', 'aci-hold', 'aci-theme'],
   INPUT_BTNS: ['aci-mic', 'aci-voice', 'globe-deck-send'],
   CONTEXT_BTNS: {
     idle: ['aci-locate', 'aci-order', 'aci-batch', 'aci-vhf', 'aci-call'],
@@ -109,6 +109,7 @@ const SuperCli = {
       'aci-cli-toggle': () => GlobeDeck?.toggle(),
       'aci-stop': () => userIntervene?.(),
       'aci-hold': () => SessionHold?.toggle?.(),
+      'aci-theme': () => AstranovTheme?.toggle?.(),
       'aci-locate': () => this.run('locate'),
       'aci-order': () => this.run('order'),
       'aci-batch': () => this.run('batch'),

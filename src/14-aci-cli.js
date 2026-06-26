@@ -201,6 +201,13 @@ const AciCli = {
       if (cmd === 'exit' || cmd === 'close') { GlobeDeck?.completeTask('cli'); return; }
       if (cmd === 'logout') { await Auth.signOut(); this.print('signed out', 'ok'); return; }
 
+      if (cmd === 'theme' || cmd === 'dark' || cmd === 'bright' || cmd === 'light') {
+        const mode = cmd === 'theme' ? (parts[1] || '').toLowerCase() : (cmd === 'light' ? 'bright' : cmd);
+        if (mode === 'dark' || mode === 'bright') AstranovTheme?.set?.(mode);
+        else AstranovTheme?.toggle?.();
+        this.print('theme → ' + (AstranovTheme?.mode || 'dark'), 'ok');
+        return;
+      }
       if (cmd === 'think') {
         if (!rest) { ACIControl?.reply('usage: think <prompt>'); return; }
         const r = await ACI.think(rest);

@@ -100,6 +100,13 @@ async function submitVoiceToCli(transcript) {
     startVoiceOptions();
     return;
   }
+  if (/^(dark|bright|light)\s*(theme|mode)?\b/.test(low) || /^theme\s+(dark|bright|light)\b/.test(low)) {
+    _voiceBusy = false;
+    const mode = /bright|light/.test(low) ? 'bright' : 'dark';
+    AstranovTheme?.set?.(mode);
+    AciCli?.print('theme → ' + mode, 'ok');
+    return;
+  }
 
   try {
     if (voiceWantsAciControl(line)) {

@@ -15,11 +15,34 @@
 <link rel="apple-touch-icon" href="/icon.svg" />
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="" />
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
 <style>
-  html, body { margin:0; padding:0; height:100%; width:100%; overflow:hidden; background:#000; color:#e8f4ff; font-family:system-ui, sans-serif; }
-  #globe { position:absolute; top:0; left:0; right:0; bottom:0; touch-action:none; }
-  #globe canvas { display:block; cursor:grab; }
+  :root, [data-theme="dark"] {
+    --an-bg: #000;
+    --an-text: #e8f4ff;
+    --an-panel: rgba(0,8,18,0.82);
+    --an-border: rgba(0,180,255,0.35);
+    --an-accent: #00b4ff;
+    --an-muted: rgba(150,220,255,0.7);
+  }
+  [data-theme="bright"] {
+    --an-bg: #d8e8f8;
+    --an-text: #0a1830;
+    --an-panel: rgba(240,248,255,0.92);
+    --an-border: rgba(40,120,200,0.35);
+    --an-accent: #0066bb;
+    --an-muted: rgba(20,60,100,0.72);
+  }
+  html, body { margin:0; padding:0; height:100%; width:100%; overflow:hidden; background:var(--an-bg); color:var(--an-text); font-family:system-ui, sans-serif; transition:background 0.35s,color 0.35s; }
+  #globe { position:absolute; top:0; left:0; right:0; bottom:0; touch-action:none; z-index:2; }
+  #globe canvas { display:block; cursor:grab; transition:opacity 0.45s ease; }
   #globe canvas.dragging { cursor:grabbing; }
+  #globe.city-map-active canvas { opacity:0 !important; pointer-events:none; }
+  #city-map { position:fixed; inset:0; z-index:4; opacity:0; pointer-events:none; transition:opacity 0.45s ease; }
+  #city-map.active { opacity:1; pointer-events:auto; }
+  #city-map .leaflet-container { background:var(--an-bg); font-family:system-ui,sans-serif; }
+  .city-map-pin { background:transparent !important; border:none !important; }
   #user-chip { position:fixed; top:10px; right:10px; z-index:45; font:11px system-ui; color:rgba(180,230,255,0.85); pointer-events:none; max-width:140px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
   #drive-guide { position:fixed; top:36px; left:10px; right:10px; z-index:42; font:12px/1.35 system-ui; color:#7df; background:rgba(0,20,40,0.75); border:1px solid rgba(68,170,255,0.35); border-radius:12px; padding:8px 12px; display:none; pointer-events:none; }
   #drive-guide.open { display:block; }
@@ -51,7 +74,12 @@
   #aci-login { font-weight:700; font-size:13px; }
   #aci-stop { background:rgba(120,20,40,0.45); border-color:rgba(255,80,100,0.5); color:#faa; }
   #news-ticker { display:none; margin:8px 8px 0; padding:6px 12px; background:rgba(10,0,20,0.75); border:1px solid rgba(180,100,255,0.3); border-radius:14px; font:11px system-ui; color:#ddaaff; white-space:nowrap; overflow:hidden; pointer-events:auto; }
-  #zoom-label { position:fixed; top:10px; left:10px; z-index:40; font:11px system-ui; color:rgba(150,220,255,0.7); pointer-events:none; max-width:55vw; }
+  #zoom-label { position:fixed; top:10px; left:10px; z-index:40; font:11px system-ui; color:var(--an-muted); pointer-events:none; max-width:55vw; }
+  #aci-theme { background:rgba(60,40,120,0.45); border:1px solid rgba(180,140,255,0.45); color:#ddf; border-radius:50%; width:38px; height:38px; cursor:pointer; font-size:16px; flex-shrink:0; }
+  [data-theme="bright"] #aci-bar, [data-theme="bright"] #globe-deck, [data-theme="bright"] #city-life-chip, [data-theme="bright"] #globe-entity-hud { filter:none; }
+  [data-theme="bright"] #globe-deck { background:rgba(248,252,255,0.96); border-color:rgba(0,120,200,0.35); color:#0a2840; }
+  [data-theme="bright"] #globe-deck-log { color:#1a4060; }
+  [data-theme="bright"] #aci-cli-in { background:rgba(255,255,255,0.75); color:#0a2840; }
   #cosmic-guide { position:fixed; top:30px; left:10px; right:100px; z-index:39; pointer-events:none; font:10px/1.45 system-ui; color:rgba(150,200,240,0.82); max-height:22vh; overflow:hidden; }
   #cosmic-guide:empty { display:none; }
   #cosmic-guide .cg-title { color:#7bc; font-weight:600; font-size:11px; margin-bottom:5px; }
@@ -304,6 +332,7 @@
     </div>
   </div>
   <div id="superspace-hud"></div>
+  <div id="city-map"></div>
   <div id="city-life-chip"></div>
   <button id="super-add-fab" type="button" title="Super Add — post · vendor · Astranov Site · driver">+</button>
   <div id="globe-entity-labels"></div>
@@ -334,6 +363,7 @@
         <button id="aci-stop" title="Stop" type="button">🛑</button>
         <button id="aci-hold" title="Hold session — pause mic &amp; tasks for noisy places" type="button" aria-pressed="false">⏸</button>
         <button id="aci-locate" title="Locate me — city view" type="button">🎯</button>
+        <button id="aci-theme" title="Dark / bright theme" type="button">🌙</button>
         <button id="aci-order" title="Order" type="button">🛒</button>
         <button id="aci-batch" title="Batch" type="button">🔗</button>
         <button id="aci-vhf" title="PMR radio" type="button">📡</button>
@@ -1759,7 +1789,7 @@ const SuperCli = {
   _context: 'idle',
   title: ACL_TITLE,
 
-  CORE: ['aci-login', 'aci-cli-toggle', 'aci-stop', 'aci-hold'],
+  CORE: ['aci-login', 'aci-cli-toggle', 'aci-stop', 'aci-hold', 'aci-theme'],
   INPUT_BTNS: ['aci-mic', 'aci-voice', 'globe-deck-send'],
   CONTEXT_BTNS: {
     idle: ['aci-locate', 'aci-order', 'aci-batch', 'aci-vhf', 'aci-call'],
@@ -1862,6 +1892,7 @@ const SuperCli = {
       'aci-cli-toggle': () => GlobeDeck?.toggle(),
       'aci-stop': () => userIntervene?.(),
       'aci-hold': () => SessionHold?.toggle?.(),
+      'aci-theme': () => AstranovTheme?.toggle?.(),
       'aci-locate': () => this.run('locate'),
       'aci-order': () => this.run('order'),
       'aci-batch': () => this.run('batch'),
@@ -2020,6 +2051,7 @@ Object.assign(SuperCli, {
       'shops', 'order', 'vendor', 'ping', 'locate', 'gps', 'me', 'vhf', 'call', 'phone',
       'drive', 'news', 'roles', 'claim', 'field_stats', 'hold', 'resume', 'stop',
       'youtube', 'yt', 'watch', 'play', 'space', 'scenario', 'add', 'post', 'superadd',
+      'theme', 'dark', 'bright', 'light',
     ]);
     return known.has(c);
   },
@@ -2078,6 +2110,7 @@ Object.assign(SuperCli, {
     this.out('youtube <search> · watch <url> · play 2 (pick result)', 'ok');
     this.out('space locate <topic> · space status — brain places media on globe/cosmos', 'ok');
     this.out('scenario wake|city|groceries|youtube|reviews|list — real user flows', 'ok');
+    this.out('theme dark|bright · or just: dark · bright — globe + city map + UI', 'ok');
     this.out('add · post — Super Add camera · global/team/local channel', 'ok');
     this.out('Tri-UI: SuperCli + SuperVoice + SuperSpace · mic+send at bottom bar', 'dim');
     this.out('brain think|evolve|teach|coders|listen on|off|status · brain order <task>', owner ? 'ok' : 'dim');
@@ -2365,6 +2398,19 @@ Object.assign(SuperCli, {
         await this.cmdScenario(parts, rest);
         return { handled: true };
       }
+      if (cmd === 'theme' || cmd === 'dark' || cmd === 'bright' || cmd === 'light') {
+        const mode = cmd === 'theme'
+          ? (parts[1] || rest || '').toLowerCase()
+          : (cmd === 'light' ? 'bright' : cmd);
+        if (mode === 'dark' || mode === 'bright') {
+          AstranovTheme?.set?.(mode);
+          this.out('theme → ' + mode, 'ok');
+        } else {
+          AstranovTheme?.toggle?.();
+          this.out('theme → ' + (AstranovTheme?.mode || 'dark'), 'ok');
+        }
+        return { handled: true };
+      }
       if (cmd === 'add' || cmd === 'post' || cmd === 'superadd') {
         SuperAdd?.open?.();
         return { handled: true };
@@ -2630,6 +2676,13 @@ const AciCli = {
       if (cmd === 'exit' || cmd === 'close') { GlobeDeck?.completeTask('cli'); return; }
       if (cmd === 'logout') { await Auth.signOut(); this.print('signed out', 'ok'); return; }
 
+      if (cmd === 'theme' || cmd === 'dark' || cmd === 'bright' || cmd === 'light') {
+        const mode = cmd === 'theme' ? (parts[1] || '').toLowerCase() : (cmd === 'light' ? 'bright' : cmd);
+        if (mode === 'dark' || mode === 'bright') AstranovTheme?.set?.(mode);
+        else AstranovTheme?.toggle?.();
+        this.print('theme → ' + (AstranovTheme?.mode || 'dark'), 'ok');
+        return;
+      }
       if (cmd === 'think') {
         if (!rest) { ACIControl?.reply('usage: think <prompt>'); return; }
         const r = await ACI.think(rest);
@@ -5998,6 +6051,7 @@ const CityLife = {
     userLocated = true;
     this._lastDrop = { lat, lng, t: Date.now() };
     this.flyToCity(lat, lng, opts.label || 'Your city');
+    CityMap?.flyTo?.(lat, lng, CityMap?.camZToZoom?.(this.CITY_ZOOM));
 
     if (Commerce?.loadVendors) await Commerce.loadVendors();
     const nearby = this.nearbyVendors(lat, lng);
@@ -7523,7 +7577,12 @@ const CosmicZoom = {
     const el = document.getElementById('cosmic-guide');
     if (!el) return;
     if (level === 'earth' && camZ < 3.4) {
-      el.innerHTML = '';
+      if (CityMap?.active) {
+        el.innerHTML = '<div class="cg-title">City map</div>'
+          + '<div class="cg-item"><b>Satellite</b> — buildings & streets · pinch to zoom closer</div>'
+          + '<div class="cg-item"><b>Live</b> — friends · drivers · OSRM routing when driving</div>'
+          + '<div class="cg-item"><i>Zoom out to return to globe · theme 🌙/☀️</i></div>';
+      }
       return;
     }
     let html = '';
@@ -7569,9 +7628,14 @@ const CosmicZoom = {
     if (level !== this.level) this.level = level;
     const zl = document.getElementById('zoom-label');
     if (zl && !DrivingView?.active) {
-      const hint = level === 'orbit' ? ' · ISS · Starlink' : level === 'system' ? ' · planets' : level === 'galaxy' ? ' · star field' : '';
-      zl.textContent = label + hint + ' (z=' + camZ.toFixed(1) + ')';
+      if (CityMap?.active) {
+        zl.textContent = 'CITY MAP · satellite · streets · friends · drivers (z=' + camZ.toFixed(2) + ')';
+      } else {
+        const hint = level === 'orbit' ? ' · ISS · Starlink' : level === 'system' ? ' · planets' : level === 'galaxy' ? ' · star field' : camZ < 3.4 ? ' · ☀ day/night live' : '';
+        zl.textContent = label + hint + ' (z=' + camZ.toFixed(1) + ')';
+      }
     }
+    CityMap?.onCamera?.(camZ, level);
     this.updateGuide(level, camZ);
     this.setOrbitVisibility(level);
 
@@ -7619,7 +7683,7 @@ window.CosmicZoom = CosmicZoom;
 // Globe gestures — primary UI (Google Earth / Maps style). CLI is secondary.
 const canvas = renderer.domElement;
 const TRACK_SENS = 0.0028;
-const ZOOM_MIN = 1.35;
+const ZOOM_MIN = 1.05;
 const ZOOM_MAX = 18;
 const ZOOM_SMOOTH = 0.09;
 
@@ -7691,6 +7755,7 @@ function zoomBy(delta) {
   camera.position.z = next;
   camera.lookAt(0, 0, 0);
   CosmicZoom.update(camera.position.z);
+  CityMap?.onCamera?.(camera.position.z, CosmicZoom?.level);
 }
 
 function zoomAt(clientX, clientY, delta, opts) {
@@ -7896,6 +7961,7 @@ function tickGlobeFly() {
   camera.position.z = f.fromZ + (f.toZ - f.fromZ) * ease;
   camera.lookAt(0, 0, 0);
   CosmicZoom.update(camera.position.z);
+  CityMap?.onCamera?.(camera.position.z, CosmicZoom?.level);
   if (p >= 1) window._globeFly = null;
 }
 window.tickGlobeFly = tickGlobeFly;
@@ -7912,6 +7978,529 @@ function showGestureHint() {
   setTimeout(() => { el.remove(); }, 4500);
 }
 setTimeout(showGestureHint, 600);
+
+// === CITY MAP — satellite + streets when zoomed to city level ===
+const CityMap = {
+  ENTER_Z: 1.38,
+  EXIT_Z: 1.48,
+  active: false,
+  map: null,
+  _ready: false,
+  _center: { lat: 36.44, lng: 28.22 },
+  _layers: {},
+  _markers: {},
+  _route: null,
+  _driverTimer: null,
+  _syncTimer: null,
+
+  init() {
+    if (!window.L) {
+      console.warn('[CityMap] Leaflet not loaded');
+      return;
+    }
+    let el = document.getElementById('city-map');
+    if (!el) {
+      el = document.createElement('div');
+      el.id = 'city-map';
+      document.body.appendChild(el);
+    }
+    this.map = L.map(el, {
+      zoomControl: false,
+      attributionControl: true,
+      preferCanvas: true,
+    });
+    this._buildLayers();
+    AstranovTheme?.registerMap?.(this);
+    this.map.setView([this._center.lat, this._center.lng], 14);
+    this._ready = true;
+    this._driverTimer = setInterval(() => this._tickDrivers(), 2800);
+    this._syncTimer = setInterval(() => this._syncMarkers(), 1200);
+  },
+
+  _buildLayers() {
+    const sat = L.tileLayer(
+      'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+      { maxZoom: 20, attribution: 'Esri' }
+    );
+    const streets = L.tileLayer(
+      'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+      { maxZoom: 19, opacity: 0.42, attribution: '© OSM' }
+    );
+    const darkStreets = L.tileLayer(
+      'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',
+      { maxZoom: 20, attribution: '© CARTO © OSM' }
+    );
+    const brightStreets = L.tileLayer(
+      'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png',
+      { maxZoom: 20, attribution: '© CARTO © OSM' }
+    );
+    this._layers = { sat, streets, darkStreets, brightStreets };
+    this._applyBaseLayers();
+  },
+
+  _applyBaseLayers() {
+    if (!this.map) return;
+    Object.values(this._layers).forEach(l => { try { this.map.removeLayer(l); } catch (_) {} });
+    const mode = AstranovTheme?.mode || 'dark';
+    if (mode === 'bright') {
+      this._layers.sat.addTo(this.map);
+      this._layers.brightStreets.addTo(this.map);
+    } else {
+      this._layers.sat.addTo(this.map);
+      this._layers.streets.addTo(this.map);
+    }
+  },
+
+  onThemeChange() {
+    this._applyBaseLayers();
+  },
+
+  camZToZoom(camZ) {
+    const z = Math.max(1.02, Math.min(1.38, camZ));
+    const t = (1.38 - z) / (1.38 - 1.02);
+    return Math.round(12 + t * 7);
+  },
+
+  globeCenterLatLng() {
+    const v = new THREE.Vector3(0, 0, 1);
+    const q = globePivot.quaternion.clone();
+    q.invert();
+    v.applyQuaternion(q);
+    const r = Math.sqrt(v.x * v.x + v.y * v.y + v.z * v.z) || 1;
+    const lat = 90 - Math.acos(Math.max(-1, Math.min(1, v.y / r))) * 180 / Math.PI;
+    let lng = Math.atan2(v.z, -v.x) * 180 / Math.PI - 180;
+    if (lng > 180) lng -= 360;
+    if (lng < -180) lng += 360;
+    return { lat, lng };
+  },
+
+  flyTo(lat, lng, zoom) {
+    this._center = { lat, lng };
+    if (this.map) this.map.setView([lat, lng], zoom || 15, { animate: true });
+  },
+
+  onCamera(camZ, level) {
+    if (!this._ready) return;
+    const earth = (level || CosmicZoom?.level || 'earth') === 'earth';
+    const driving = !!DrivingView?.active;
+    const shouldEnter = earth && (camZ <= this.ENTER_Z || driving);
+    const shouldExit = !earth || (camZ > this.EXIT_Z && !driving);
+
+    if (shouldEnter && !this.active) this._enter(camZ);
+    else if (shouldExit && this.active) this._exit();
+    else if (this.active) this._syncView(camZ);
+  },
+
+  _enter(camZ) {
+    this.active = true;
+    cityLevel = true;
+    const el = document.getElementById('city-map');
+    const globe = document.getElementById('globe');
+    if (el) el.classList.add('active');
+    if (globe) globe.classList.add('city-map-active');
+    const c = window._lastPos || this.globeCenterLatLng();
+    this._center = c;
+    this.map.setView([c.lat, c.lng], this.camZToZoom(camZ), { animate: false });
+    this._syncMarkers();
+    this._syncRoute();
+    CityLife?._updateChip?.(
+      (CityLife?.nearbyVendors?.(c.lat, c.lng) || []).length,
+      Object.keys(this._markers).filter(k => k.startsWith('drv_')).length
+    );
+    const chip = document.getElementById('city-life-chip');
+    if (chip) {
+      chip.classList.add('open');
+      chip.innerHTML = '<b>City map</b> · satellite · streets · friends · drivers · routing';
+    }
+    AciCli?.print?.('◎ City map — satellite · navigation · live drivers', 'ok');
+  },
+
+  _exit() {
+    this.active = false;
+    const el = document.getElementById('city-map');
+    const globe = document.getElementById('globe');
+    if (el) el.classList.remove('active');
+    if (globe) globe.classList.remove('city-map-active');
+    EarthRealism?._hudTimer && (EarthRealism._hudTimer = 0);
+  },
+
+  _syncView(camZ) {
+    const c = DrivingView?.active && window._lastPos
+      ? window._lastPos
+      : (window._lastPos || this.globeCenterLatLng());
+    this._center = c;
+    const lz = this.camZToZoom(camZ);
+    if (this.map.getZoom() !== lz) this.map.setZoom(lz, { animate: false });
+    const cur = this.map.getCenter();
+    if (Math.abs(cur.lat - c.lat) > 0.0004 || Math.abs(cur.lng - c.lng) > 0.0004) {
+      this.map.panTo([c.lat, c.lng], { animate: false });
+    }
+  },
+
+  _icon(emoji, color) {
+    return L.divIcon({
+      className: 'city-map-pin',
+      html: '<span style="background:' + color + ';border:2px solid #fff;border-radius:50%;width:28px;height:28px;display:flex;align-items:center;justify-content:center;font-size:14px;box-shadow:0 2px 8px rgba(0,0,0,0.45)">' + emoji + '</span>',
+      iconSize: [28, 28],
+      iconAnchor: [14, 14],
+    });
+  },
+
+  _setMarker(id, lat, lng, opts) {
+    opts = opts || {};
+    if (lat == null || lng == null) return;
+    const prev = this._markers[id];
+    if (prev) {
+      prev.setLatLng([lat, lng]);
+      return prev;
+    }
+    const m = L.marker([lat, lng], {
+      icon: this._icon(opts.emoji || '◎', opts.color || 'rgba(0,140,220,0.9)'),
+      title: opts.title || id,
+    });
+    if (opts.onClick) m.on('click', opts.onClick);
+    m.addTo(this.map);
+    this._markers[id] = m;
+    return m;
+  },
+
+  _syncMarkers() {
+    if (!this.active || !this.map) return;
+    const me = window._lastPos;
+    if (me) {
+      this._setMarker('me', me.lat, me.lng, {
+        emoji: '📍', color: 'rgba(0,200,255,0.95)', title: me?.name || 'You',
+        onClick: () => GlobeEntity?.entities?.get('me') && GlobeEntity.activate(GlobeEntity.entities.get('me')),
+      });
+    }
+    (window.others || []).forEach((u, i) => {
+      this._setMarker('friend_' + (u.id || i), u.lat, u.lng, {
+        emoji: u.emoji || '👤', color: 'rgba(255,170,50,0.92)', title: u.name,
+      });
+    });
+    (Commerce?.vendors || []).forEach((v, i) => {
+      if (v.lat == null) return;
+      this._setMarker('shop_' + (v.id || i), v.lat, v.lng, {
+        emoji: '🏪', color: 'rgba(255,140,40,0.9)', title: v.name || 'Shop',
+        onClick: () => Commerce?.openVendor?.(v),
+      });
+    });
+  },
+
+  async _tickDrivers() {
+    if (!this.active) return;
+    const u = window._lastPos || this._center;
+    const drivers = Commerce?.fetchNearbyDrivers
+      ? await Commerce.fetchNearbyDrivers(u.lat, u.lng)
+      : [];
+    Commerce?.showDriversOnGlobe?.(drivers);
+    const seen = new Set();
+    drivers.forEach((d, i) => {
+      const lat = d.lat ?? d.latitude ?? (u.lat + (Math.random() - 0.5) * 0.01);
+      const lng = d.lng ?? d.longitude ?? (u.lng + (Math.random() - 0.5) * 0.01);
+      const id = 'drv_' + (d.id || i);
+      seen.add(id);
+      this._setMarker(id, lat, lng, {
+        emoji: '🚗', color: 'rgba(80,180,255,0.92)', title: d.display_name || 'Driver',
+      });
+    });
+    Object.keys(this._markers).forEach(k => {
+      if (k.startsWith('drv_') && !seen.has(k)) {
+        this.map.removeLayer(this._markers[k]);
+        delete this._markers[k];
+      }
+    });
+  },
+
+  setRoute(coords) {
+    this._routeCoords = coords || [];
+    this._syncRoute();
+  },
+
+  _syncRoute() {
+    if (!this.map) return;
+    if (this._route) {
+      this.map.removeLayer(this._route);
+      this._route = null;
+    }
+    const coords = this._routeCoords || DrivingView?.routeCoords || [];
+    if (!coords.length || !this.active) return;
+    const latlngs = coords.map(c => [c.lat, c.lng]);
+    this._route = L.polyline(latlngs, {
+      color: AstranovTheme?.mode === 'bright' ? '#0066cc' : '#44ccff',
+      weight: 5,
+      opacity: 0.88,
+    }).addTo(this.map);
+  },
+};
+window.CityMap = CityMap;
+
+// === ASTRANOV THEME — dark / bright for globe, city map, and UI ===
+const AstranovTheme = {
+  mode: 'dark',
+  KEY: 'astranov_theme_v1',
+  _maps: [],
+
+  init() {
+    try {
+      const saved = localStorage.getItem(this.KEY);
+      if (saved === 'bright' || saved === 'dark') this.mode = saved;
+    } catch (_) {}
+    this.apply();
+    const btn = document.getElementById('aci-theme');
+    if (btn) {
+      btn.onclick = e => {
+        e.preventDefault();
+        e.stopPropagation();
+        this.toggle();
+      };
+      this._syncBtn();
+    }
+  },
+
+  registerMap(mapApi) {
+    if (mapApi && !this._maps.includes(mapApi)) this._maps.push(mapApi);
+  },
+
+  toggle() {
+    this.set(this.mode === 'dark' ? 'bright' : 'dark');
+  },
+
+  set(mode) {
+    const next = mode === 'bright' ? 'bright' : 'dark';
+    if (next === this.mode) return this.mode;
+    this.mode = next;
+    try { localStorage.setItem(this.KEY, next); } catch (_) {}
+    this.apply();
+    AciCli?.print?.('theme → ' + next, 'ok');
+    GlobeDeck?.setPreview?.((next === 'bright' ? '☀️' : '🌙') + ' ' + next + ' theme');
+    if (Voice?.maySpeak?.()) speak('Theme ' + next + '.', () => resumeListening?.());
+    return this.mode;
+  },
+
+  apply() {
+    document.documentElement.dataset.theme = this.mode;
+    const meta = document.querySelector('meta[name="theme-color"]');
+    if (meta) meta.content = this.mode === 'bright' ? '#c8e4ff' : '#00b4ff';
+    if (scene?.background) {
+      scene.background = new THREE.Color(this.mode === 'bright' ? 0xc8dff0 : 0x000000);
+    }
+    if (renderer) renderer.setClearColor(this.mode === 'bright' ? 0xc8dff0 : 0x000000, 1);
+    EarthRealism?.onThemeChange?.();
+    this._maps.forEach(m => m.onThemeChange?.());
+    this._syncBtn();
+  },
+
+  _syncBtn() {
+    const btn = document.getElementById('aci-theme');
+    if (!btn) return;
+    btn.textContent = this.mode === 'bright' ? '☀️' : '🌙';
+    btn.title = this.mode === 'bright' ? 'Bright theme — tap for dark' : 'Dark theme — tap for bright';
+    btn.classList.toggle('deck-btn-active', this.mode === 'bright');
+  },
+};
+window.AstranovTheme = AstranovTheme;
+
+// === EARTH REALISM — live day/night terminator, sun & moon ===
+const EarthRealism = {
+  _inited: false,
+  sunDir: new THREE.Vector3(1, 0.2, 0.4),
+  moonMesh: null,
+  sunGlow: null,
+  terminator: null,
+  _dayTex: null,
+  _nightTex: null,
+  _hudTimer: 0,
+
+  init() {
+    if (this._inited || !earth) return;
+    this._inited = true;
+    const loader = new THREE.TextureLoader();
+    const dayUrl = 'https://cdn.jsdelivr.net/gh/mrdoob/three.js@r128/examples/textures/planets/earth_atmos_2048.jpg';
+    const nightUrl = 'https://cdn.jsdelivr.net/gh/mrdoob/three.js@r128/examples/textures/planets/earth_lights_2048.png';
+    loader.load(dayUrl, tex => {
+      this._dayTex = tex;
+      this._applyShader();
+    });
+    loader.load(nightUrl, tex => {
+      this._nightTex = tex;
+      this._applyShader();
+    });
+    this._buildSkyBodies();
+    this._buildTerminator();
+    this.tick();
+  },
+
+  _applyShader() {
+    if (!this._dayTex || !this._nightTex || !earth) return;
+    const mat = new THREE.ShaderMaterial({
+      uniforms: {
+        dayTexture: { value: this._dayTex },
+        nightTexture: { value: this._nightTex },
+        sunDirection: { value: this.sunDir.clone() },
+        brightness: { value: AstranovTheme?.mode === 'bright' ? 1.15 : 1.0 },
+      },
+      vertexShader: [
+        'varying vec2 vUv;',
+        'varying vec3 vNormalW;',
+        'void main() {',
+        '  vUv = uv;',
+        '  vec4 wp = modelMatrix * vec4(position, 1.0);',
+        '  vNormalW = normalize(mat3(modelMatrix) * normal);',
+        '  gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);',
+        '}',
+      ].join('\n'),
+      fragmentShader: [
+        'uniform sampler2D dayTexture;',
+        'uniform sampler2D nightTexture;',
+        'uniform vec3 sunDirection;',
+        'uniform float brightness;',
+        'varying vec2 vUv;',
+        'varying vec3 vNormalW;',
+        'void main() {',
+        '  float d = dot(normalize(vNormalW), normalize(sunDirection));',
+        '  vec4 dayColor = texture2D(dayTexture, vUv);',
+        '  vec4 nightColor = texture2D(nightTexture, vUv);',
+        '  float blend = smoothstep(-0.12, 0.28, d);',
+        '  vec4 col = mix(nightColor * 1.35, dayColor, blend);',
+        '  gl_FragColor = vec4(col.rgb * brightness, 1.0);',
+        '}',
+      ].join('\n'),
+    });
+    earth.material = mat;
+    earth.material.needsUpdate = true;
+  },
+
+  onThemeChange() {
+    if (earth?.material?.uniforms?.brightness) {
+      earth.material.uniforms.brightness.value = AstranovTheme?.mode === 'bright' ? 1.15 : 1.0;
+    }
+  },
+
+  _buildSkyBodies() {
+    const sunGeo = new THREE.SphereGeometry(0.08, 16, 16);
+    const sunMat = new THREE.MeshBasicMaterial({ color: 0xffee88 });
+    this.sunGlow = new THREE.Mesh(sunGeo, sunMat);
+    this.sunGlow.userData = { type: 'sun-indicator' };
+    scene.add(this.sunGlow);
+
+    const moonGeo = new THREE.SphereGeometry(0.045, 12, 12);
+    const moonMat = new THREE.MeshBasicMaterial({ color: 0xccddee });
+    this.moonMesh = new THREE.Mesh(moonGeo, moonMat);
+    this.moonMesh.userData = { type: 'moon-indicator' };
+    scene.add(this.moonMesh);
+  },
+
+  _buildTerminator() {
+    const pts = [];
+    for (let i = 0; i <= 64; i++) {
+      const a = (i / 64) * Math.PI * 2;
+      pts.push(new THREE.Vector3(Math.cos(a) * 1.012, 0, Math.sin(a) * 1.012));
+    }
+    const geo = new THREE.BufferGeometry().setFromPoints(pts);
+    this.terminator = new THREE.Line(
+      geo,
+      new THREE.LineBasicMaterial({ color: 0xffaa44, transparent: true, opacity: 0.55 })
+    );
+    globePivot.add(this.terminator);
+  },
+
+  _solarPosition(date) {
+    const d = date || new Date();
+    const start = Date.UTC(d.getUTCFullYear(), 0, 0);
+    const day = (Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()) - start) / 86400000;
+    const decl = 23.44 * Math.sin((360 / 365) * (day - 81) * Math.PI / 180) * Math.PI / 180;
+    const utcH = d.getUTCHours() + d.getUTCMinutes() / 60 + d.getUTCSeconds() / 3600;
+    const lon = ((12 - utcH) * 15) * Math.PI / 180;
+    const lat = decl;
+    const x = Math.cos(lat) * Math.cos(lon);
+    const y = Math.sin(lat);
+    const z = Math.cos(lat) * Math.sin(lon);
+    return new THREE.Vector3(x, y, z).normalize();
+  },
+
+  _moonPosition(date) {
+    const d = date || new Date();
+    const jd = 367 * d.getUTCFullYear()
+      - Math.floor(7 * (d.getUTCFullYear() + Math.floor((d.getUTCMonth() + 9) / 12)) / 4)
+      + Math.floor(275 * (d.getUTCMonth() + 1) / 9)
+      + d.getUTCDate() - 730530
+      + (d.getUTCHours() + d.getUTCMinutes() / 60) / 24;
+    const phase = (jd / 29.53) * Math.PI * 2;
+    const orbit = jd * 0.036 + 1.2;
+    const dist = 2.8;
+    const sun = this._solarPosition(d);
+    const perp = new THREE.Vector3(-sun.z, 0.15, sun.x).normalize();
+    const pos = sun.clone().multiplyScalar(Math.cos(phase) * dist * 0.35)
+      .add(perp.clone().multiplyScalar(Math.sin(phase) * dist))
+      .add(new THREE.Vector3(Math.cos(orbit) * 0.2, Math.sin(orbit) * 0.08, Math.sin(orbit) * 0.2));
+    return pos.normalize().multiplyScalar(dist);
+  },
+
+  _updateTerminator(sunDir) {
+    if (!this.terminator) return;
+    const up = new THREE.Vector3(0, 1, 0);
+    const axis = new THREE.Vector3().crossVectors(up, sunDir).normalize();
+    const angle = Math.acos(Math.max(-1, Math.min(1, up.dot(sunDir))));
+    this.terminator.quaternion.setFromAxisAngle(axis, angle);
+  },
+
+  _formatHud(sunDir) {
+    const subsolar = this._subsolarLatLng(sunDir);
+    const now = new Date();
+    const utc = now.toISOString().slice(11, 16) + ' UTC';
+    const illum = Math.round((1 + sunDir.y) * 50);
+    const moonVis = this.moonMesh?.visible ? 'visible' : 'below horizon';
+    return '<div class="cg-title">Live Earth · ' + utc + '</div>'
+      + '<div class="cg-item"><b>☀ Sun</b> — subsolar ' + subsolar.lat.toFixed(1) + '°, ' + subsolar.lng.toFixed(1) + '°</div>'
+      + '<div class="cg-item"><b>🌗 Terminator</b> — real-time day/night boundary · ' + illum + '% lit</div>'
+      + '<div class="cg-item"><b>🌙 Moon</b> — ' + moonVis + ' · phase from ephemeris</div>'
+      + '<div class="cg-item"><i>Drag globe · zoom in for city satellite map</i></div>';
+  },
+
+  _subsolarLatLng(sunDir) {
+    const lat = Math.asin(Math.max(-1, Math.min(1, sunDir.y))) * 180 / Math.PI;
+    let lng = Math.atan2(sunDir.z, sunDir.x) * 180 / Math.PI;
+    if (lng > 180) lng -= 360;
+    return { lat, lng };
+  },
+
+  tick() {
+    const sunDir = this._solarPosition();
+    this.sunDir.copy(sunDir);
+    if (earth?.material?.uniforms?.sunDirection) {
+      earth.material.uniforms.sunDirection.value.copy(sunDir);
+    }
+    if (typeof sun !== 'undefined' && sun?.position) {
+      sun.position.copy(sunDir.clone().multiplyScalar(8));
+      sun.intensity = AstranovTheme?.mode === 'bright' ? 1.9 : 1.5;
+    }
+    if (this.sunGlow) {
+      this.sunGlow.position.copy(sunDir.clone().multiplyScalar(4.2));
+      const camZ = camera?.position?.z ?? 2.5;
+      this.sunGlow.visible = camZ < 5.5 && camZ > 1.5 && !CityMap?.active;
+      this.sunGlow.scale.setScalar(0.85 + Math.sin(Date.now() * 0.002) * 0.08);
+    }
+    if (this.moonMesh) {
+      this.moonMesh.position.copy(this._moonPosition());
+      const camZ = camera?.position?.z ?? 2.5;
+      this.moonMesh.visible = camZ < 5.5 && camZ > 1.5 && !CityMap?.active;
+    }
+    this._updateTerminator(sunDir);
+
+    const level = CosmicZoom?.level || 'earth';
+    const camZ = camera?.position?.z ?? 2.5;
+    if (level === 'earth' && camZ < 3.4 && !CityMap?.active) {
+      const now = Date.now();
+      if (now - this._hudTimer > 4000) {
+        this._hudTimer = now;
+        const el = document.getElementById('cosmic-guide');
+        if (el) el.innerHTML = this._formatHud(sunDir);
+      }
+    }
+  },
+};
+window.EarthRealism = EarthRealism;
 
 // ASTRANOV AI GRAPHICS ENGINE
 // Advanced gaming graphics - fully procedural, no 3D models
@@ -8482,6 +9071,7 @@ const DrivingView = {
       new THREE.LineBasicMaterial({ color: 0x44aaff, transparent: true, opacity: 0.85 })
     );
     globePivot.add(this.routeLine);
+    CityMap?.setRoute?.(this.routeCoords);
     MapDepict?.pulse(window._lastPos.lat, window._lastPos.lng, 0x44aaff, 'road route', 6000);
   },
 
@@ -8836,6 +9426,13 @@ async function submitVoiceToCli(transcript) {
   if (/^(mic|voice|μίκροφωνο|ακού)\b/.test(low)) {
     _voiceBusy = false;
     startVoiceOptions();
+    return;
+  }
+  if (/^(dark|bright|light)\s*(theme|mode)?\b/.test(low) || /^theme\s+(dark|bright|light)\b/.test(low)) {
+    _voiceBusy = false;
+    const mode = /bright|light/.test(low) ? 'bright' : 'dark';
+    AstranovTheme?.set?.(mode);
+    AciCli?.print('theme → ' + mode, 'ok');
     return;
   }
 
@@ -9276,6 +9873,7 @@ function animate() {
   GlobeEntity?.tick?.();
   SuperSpace?.tick?.();
   CosmicZoom.update(camera.position.z);
+  EarthRealism?.tick?.();
   renderer.render(scene, camera);
 }
 animate();
@@ -9296,6 +9894,9 @@ PmrRadio.bindUI();
 GlobeVideo.init();
 DrivingView.init();
 CosmicZoom.init();
+AstranovTheme.init();
+CityMap.init();
+EarthRealism.init();
 SuperSpace.init();
 CityLife.init();
 SuperAdd.init();

@@ -57,6 +57,7 @@ Object.assign(SuperCli, {
       'shops', 'order', 'vendor', 'ping', 'locate', 'gps', 'me', 'vhf', 'call', 'phone',
       'drive', 'news', 'roles', 'claim', 'field_stats', 'hold', 'resume', 'stop',
       'youtube', 'yt', 'watch', 'play', 'space', 'scenario', 'add', 'post', 'superadd',
+      'theme', 'dark', 'bright', 'light',
     ]);
     return known.has(c);
   },
@@ -115,6 +116,7 @@ Object.assign(SuperCli, {
     this.out('youtube <search> · watch <url> · play 2 (pick result)', 'ok');
     this.out('space locate <topic> · space status — brain places media on globe/cosmos', 'ok');
     this.out('scenario wake|city|groceries|youtube|reviews|list — real user flows', 'ok');
+    this.out('theme dark|bright · or just: dark · bright — globe + city map + UI', 'ok');
     this.out('add · post — Super Add camera · global/team/local channel', 'ok');
     this.out('Tri-UI: SuperCli + SuperVoice + SuperSpace · mic+send at bottom bar', 'dim');
     this.out('brain think|evolve|teach|coders|listen on|off|status · brain order <task>', owner ? 'ok' : 'dim');
@@ -400,6 +402,19 @@ Object.assign(SuperCli, {
       }
       if (cmd === 'scenario' || cmd === 'day') {
         await this.cmdScenario(parts, rest);
+        return { handled: true };
+      }
+      if (cmd === 'theme' || cmd === 'dark' || cmd === 'bright' || cmd === 'light') {
+        const mode = cmd === 'theme'
+          ? (parts[1] || rest || '').toLowerCase()
+          : (cmd === 'light' ? 'bright' : cmd);
+        if (mode === 'dark' || mode === 'bright') {
+          AstranovTheme?.set?.(mode);
+          this.out('theme → ' + mode, 'ok');
+        } else {
+          AstranovTheme?.toggle?.();
+          this.out('theme → ' + (AstranovTheme?.mode || 'dark'), 'ok');
+        }
         return { handled: true };
       }
       if (cmd === 'add' || cmd === 'post' || cmd === 'superadd') {

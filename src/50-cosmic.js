@@ -162,7 +162,12 @@ const CosmicZoom = {
     const el = document.getElementById('cosmic-guide');
     if (!el) return;
     if (level === 'earth' && camZ < 3.4) {
-      el.innerHTML = '';
+      if (CityMap?.active) {
+        el.innerHTML = '<div class="cg-title">City map</div>'
+          + '<div class="cg-item"><b>Satellite</b> — buildings & streets · pinch to zoom closer</div>'
+          + '<div class="cg-item"><b>Live</b> — friends · drivers · OSRM routing when driving</div>'
+          + '<div class="cg-item"><i>Zoom out to return to globe · theme 🌙/☀️</i></div>';
+      }
       return;
     }
     let html = '';
@@ -208,9 +213,14 @@ const CosmicZoom = {
     if (level !== this.level) this.level = level;
     const zl = document.getElementById('zoom-label');
     if (zl && !DrivingView?.active) {
-      const hint = level === 'orbit' ? ' · ISS · Starlink' : level === 'system' ? ' · planets' : level === 'galaxy' ? ' · star field' : '';
-      zl.textContent = label + hint + ' (z=' + camZ.toFixed(1) + ')';
+      if (CityMap?.active) {
+        zl.textContent = 'CITY MAP · satellite · streets · friends · drivers (z=' + camZ.toFixed(2) + ')';
+      } else {
+        const hint = level === 'orbit' ? ' · ISS · Starlink' : level === 'system' ? ' · planets' : level === 'galaxy' ? ' · star field' : camZ < 3.4 ? ' · ☀ day/night live' : '';
+        zl.textContent = label + hint + ' (z=' + camZ.toFixed(1) + ')';
+      }
     }
+    CityMap?.onCamera?.(camZ, level);
     this.updateGuide(level, camZ);
     this.setOrbitVisibility(level);
 

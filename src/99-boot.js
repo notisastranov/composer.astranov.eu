@@ -47,6 +47,7 @@ function animate() {
   GlobeEntity?.tick?.();
   SuperSpace?.tick?.();
   CosmicZoom.update(camera.position.z);
+  EarthRealism?.tick?.();
   renderer.render(scene, camera);
 }
 animate();
@@ -67,6 +68,9 @@ PmrRadio.bindUI();
 GlobeVideo.init();
 DrivingView.init();
 CosmicZoom.init();
+AstranovTheme.init();
+CityMap.init();
+EarthRealism.init();
 SuperSpace.init();
 CityLife.init();
 SuperAdd.init();
