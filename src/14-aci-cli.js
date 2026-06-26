@@ -170,7 +170,9 @@ const AciCli = {
 
     try {
       if (cmd === 'help' || cmd === '?') {
-        ACIControl?.reply('Coders always on. Commands: order · vendors · batch · vhf · locate · connect. Just type — no summon needed.');
+        ACIControl?.reply(Auth?.isOwner
+          ? 'Owner: explicit coders … = EXECUTE ORDER. You alone judge cause priority. Also: batch · order · vendors · locate.'
+          : 'Coders always on. Commands: order · vendors · batch · vhf · locate. Just type.');
         GlobeDeck?.finishCliIfOneShot(cmd);
         return;
       }

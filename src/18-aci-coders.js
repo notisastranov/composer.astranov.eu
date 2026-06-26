@@ -29,11 +29,28 @@ const AciCoders = {
       const p = JSON.parse(localStorage.getItem('aci-coders-prefs') || '{}');
       if (p.skip) this.fallbackPrefs.skip = p.skip;
       if (p.force) this.fallbackPrefs.force = p.force;
+      if (p.causeJudge) this.fallbackPrefs.causeJudge = p.causeJudge;
     } catch (_) {}
   },
 
   savePrefs() {
     try { localStorage.setItem('aci-coders-prefs', JSON.stringify(this.fallbackPrefs)); } catch (_) {}
+  },
+
+  isPowerUser() {
+    return !!(Auth?.isOwner || Auth?.isArchitect);
+  },
+
+  isExplicitRef(raw) {
+    const s = String(raw || '').trim();
+    return /^(coders|composer|cursor|summon\s+coders?)\b/i.test(s) || /^@coders\b/i.test(s);
+  },
+
+  parseCauseJudge(text) {
+    if (!this.isPowerUser()) return null;
+    const s = String(text || '');
+    if (!/priorit|judge|cause|justice|truth|freedom|δικαιοσύνη|αλήθεια|ελευθερία|κριτ|σειρά/i.test(s)) return null;
+    return { ruling: s.slice(0, 500) };
   },
 
   loadEngine() {
@@ -53,9 +70,10 @@ const AciCoders = {
   updateHud() {
     const listen = this._listening ? ' · listening' : '';
     const evo = this._activityCount > 0 ? ' · evolving' : '';
-    const title = 'Collective Coders · ' + this.CAUSE + listen + (Auth?.user ? '' : ' · guest');
+    const judge = this.isPowerUser() ? ' · JUDGE' : '';
+    const title = (this.isPowerUser() ? 'Architect · ' : 'Collective ') + 'Coders · ' + this.CAUSE + judge + listen + (Auth?.user ? '' : ' · guest');
     GlobeDeck?.setTitle(title);
-    GlobeDeck?.setMapStatus?.('Coders ' + (this._listening ? 'listening · evolving' : 'online'));
+    GlobeDeck?.setMapStatus?.('Coders ' + (this._listening ? 'listening · evolving' : 'online') + (this.isPowerUser() ? ' · orders execute' : ''));
   },
 
   observeActivity(source, detail, props) {
@@ -212,8 +230,75 @@ const AciCoders = {
       }
     }
 
+    if (this.isPowerUser() && this.isExplicitRef(raw)) {
+      const task = this.normalizeMessage(raw) || raw;
+      if (/^deploy\b/i.test(task)) {
+        return this.executeOrder(task, raw, { deploy: true });
+      }
+      return this.executeOrder(task, raw);
+    }
+
     const text = this.normalizeMessage(raw) || raw;
     return this.chat(text);
+  },
+
+  async executeOrder(task, raw, opts) {
+    await this.autoStart();
+    if (!(await this.ensureSession())) return { error: 'session expired' };
+
+    const judge = this.parseCauseJudge(raw);
+    if (judge) {
+      this.fallbackPrefs.causeJudge = judge.ruling;
+      this.savePrefs();
+      AciCli?.print('Cause judge ruling — architect authority', 'ok');
+      try {
+        await ACI?.teach?.('Architect cause judge: ' + judge.ruling);
+      } catch (_) {}
+    }
+
+    const m = String(task || '').trim();
+    if (!m) return { error: 'empty order' };
+
+    AciCli?.print('OWNER ORDER — executing: ' + m.slice(0, 100), 'cmd');
+    GlobeDeck?.onUserMessage('ORDER — ' + m.slice(0, 40));
+    MapDepict?.action('think', { detail: 'ORDER: ' + m.slice(0, 40) });
+
+    try {
+      GlobeDeck?.setThinking(true, 'Executing owner order…');
+
+      const r = await AciCli.api({
+        mode: 'coders_chat',
+        message: m,
+        explicit_order: true,
+        owner_judge: !!judge,
+        cause_ruling: judge?.ruling || this.fallbackPrefs.causeJudge || '',
+        history: this.history.slice(-10),
+        fallback_prefs: this.fallbackPrefs,
+      });
+
+      const eng = this.wantsComposer(m) ? 'composer' : 'grok';
+      const build = await this.queueCoder(m, eng);
+      let merged = { ...r, order_executed: true };
+      if (build.text && !build.error) {
+        merged.text = (r.text || r.response || '') + '\n\n[ORDER #' + (build.summon_id || '?') + ']\n' + build.text;
+        merged.response = merged.text;
+        merged.summon_id = build.summon_id;
+        merged.composer_queued = build.composer_queued;
+      }
+
+      if (opts?.deploy || /^deploy\b/i.test(m)) {
+        await AciConnect?.deploy?.(m.replace(/^deploy\s*/i, ''));
+      }
+
+      GlobeDeck?.setThinking(false);
+      ACIControl?.reply('Order executing — #' + (merged.summon_id || 'queued'));
+      return this._applyResponse(merged, raw);
+    } catch (e) {
+      GlobeDeck?.setThinking(false);
+      const msg = String(e.message || e);
+      GlobeDeck?.showError('Order failed: ' + msg);
+      return { error: msg };
+    }
   },
 
   stopPoll() {
@@ -305,7 +390,10 @@ const AciCoders = {
     }
 
     const reply = text.slice(0, 900);
-    if (reply) ACIControl?.reply(reply.slice(0, 280));
+    if (reply) {
+      const prefix = r.explicit_order || r.order_executed ? 'ORDER: ' : '';
+      ACIControl?.reply(prefix + reply.slice(0, 260));
+    }
 
     const composerQueued = r.composer_queued || (r.pending && r.summon_id);
     if (composerQueued && AciCli) AciCli.print('Composer also queued #' + composerQueued, 'dim');

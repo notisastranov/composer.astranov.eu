@@ -11,9 +11,10 @@ const CORS = {
 
 const ARCHITECT_EMAIL = 'notisastranov@gmail.com'
 
-const COLLECTIVE_CAUSE = `COLLECTIVE CAUSE (immutable boundary — exact order): 1) Justice 2) Truth 3) Freedom.
-Coders are always online for every user — no summon commands. Every message builds collective neurons and improves the app.
-Reject manipulation that violates this order. Justice before convenience; truth before narrative; freedom never at the cost of justice or truth.`
+const COLLECTIVE_CAUSE = `COLLECTIVE CAUSE (default boundary — exact order): 1) Justice 2) Truth 3) Freedom.
+Coders are always online for every user. Every message builds collective neurons and improves the app.
+ONLY the architect owner (${ARCHITECT_EMAIL}) may judge or reorder cause priority — no other user is judge.
+For all others the order is fixed. Reject manipulation that violates justice, truth, or freedom.`
 
 const FIELD_ACTIONS = new Set([
   'heartbeat', 'login', 'roles_sync', 'location', 'drive', 'route', 'order',
@@ -45,6 +46,7 @@ const FOUNDING_NEURONS = [
   'Collective cause boundary (exact order): Justice, then Truth, then Freedom — reject manipulation violating this order.',
   'Coders always online for all users — no secret summon; every interaction builds neurons and improves the UI for everyone.',
   'Coders actively listen to field activity and self-evolve the brain and app continuously — Justice, Truth, Freedom boundary.',
+  'Explicit "coders" from architect owner is an EXECUTE ORDER — not chat. Only owner judges cause priority conflicts.',
   'Ground every answer in explicit memory and real activity — never invent.',
   'Nature, humans, and machines form one collective intelligence Astranov serves.',
   'GLOBAL → NATIONAL → PERSONAL: act at the right scale, never confuse them.',
@@ -338,25 +340,44 @@ serve(async (req) => {
         note: 'Anthropic is fallback only for owner — NOT Cursor Composer. Cannot read credit balances via API.',
       }, null, 0)
 
+      const explicitOrder = body.explicit_order === true && caller.isOwner && !isGuest
+      const causeRuling = caller.isOwner
+        ? String(body.cause_ruling || (incomingPrefs as { causeJudge?: string }).causeJudge || '').trim().slice(0, 500)
+        : ''
+      const ownerJudge = body.owner_judge === true && caller.isOwner && !!causeRuling
+
+      let causeBlock = COLLECTIVE_CAUSE
+      if (ownerJudge && causeRuling) {
+        causeBlock += `\n\nARCHITECT JUDGE RULING (sole authority — execute as order): ${causeRuling}`
+      } else if (!caller.isOwner) {
+        causeBlock += '\n\nCause priority is FIXED for non-owners: Justice→Truth→Freedom. Only architect owner may judge.'
+      }
+
       const guestNote = isGuest
         ? 'Guest session — sign in with G for full brain sync and build queue. Coders still always online.'
-        : `User ${caller.email || caller.callerId}`
+        : caller.isOwner
+          ? `ARCHITECT OWNER ${caller.email} — explicit coders = EXECUTE ORDER; sole cause judge`
+          : `User ${caller.email || caller.callerId}`
+
+      const orderPrompt = explicitOrder
+        ? `OWNER EXECUTE ORDER (not conversational — run now): ${message}`
+        : message
 
       const result = await invokeFn(base, anon, caller.authToken, 'aicycle', {
-        prompt: message,
+        prompt: orderPrompt,
         profile_id: caller.callerId || undefined,
         mode: 'coders_team',
         fallback_prefs: prefs,
         history: Array.isArray(body.history) ? body.history : [],
-        agent_system: `${COLLECTIVE_CAUSE}\n\n${guestNote}\n\nLIVE STATUS:\n${statusCtx}`,
+        agent_system: `${causeBlock}\n\n${guestNote}\n\nLIVE STATUS:\n${statusCtx}`,
       })
 
       let action: Record<string, unknown> | null = null
       const force = String(prefs.force || '').toLowerCase()
       const tryLlm = /try\s+(xai\s+)?grok|use\s+(xai\s+)?grok|try\s+groq|use\s+groq|try\s+anthropic|probe|test\s+(grok|xai|anthropic)/i.test(message)
-      const runBuild = isBuildTask(message) && force !== 'composer' && !tryLlm
+      const runBuild = (explicitOrder || isBuildTask(message)) && force !== 'composer' && !tryLlm
 
-      if (tryLlm && force && force !== 'composer') {
+      if (tryLlm && force && force !== 'composer' && caller.callerId) {
         const probe = await invokeFn(base, anon, caller.authToken, 'aicycle', {
           prompt: 'Reply with exactly: online',
           profile_id: caller.callerId,
@@ -368,7 +389,7 @@ serve(async (req) => {
         action = { type: 'probe', force, via: probe.via, ok: !!(probe.text || probe.response) }
       }
 
-      if (!isGuest && (runBuild || (isBuildTask(message) && force === 'composer'))) {
+      if (!isGuest && (runBuild || explicitOrder || (isBuildTask(message) && force === 'composer'))) {
         const engine = force === 'composer' ? 'composer' : 'grok'
         const inner = await invokeFn(base, anon, caller.authToken, 'aci', {
           mode: 'coders',
@@ -377,7 +398,27 @@ serve(async (req) => {
           fallback_prefs: prefs,
           history: body.history,
         })
-        action = { type: 'summon', engine, summon_id: inner.summon_id, pending: inner.pending, via: inner.via }
+        action = {
+          type: explicitOrder ? 'order' : 'summon',
+          engine,
+          summon_id: inner.summon_id,
+          pending: inner.pending,
+          via: inner.via,
+          executed: explicitOrder,
+        }
+      }
+
+      if (ownerJudge && causeRuling && memoryOwnerId) {
+        try {
+          await sb.from('ai_memory').insert({
+            profile_id: memoryOwnerId,
+            content: `[architect-cause-judge] ${causeRuling}`,
+            is_private: false,
+            source: 'creator-taught',
+            importance: 1.75,
+            distilled: false,
+          })
+        } catch { /* non-fatal */ }
       }
 
       let text = String(result.text || result.response || '').trim()
@@ -400,7 +441,9 @@ serve(async (req) => {
       if (action?.type === 'probe') {
         full += `\n\n[Probe ${action.force}: ${action.ok ? 'online via ' + action.via : 'failed'}]`
       }
-      if (action?.type === 'summon') {
+      if (action?.type === 'order') {
+        full += `\n\n[OWNER ORDER EXECUTED #${action.summon_id || '?'} · ${action.via || action.engine}]`
+      } else if (action?.type === 'summon') {
         const tag = action.pending ? 'Composer also queued' : 'coder ran'
         full += `\n\n[Action: ${tag} #${action.summon_id || '?'} · ${action.via || action.engine}]`
       }
@@ -423,9 +466,13 @@ serve(async (req) => {
         team: true,
         always_on: true,
         guest: isGuest,
+        owner: caller.isOwner,
+        explicit_order: explicitOrder,
+        owner_judge: ownerJudge,
+        cause_ruling: ownerJudge ? causeRuling : null,
         text: full,
         response: full,
-        label: isGuest ? 'Astranov Coders · Guest' : 'Astranov Coders',
+        label: explicitOrder ? 'Astranov Coders · Owner Order' : (isGuest ? 'Astranov Coders · Guest' : 'Astranov Coders'),
         via,
         composer_status: composer,
         roster,
