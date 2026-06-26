@@ -56,6 +56,7 @@ FieldBrain.init();
 FieldBrain.hookFeed();
 GlobeDeck.init();
 SuperCli.init();
+SessionHold.init();
 AciCli.init();
 setTimeout(() => Auth.refreshAuthority(), 800);
 setTimeout(() => AciCoders?.autoStart?.(), 1200);

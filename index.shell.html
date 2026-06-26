@@ -69,6 +69,9 @@
   #super-cli-bar #globe-deck-send { border-radius:10px; width:auto; padding:0 10px; font-size:12px; }
   #super-cli-bar button[hidden] { display:none !important; }
   #super-cli-bar #aci-locate.deck-btn-active { background:rgba(0,140,80,0.5); border-color:rgba(0,255,160,0.65); color:#8fc; box-shadow:0 0 8px rgba(0,255,160,0.25); }
+  #super-cli-bar #aci-hold.deck-btn-active { background:rgba(180,120,0,0.55); border-color:rgba(255,200,80,0.7); color:#fd8; box-shadow:0 0 10px rgba(255,180,40,0.35); }
+  #globe-deck.session-held #aci-hold { animation:hold-pulse 1.6s ease-in-out infinite; }
+  @keyframes hold-pulse { 0%,100%{ box-shadow:0 0 6px rgba(255,180,40,0.2); } 50%{ box-shadow:0 0 14px rgba(255,180,40,0.55); } }
   #globe-deck.collapsed #globe-deck-input-row { display:none; }
   #globe-deck-log, #globe-deck-stage { -webkit-overflow-scrolling:touch; touch-action:pan-y; }
   #aci-bar { display:none !important; }
@@ -168,6 +171,7 @@
         <button id="aci-login" title="Sign in with Google" type="button">G</button>
         <button id="aci-cli-toggle" title="Expand/collapse Astranov Command Line" type="button">💻</button>
         <button id="aci-stop" title="Stop" type="button">🛑</button>
+        <button id="aci-hold" title="Hold session — pause mic &amp; tasks for noisy places" type="button" aria-pressed="false">⏸</button>
         <button id="aci-mic" title="Voice" type="button">🎤</button>
         <button id="aci-locate" title="Locate me" type="button">🎯</button>
         <button id="aci-order" title="Order" type="button">🛒</button>

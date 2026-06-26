@@ -69,6 +69,9 @@
   #super-cli-bar #globe-deck-send { border-radius:10px; width:auto; padding:0 10px; font-size:12px; }
   #super-cli-bar button[hidden] { display:none !important; }
   #super-cli-bar #aci-locate.deck-btn-active { background:rgba(0,140,80,0.5); border-color:rgba(0,255,160,0.65); color:#8fc; box-shadow:0 0 8px rgba(0,255,160,0.25); }
+  #super-cli-bar #aci-hold.deck-btn-active { background:rgba(180,120,0,0.55); border-color:rgba(255,200,80,0.7); color:#fd8; box-shadow:0 0 10px rgba(255,180,40,0.35); }
+  #globe-deck.session-held #aci-hold { animation:hold-pulse 1.6s ease-in-out infinite; }
+  @keyframes hold-pulse { 0%,100%{ box-shadow:0 0 6px rgba(255,180,40,0.2); } 50%{ box-shadow:0 0 14px rgba(255,180,40,0.55); } }
   #globe-deck.collapsed #globe-deck-input-row { display:none; }
   #globe-deck-log, #globe-deck-stage { -webkit-overflow-scrolling:touch; touch-action:pan-y; }
   #aci-bar { display:none !important; }
@@ -168,6 +171,7 @@
         <button id="aci-login" title="Sign in with Google" type="button">G</button>
         <button id="aci-cli-toggle" title="Expand/collapse Astranov Command Line" type="button">💻</button>
         <button id="aci-stop" title="Stop" type="button">🛑</button>
+        <button id="aci-hold" title="Hold session — pause mic &amp; tasks for noisy places" type="button" aria-pressed="false">⏸</button>
         <button id="aci-mic" title="Voice" type="button">🎤</button>
         <button id="aci-locate" title="Locate me" type="button">🎯</button>
         <button id="aci-order" title="Order" type="button">🛒</button>
@@ -789,6 +793,7 @@ function userIntervene() {
   Voice.flush();
   voiceSessionActive = false;
   voiceEnabled = false;
+  SessionHold?.release?.();
   const cliIn = document.getElementById('aci-cli-in');
   if (cliIn) cliIn.placeholder = 'type or tap 🎤 · Enter or ➡';
   GlobeControl?.userTookGlobe?.('stop');
@@ -1338,7 +1343,7 @@ const SuperCli = {
   _context: 'idle',
   title: ACL_TITLE,
 
-  CORE: ['aci-login', 'aci-cli-toggle', 'aci-stop', 'globe-deck-send'],
+  CORE: ['aci-login', 'aci-cli-toggle', 'aci-stop', 'aci-hold', 'globe-deck-send'],
   CONTEXT_BTNS: {
     idle: ['aci-mic', 'aci-locate', 'aci-order', 'aci-batch', 'aci-vhf', 'aci-call'],
     guest: ['aci-mic', 'aci-locate', 'aci-order', 'aci-vhf', 'aci-call'],
@@ -1385,7 +1390,9 @@ const SuperCli = {
       'aci-login': () => Auth?.user ? Auth.signOut() : Auth?.signInGoogle(),
       'aci-cli-toggle': () => GlobeDeck?.toggle(),
       'aci-stop': () => userIntervene?.(),
+      'aci-hold': () => SessionHold?.toggle?.(),
       'aci-mic': () => {
+        if (SessionHold?.isHeld?.()) { SessionHold.resume(); return; }
         if (Voice?.speaking || voiceSessionActive) userIntervene?.();
         else startVoiceOptions?.();
       },
@@ -2480,6 +2487,177 @@ const AciCoders = {
 };
 window.AciCoders = AciCoders;
 
+// === SESSION HOLD — pause mic/tasks in noisy places, resume later ===
+let sessionHeld = false;
+
+const SessionHold = {
+  STORAGE_KEY: 'astranov-session-hold-v1',
+  _snapshot: null,
+
+  init() {
+    const btn = document.getElementById('aci-hold');
+    if (btn) btn.onclick = e => { e.preventDefault(); e.stopPropagation(); this.toggle(); };
+    this.restoreIfNeeded();
+    this.syncButton();
+  },
+
+  isHeld() { return sessionHeld; },
+
+  capture() {
+    const input = document.getElementById('aci-cli-in');
+    return {
+      savedAt: Date.now(),
+      voiceSessionActive: !!voiceSessionActive,
+      voiceEnabled: !!voiceEnabled,
+      deckExpanded: !!GlobeDeck?.expanded,
+      activeTask: GlobeDeck?.activeTask || null,
+      deckTitle: document.getElementById('globe-deck-title')?.textContent || '',
+      inputBuffer: input?.value || AciCli?.buffer || '',
+      context: SuperCli?._context || 'idle',
+      followMode: GlobeControl?.followMode || null,
+      batchId: AstranovNode?.batchId || null,
+      vhfActive: !!Comms?.vhfActive,
+      driving: !!DrivingView?.active,
+      userId: Auth?.user?.id || null,
+    };
+  },
+
+  persist(snapshot) {
+    try {
+      localStorage.setItem(this.STORAGE_KEY, JSON.stringify({ held: true, snapshot }));
+    } catch (_) {}
+  },
+
+  clearPersist() {
+    try { localStorage.removeItem(this.STORAGE_KEY); } catch (_) {}
+  },
+
+  pauseListening() {
+    if (recognition) { try { recognition.stop(); } catch (_) {} }
+    isListening = false;
+    Voice?.flush?.();
+  },
+
+  hold(opts = {}) {
+    if (sessionHeld) return;
+    const snap = this.capture();
+    this._snapshot = snap;
+    sessionHeld = true;
+    this.pauseListening();
+    this.persist(snap);
+    this.syncButton();
+    const deck = GlobeDeck?.deck?.();
+    if (deck) deck.classList.add('session-held');
+    const input = document.getElementById('aci-cli-in');
+    if (input) input.placeholder = '⏸ held — tap ▶ to resume';
+    GlobeDeck?.setPreview('⏸ Session held — mic & tasks paused');
+    AciCli?.print('⏸ Session held — leave noisy area, tap ▶ to resume', 'dim');
+    if (!opts.quiet) ACIControl?.reply('Held — tap ▶ when ready to resume');
+    SuperCli?.setContext?.(SuperCli.inferContext?.() || 'idle');
+  },
+
+  async resume(opts = {}) {
+    if (!sessionHeld) return;
+    const snap = this._snapshot || this.loadPersisted()?.snapshot;
+    sessionHeld = false;
+    this.syncButton();
+    const deck = GlobeDeck?.deck?.();
+    if (deck) deck.classList.remove('session-held');
+    const input = document.getElementById('aci-cli-in');
+    if (input) input.placeholder = 'type or tap 🎤 · Enter or ➡';
+
+    if (snap) {
+      if (snap.deckExpanded) GlobeDeck?.expand(snap.deckTitle || SuperCli?.title || 'Astranov Command Line');
+      if (snap.activeTask) GlobeDeck.activeTask = snap.activeTask;
+      if (snap.inputBuffer && input) {
+        input.value = snap.inputBuffer;
+        if (AciCli) AciCli.buffer = snap.inputBuffer;
+      }
+      if (snap.context) SuperCli?.setContext?.(snap.context);
+      if (snap.voiceSessionActive || snap.voiceEnabled) {
+        voiceSessionActive = true;
+        voiceEnabled = true;
+      }
+      if (window.AciCli) AciCli.open = !!snap.deckExpanded;
+    }
+
+    this.clearPersist();
+    this._snapshot = null;
+    AciCli?.print('▶ Session resumed', 'ok');
+    GlobeDeck?.setPreview('▶ Resumed');
+    if (!opts.quiet) ACIControl?.reply('Resumed — Astranov Command Line active');
+
+    if (snap?.voiceSessionActive || snap?.voiceEnabled) {
+      setTimeout(() => startVoiceOptions?.(), 400);
+    } else {
+      scheduleVoiceResume?.();
+    }
+    SuperCli?.setContext?.(SuperCli.inferContext?.() || 'idle');
+  },
+
+  loadPersisted() {
+    try {
+      const raw = localStorage.getItem(this.STORAGE_KEY);
+      if (!raw) return null;
+      return JSON.parse(raw);
+    } catch { return null; }
+  },
+
+  restoreIfNeeded() {
+    const saved = this.loadPersisted();
+    if (!saved?.held || !saved.snapshot) return;
+    this._snapshot = saved.snapshot;
+    sessionHeld = true;
+    voiceSessionActive = false;
+    voiceEnabled = false;
+    this.pauseListening();
+    this.syncButton();
+    const deck = GlobeDeck?.deck?.();
+    if (deck) deck.classList.add('session-held');
+    const input = document.getElementById('aci-cli-in');
+    if (input) input.placeholder = '⏸ held — tap ▶ to resume';
+    if (saved.snapshot.deckTitle) GlobeDeck?.setTitle(saved.snapshot.deckTitle);
+    GlobeDeck?.setPreview('⏸ Session held — tap ▶ to resume');
+    setTimeout(() => {
+      AciCli?.print('⏸ Restored held session — tap ▶ to resume', 'dim');
+    }, 600);
+  },
+
+  release() {
+    sessionHeld = false;
+    this._snapshot = null;
+    this.clearPersist();
+    this.pauseListening();
+    this.syncButton();
+    const deck = GlobeDeck?.deck?.();
+    if (deck) deck.classList.remove('session-held');
+    const input = document.getElementById('aci-cli-in');
+    if (input) input.placeholder = 'type or tap 🎤 · Enter or ➡';
+  },
+
+  toggle() {
+    if (sessionHeld) this.resume();
+    else this.hold();
+  },
+
+  syncButton() {
+    const btn = document.getElementById('aci-hold');
+    if (!btn) return;
+    if (sessionHeld) {
+      btn.textContent = '▶';
+      btn.title = 'Resume session — restore mic & tasks';
+      btn.classList.add('deck-btn-active');
+      btn.setAttribute('aria-pressed', 'true');
+    } else {
+      btn.textContent = '⏸';
+      btn.title = 'Hold session — pause mic & tasks for noisy places';
+      btn.classList.remove('deck-btn-active');
+      btn.setAttribute('aria-pressed', 'false');
+    }
+  },
+};
+window.SessionHold = SessionHold;
+
 // === FIELD BRAIN — multi-role field usage → collective brain (compliant scope) ===
 // All logged-in users: client + driver. Vendor when they own a shop. Same person, all hats.
 
@@ -2790,6 +2968,19 @@ const ACIControl = {
     const low = text.toLowerCase().trim();
     const say = (msg) => this.voiceAck(msg, fromVoice);
 
+    if (/^(hold|pause session|quiet mode|κράτα|κρατα|σίγαση|σιγαση)\b/.test(low)) {
+      SessionHold?.hold?.();
+      return { executed: true, action: 'hold' };
+    }
+    if (/^(resume|unhold|continue|συνέχισε|συνεχισε|ξανα)\b/.test(low)) {
+      await SessionHold?.resume?.();
+      return { executed: true, action: 'resume' };
+    }
+    if (SessionHold?.isHeld?.()) {
+      this.reply('Session held — tap ▶ or say resume');
+      say('Held. Say resume when ready.');
+      return { executed: false, action: 'held' };
+    }
     if (/^(stop|σταμάτα|σταματα|pause|διακοπή|quiet|σιωπή|mute)/.test(low)) {
       userIntervene();
       return { executed: true, action: 'stop' };
@@ -5765,6 +5956,7 @@ function openVoiceCli() {
 }
 
 function scheduleVoiceResume() {
+  if (sessionHeld || SessionHold?.isHeld?.()) return;
   if (!voiceSessionActive || !voiceEnabled || isListening || Voice.speaking || _voiceBusy) return;
   setTimeout(() => {
     if (!voiceSessionActive || !voiceEnabled || isListening || Voice.speaking || _voiceBusy) return;
@@ -5792,6 +5984,21 @@ async function submitVoiceToCli(transcript) {
   if (input) { input.value = ''; if (AciCli) AciCli.buffer = ''; }
 
   const low = line.toLowerCase();
+  if (/^(hold|pause session|quiet mode|κράτα|κρατα|σίγαση|σιγαση)\b/.test(low)) {
+    _voiceBusy = false;
+    SessionHold?.hold?.();
+    return;
+  }
+  if (/^(resume|unhold|continue|συνέχισε|συνεχισε|ξανα)\b/.test(low)) {
+    _voiceBusy = false;
+    await SessionHold?.resume?.();
+    return;
+  }
+  if (sessionHeld || SessionHold?.isHeld?.()) {
+    _voiceBusy = false;
+    AciCli?.print('⏸ session held — say resume or tap ▶', 'dim');
+    return;
+  }
   if (/^(stop|σταμάτα|σταματα|pause|διακοπή|quiet|σιωπή|mute)\b/.test(low)) {
     _voiceBusy = false;
     userIntervene();
@@ -5844,6 +6051,7 @@ function initVoice() {
 }
 
 function startListeningForOptions() {
+  if (sessionHeld || SessionHold?.isHeld?.()) return;
   if (!recognition || isListening || _voiceBusy || Voice.speaking) return;
   isListening = true;
   try {
@@ -5891,6 +6099,10 @@ function resumeListening() {
 window.resumeListening = resumeListening;
 
 function startVoiceOptions() {
+  if (sessionHeld || SessionHold?.isHeld?.()) {
+    SessionHold?.resume?.();
+    return;
+  }
   Voice.flush();
   voiceSessionActive = true;
   voiceEnabled = true;
@@ -6226,6 +6438,7 @@ FieldBrain.init();
 FieldBrain.hookFeed();
 GlobeDeck.init();
 SuperCli.init();
+SessionHold.init();
 AciCli.init();
 setTimeout(() => Auth.refreshAuthority(), 800);
 setTimeout(() => AciCoders?.autoStart?.(), 1200);

@@ -42,6 +42,7 @@ function openVoiceCli() {
 }
 
 function scheduleVoiceResume() {
+  if (sessionHeld || SessionHold?.isHeld?.()) return;
   if (!voiceSessionActive || !voiceEnabled || isListening || Voice.speaking || _voiceBusy) return;
   setTimeout(() => {
     if (!voiceSessionActive || !voiceEnabled || isListening || Voice.speaking || _voiceBusy) return;
@@ -69,6 +70,21 @@ async function submitVoiceToCli(transcript) {
   if (input) { input.value = ''; if (AciCli) AciCli.buffer = ''; }
 
   const low = line.toLowerCase();
+  if (/^(hold|pause session|quiet mode|κράτα|κρατα|σίγαση|σιγαση)\b/.test(low)) {
+    _voiceBusy = false;
+    SessionHold?.hold?.();
+    return;
+  }
+  if (/^(resume|unhold|continue|συνέχισε|συνεχισε|ξανα)\b/.test(low)) {
+    _voiceBusy = false;
+    await SessionHold?.resume?.();
+    return;
+  }
+  if (sessionHeld || SessionHold?.isHeld?.()) {
+    _voiceBusy = false;
+    AciCli?.print('⏸ session held — say resume or tap ▶', 'dim');
+    return;
+  }
   if (/^(stop|σταμάτα|σταματα|pause|διακοπή|quiet|σιωπή|mute)\b/.test(low)) {
     _voiceBusy = false;
     userIntervene();
@@ -121,6 +137,7 @@ function initVoice() {
 }
 
 function startListeningForOptions() {
+  if (sessionHeld || SessionHold?.isHeld?.()) return;
   if (!recognition || isListening || _voiceBusy || Voice.speaking) return;
   isListening = true;
   try {
@@ -168,6 +185,10 @@ function resumeListening() {
 window.resumeListening = resumeListening;
 
 function startVoiceOptions() {
+  if (sessionHeld || SessionHold?.isHeld?.()) {
+    SessionHold?.resume?.();
+    return;
+  }
   Voice.flush();
   voiceSessionActive = true;
   voiceEnabled = true;

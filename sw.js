@@ -1,5 +1,5 @@
 /* Astranov service worker — installable PWA shell; network-first for app HTML */
-const CACHE = 'astranov-v14';
+const CACHE = 'astranov-v15';
 const SHELL = ['/manifest.webmanifest', '/icon.svg'];
 
 self.addEventListener('install', (e) => {

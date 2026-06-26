@@ -199,6 +199,19 @@ const ACIControl = {
     const low = text.toLowerCase().trim();
     const say = (msg) => this.voiceAck(msg, fromVoice);
 
+    if (/^(hold|pause session|quiet mode|κράτα|κρατα|σίγαση|σιγαση)\b/.test(low)) {
+      SessionHold?.hold?.();
+      return { executed: true, action: 'hold' };
+    }
+    if (/^(resume|unhold|continue|συνέχισε|συνεχισε|ξανα)\b/.test(low)) {
+      await SessionHold?.resume?.();
+      return { executed: true, action: 'resume' };
+    }
+    if (SessionHold?.isHeld?.()) {
+      this.reply('Session held — tap ▶ or say resume');
+      say('Held. Say resume when ready.');
+      return { executed: false, action: 'held' };
+    }
     if (/^(stop|σταμάτα|σταματα|pause|διακοπή|quiet|σιωπή|mute)/.test(low)) {
       userIntervene();
       return { executed: true, action: 'stop' };

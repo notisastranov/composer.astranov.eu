@@ -6,7 +6,7 @@ const SuperCli = {
   _context: 'idle',
   title: ACL_TITLE,
 
-  CORE: ['aci-login', 'aci-cli-toggle', 'aci-stop', 'globe-deck-send'],
+  CORE: ['aci-login', 'aci-cli-toggle', 'aci-stop', 'aci-hold', 'globe-deck-send'],
   CONTEXT_BTNS: {
     idle: ['aci-mic', 'aci-locate', 'aci-order', 'aci-batch', 'aci-vhf', 'aci-call'],
     guest: ['aci-mic', 'aci-locate', 'aci-order', 'aci-vhf', 'aci-call'],
@@ -53,7 +53,9 @@ const SuperCli = {
       'aci-login': () => Auth?.user ? Auth.signOut() : Auth?.signInGoogle(),
       'aci-cli-toggle': () => GlobeDeck?.toggle(),
       'aci-stop': () => userIntervene?.(),
+      'aci-hold': () => SessionHold?.toggle?.(),
       'aci-mic': () => {
+        if (SessionHold?.isHeld?.()) { SessionHold.resume(); return; }
         if (Voice?.speaking || voiceSessionActive) userIntervene?.();
         else startVoiceOptions?.();
       },
