@@ -90,7 +90,8 @@
   #globe-deck.collapsed { max-height:168px; }
   #globe-deck.expanded { max-height:min(56vh,520px); }
   #globe-deck.expanded.has-stage { max-height:min(72vh,640px); }
-  #super-cli-bar { display:flex; gap:5px; padding:6px 8px; flex-wrap:nowrap; align-items:center; justify-content:flex-start; border-bottom:1px solid rgba(0,255,160,0.12); flex-shrink:0; background:rgba(0,8,18,0.5); }
+  #super-cli-bar { display:flex; gap:5px; padding:6px 8px; flex-wrap:nowrap; align-items:center; justify-content:flex-start; border-bottom:1px solid rgba(0,255,160,0.12); flex-shrink:0; background:rgba(0,8,18,0.5); min-height:46px; }
+  #super-cli-bar button:not(#aci-login):not(#super-add-fab) { display:none !important; }
   #super-cli-bar button { background:rgba(0,100,180,0.35); border:1px solid rgba(0,200,255,0.4); color:#aaf; border-radius:50%; width:34px; height:34px; cursor:pointer; font-size:13px; flex-shrink:0; }
   #super-cli-bar #aci-stop { background:rgba(120,20,40,0.45); border-color:rgba(255,80,100,0.5); color:#faa; }
   #super-cli-bar #aci-cli-toggle { border-radius:50%; width:34px; }

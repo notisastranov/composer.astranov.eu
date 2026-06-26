@@ -6,19 +6,9 @@ const SuperCli = {
   _context: 'idle',
   title: ACL_TITLE,
 
-  CORE: ['aci-login', 'aci-cli-toggle', 'aci-stop', 'aci-hold', 'aci-theme'],
+  // Top bar: login + Super Add only — everything else via CLI (locate, order, batch, vhf, theme, hold, stop…)
+  TOOLBAR_VISIBLE: ['aci-login', 'super-add-fab'],
   INPUT_BTNS: ['aci-mic', 'aci-voice', 'globe-deck-send'],
-  CONTEXT_BTNS: {
-    idle: ['aci-locate', 'aci-order', 'aci-batch', 'aci-vhf', 'aci-call', 'super-add-fab'],
-    guest: ['aci-locate', 'aci-order', 'aci-vhf', 'aci-call', 'super-add-fab'],
-    commerce: ['aci-locate', 'aci-order'],
-    batch: ['aci-batch', 'aci-vhf', 'aci-locate'],
-    radio: ['aci-vhf', 'aci-call'],
-    drive: ['aci-locate', 'aci-order', 'aci-stop'],
-    phone: ['aci-call'],
-    news: ['aci-locate'],
-    add: ['aci-locate', 'aci-order', 'super-add-fab'],
-  },
 
   init() {
     if (this._bound) return;
@@ -46,7 +36,7 @@ const SuperCli = {
     const bar = document.getElementById('super-cli-bar');
     if (!bar) return;
     bar.dataset.ctx = this._context;
-    const allowed = new Set([...this.CORE, ...(this.CONTEXT_BTNS[this._context] || this.CONTEXT_BTNS.idle)]);
+    const allowed = new Set(this.TOOLBAR_VISIBLE);
     bar.querySelectorAll('button').forEach(btn => {
       btn.hidden = !allowed.has(btn.id);
     });
