@@ -245,6 +245,7 @@ function placeMe(lat, lng, opts) {
   globePivot.add(m);
   window._meMarker = m;
   userLocated = true;
+  GlobeEntity?.syncMe?.(lat, lng, me ? me.name : 'You');
   if (quiet) {
     MapDepict.pulse(lat, lng, 0x00ffcc, 'You', 6000);
     GlobeDeck?.setMapStatus('📍 ' + lat.toFixed(2) + ', ' + lng.toFixed(2));
@@ -301,15 +302,8 @@ function showOtherUsers() {
     { id: 'o3', name: 'Αξάς', lat: base.lat - 0.005, lng: base.lng + 0.012, hidden: false, emoji: '🛸' },
     { id: 'o2', name: 'Σταύρος', lat: base.lat + 0.004, lng: base.lng - 0.009, hidden: false, emoji: '🍻' },
   ];
-  window._friendMarkers = [];
-  others.forEach(u => {
-    const pos = latLngToPos(u.lat, u.lng, 1.025);
-    const m = new THREE.Mesh(new THREE.SphereGeometry(0.015, 5, 5), new THREE.MeshBasicMaterial({ color: u.hidden ? 0x555 : 0xffaa33 }));
-    m.position.set(pos.x, pos.y, pos.z);
-    m.userData = u;
-    globePivot.add(m);
-    window._friendMarkers.push(m);
-  });
+  GlobeEntity?.syncFriends?.(others);
+  window._friendMarkers = [...(GlobeEntity?.entities?.values() || [])].filter(e => e.type === 'friend').map(e => e.mesh);
 }
 
 function toggleKryfto() {

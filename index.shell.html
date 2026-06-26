@@ -200,6 +200,24 @@
   .sa-checks label { display:flex; align-items:center; gap:8px; cursor:pointer; }
   #sa-status { font-size:10px; color:#9ab; margin-bottom:6px; min-height:16px; }
   #sat-radio:not(.deck-active), #node-batch:not(.deck-active), #vendor-menu:not(.deck-active), #globe-youtube:not(.deck-active), #globe-super-add:not(.deck-active) { display:none !important; }
+  #globe-entity-labels { position:fixed; inset:0; pointer-events:none; z-index:115; overflow:hidden; }
+  .ge-label { position:absolute; transform:translate(-50%,-100%); display:none; flex-direction:row; align-items:flex-start; gap:6px; max-width:min(240px,42vw); padding:6px 9px; border-radius:10px; background:rgba(0,8,18,0.92); border:1px solid rgba(0,200,255,0.35); font:10px/1.35 system-ui; color:#def; box-shadow:0 4px 14px rgba(0,0,0,0.45); transition:opacity 0.15s; }
+  .ge-label .ge-pin { font-size:14px; flex-shrink:0; }
+  .ge-label .ge-text b { display:block; color:#9ef; font-size:11px; margin-bottom:2px; }
+  .ge-label .ge-text span { color:#9ab; font-size:10px; }
+  .ge-label.ge-glow { border-color:rgba(0,255,160,0.55); box-shadow:0 0 12px rgba(0,255,160,0.25); }
+  .ge-label.ge-flash { animation:ge-flash 0.9s ease-in-out infinite; border-color:rgba(255,100,100,0.75); }
+  .ge-label.ge-urg-3 { border-color:rgba(255,80,80,0.7); }
+  .ge-label.ge-selected { border-color:rgba(255,220,100,0.85); background:rgba(20,12,0,0.94); }
+  @keyframes ge-flash { 0%,100%{ opacity:1; } 50%{ opacity:0.55; } }
+  #globe-entity-hud { display:none; position:fixed; bottom:168px; left:50%; transform:translateX(-50%); z-index:124; width:min(320px,92vw); padding:12px 14px; border-radius:14px; background:rgba(0,6,16,0.94); border:1px solid rgba(0,255,200,0.45); font:11px/1.45 system-ui; color:#e8f4ff; pointer-events:auto; box-shadow:0 6px 24px rgba(0,0,0,0.5); }
+  #globe-entity-hud.open { display:block; }
+  #ge-hud-type { color:#6fc; font-size:10px; margin-bottom:4px; }
+  #ge-hud-title { font-weight:700; font-size:13px; color:#bdf; margin-bottom:4px; }
+  #ge-hud-desc { color:#9ab; font-size:11px; margin-bottom:10px; min-height:28px; }
+  #ge-hud-row { display:flex; gap:8px; }
+  #ge-hud-action { flex:1; padding:10px; border:none; border-radius:10px; background:rgba(0,120,90,0.55); border:1px solid rgba(0,255,160,0.55); color:#fff; font-weight:700; cursor:pointer; font-size:11px; }
+  #ge-hud-close { padding:10px 12px; border-radius:10px; border:1px solid #666; background:transparent; color:#aaa; cursor:pointer; font-size:11px; }
 
 </style>
 </head>
@@ -208,6 +226,16 @@
   <div id="superspace-hud"></div>
   <div id="city-life-chip"></div>
   <button id="super-add-fab" type="button" title="Super Add — post video · vendor · driver · map">+</button>
+  <div id="globe-entity-labels"></div>
+  <div id="globe-entity-hud">
+    <div id="ge-hud-type">◎ Place</div>
+    <div id="ge-hud-title">—</div>
+    <div id="ge-hud-desc">Tap markers on the globe — labels appear when you zoom close.</div>
+    <div id="ge-hud-row">
+      <button id="ge-hud-action" type="button">Open</button>
+      <button id="ge-hud-close" type="button">✖</button>
+    </div>
+  </div>
   <div id="zoom-label">EARTH</div>
   <div id="cosmic-guide"></div>
   <div id="user-chip"></div>

@@ -232,20 +232,8 @@ const SuperAdd = {
     FieldBrain?.pulse?.('explore', caption || 'map discovery', { role: 'client' });
   },
 
-  _placeMarker(lat, lng, label, channel) {
-    const p = latLngToPos(lat, lng, 1.03);
-    const g = new THREE.Group();
-    const plane = new THREE.Mesh(
-      new THREE.PlaneGeometry(0.05, 0.05),
-      new THREE.MeshBasicMaterial({ color: 0xff66aa, transparent: true, opacity: 0.9, side: THREE.DoubleSide })
-    );
-    g.add(plane);
-    g.position.set(p.x, p.y, p.z);
-    g.lookAt(0, 0, 0);
-    g.userData = { type: 'post', label, channel };
-    globePivot.add(g);
-    this._markers.push(g);
-    MapDepict?.pulse?.(lat, lng, 0xff66aa, '▶ ' + (label || 'post'), 20000);
+  _placeMarker(lat, lng, label, channel, url) {
+    GlobeEntity?.syncPost?.({ id: 'live-' + Date.now(), lat, lng, text: label, channel, mode: url ? 'video' : 'text', url, author: Auth?.user?.email?.split('@')[0] });
   },
 
   async publish() {
@@ -301,7 +289,7 @@ const SuperAdd = {
 
       if (asDriver) await this.registerDriver();
       if (asVendor) await this.registerVendor(vendorName || caption);
-      if (asMap || url) this._placeMarker(pos.lat, pos.lng, caption || author, channel);
+      if (asMap || url) this._placeMarker(pos.lat, pos.lng, caption || author, channel, url);
 
       if (channel === 'global' || channel === 'local') {
         MapDepict?.action?.('video', { lat: pos.lat, lng: pos.lng, detail: caption || 'posted' });
@@ -334,7 +322,7 @@ const SuperAdd = {
       const rows = r.ok ? await r.json() : [];
       rows.forEach(p => {
         if (p.lat == null) return;
-        this._placeMarker(p.lat, p.lng, (p.text || p.author || 'post').slice(0, 40), p.channel);
+        GlobeEntity?.syncPost?.(p);
       });
     } catch { /* */ }
   },

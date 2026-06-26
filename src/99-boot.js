@@ -44,6 +44,7 @@ function animate() {
   }
 
   if (window.MapDepict) MapDepict.tick();
+  GlobeEntity?.tick?.();
   SuperSpace?.tick?.();
   CosmicZoom.update(camera.position.z);
   renderer.render(scene, camera);
@@ -69,6 +70,9 @@ CosmicZoom.init();
 SuperSpace.init();
 CityLife.init();
 SuperAdd.init();
+GlobeEntity.init();
+if (window.others?.length) GlobeEntity.syncFriends(others);
+if (window._lastPos) GlobeEntity.syncMe(_lastPos.lat, _lastPos.lng, me?.name || 'You');
 if (typeof orbitalSats !== 'undefined') CosmicZoom.registerOrbitalSats(orbitalSats);
 Commerce.loadVendors().then(() => Commerce.initUI());
 NewsFeed.fetch();

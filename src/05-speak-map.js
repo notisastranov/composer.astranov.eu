@@ -225,6 +225,22 @@ const MapDepict = {
   },
 
   pulse(lat, lng, color, label, duration = 9000) {
+    if (window.GlobeEntity) {
+      const e = GlobeEntity.registerTemp({
+        type: 'place',
+        lat, lng,
+        title: label || 'Here',
+        description: 'Active now · zoom closer',
+        urgency: 2,
+        color: color || 0x00ddff,
+        expires: duration,
+      });
+      if (window.AIGraphics) {
+        const p = latLngToPos(lat, lng, 1.04);
+        AIGraphics.spawnEffect(new THREE.Vector3(p.x, p.y, p.z), color, 14, 36);
+      }
+      return { entity: e, born: Date.now(), duration, label };
+    }
     const p = latLngToPos(lat, lng, 1.04);
     const pos = new THREE.Vector3(p.x, p.y, p.z);
     const ring = new THREE.Mesh(
@@ -315,7 +331,7 @@ const MapDepict = {
       focusOnGlobePoint(new THREE.Vector3(fp.x, fp.y, fp.z));
     }
     if (type === 'vendor' && opts.vendors) {
-      opts.vendors.forEach(v => this.pulse(v.lat, v.lng, color, v.name, 12000));
+      GlobeEntity?.syncVendors?.(opts.vendors);
       const v0 = opts.vendors[0];
       if (v0 && typeof flyToPoint === 'function') {
         const fp = latLngToPos(v0.lat, v0.lng, 1.04);
@@ -338,18 +354,15 @@ const MapDepict = {
       focusOnGlobePoint(new THREE.Vector3(fp.x, fp.y, fp.z));
     }
     if (type === 'compare' && opts.matches) {
+      GlobeEntity?.syncVendors?.(opts.matches.map(m => m.vendor).filter(Boolean));
       opts.matches.slice(0, 6).forEach((m, i) => {
         const col = i === 0 ? 0x00ff88 : 0xffaa44;
         const v = m.vendor || m;
-        this.pulse(v.lat, v.lng, col, (v.name || '') + ' · ' + (m.total || 0).toFixed(1) + ' AVC', 22000);
         this.arc(v.lat, v.lng, lat, lng, col);
       });
     }
     if (type === 'driver' && opts.drivers) {
-      opts.drivers.forEach(d => {
-        if (d.field_lat == null) return;
-        this.pulse(d.field_lat, d.field_lng, 0x4488ff, (d.display_name || 'Driver') + ' ' + (typeof driverIcon === 'function' ? driverIcon(d) : '🚚'), 20000);
-      });
+      GlobeEntity?.syncDrivers?.(opts.drivers);
     }
     if (type === 'pay' && opts.vendorLat != null) {
       this.arc(opts.vendorLat, opts.vendorLng, lat, lng, 0x88ff44);
@@ -415,6 +428,7 @@ function userIntervene() {
   GlobeVideo?.hide?.();
   SuperSpace?.stop?.();
   SuperAdd?.stop?.();
+  GlobeEntity?.clearSelection?.();
   document.getElementById('aci-cli-in')?.classList.remove('voice-live');
   document.getElementById('aci-mic')?.classList.remove('listening', 'deck-btn-active');
   document.getElementById('aci-voice')?.classList.remove('speaking');

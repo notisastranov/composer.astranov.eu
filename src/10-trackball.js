@@ -193,11 +193,15 @@ const mouse = new THREE.Vector2();
 container.addEventListener('click', onGlobeClick);
 
 function globeClickTargets() {
+  if (window.GlobeEntity?.clickTargets) {
+    const t = GlobeEntity.clickTargets();
+    if (t.length) return t;
+  }
   const targets = [];
   if (window._meMarker) targets.push(window._meMarker);
   if (window.Commerce?.markers) targets.push(...Commerce.markers);
   globePivot.children.forEach(c => {
-    if (c.userData?.name || c.userData?.vendor || c.userData?.type === 'me' || c.userData?.type === 'pilot') {
+    if (c.userData?.globeEntity || c.userData?.name || c.userData?.vendor || c.userData?.type === 'me' || c.userData?.type === 'pilot' || c.userData?.type === 'post') {
       if (!targets.includes(c)) targets.push(c);
     }
   });
@@ -213,34 +217,17 @@ function onGlobeClick(e) {
   const markerHits = raycaster.intersectObjects(globeClickTargets(), true);
   if (markerHits.length > 0) {
     const hit = markerHits[0].object;
+    const entity = GlobeEntity?.pickFromHit?.(hit);
+    if (entity) {
+      GlobeEntity.activate(entity);
+      return;
+    }
     const root = hit.userData?.vendor ? hit : (hit.parent?.userData?.vendor ? hit.parent : hit);
     const ud = root.userData || hit.userData || {};
-
-    if (ud.type === 'post') {
-      MapDepict?.action?.('video', { detail: ud.label || 'post' });
-      AciCli?.print('post · ' + (ud.label || 'on globe') + (ud.channel ? ' · ' + ud.channel : ''), 'ok');
-      return;
-    }
-    if (ud.vendor) {
-      if (window.Commerce?.openVendor) Commerce.openVendor(ud.vendor);
-      else {
-        const vp = latLngToPos(ud.vendor.lat, ud.vendor.lng, 1.03);
-        flyToPoint(new THREE.Vector3(vp.x, vp.y, vp.z), 1.55);
-        MapDepict.action('vendor', { lat: ud.vendor.lat, lng: ud.vendor.lng, detail: ud.vendor.name });
-      }
-      return;
-    }
-    if (ud.type === 'me' || ud.name === (me?.name || 'Αξάς') || root === window._meMarker) {
+    if (ud.vendor && Commerce?.openVendor) { Commerce.openVendor(ud.vendor); return; }
+    if (ud.type === 'me' || root === window._meMarker) {
       const up = window._lastPos || { lat: 36.22, lng: 28.12 };
-      const mp = latLngToPos(up.lat, up.lng, 1.03);
-      flyToPoint(new THREE.Vector3(mp.x, mp.y, mp.z), 1.5);
-      MapDepict.action('location', { lat: up.lat, lng: up.lng, detail: me?.name || 'Αξάς' });
-      return;
-    }
-    if (ud.name) {
-      const mp = latLngToPos(ud.lat, ud.lng, 1.03);
-      flyToPoint(new THREE.Vector3(mp.x, mp.y, mp.z), 1.55);
-      MapDepict.action('explore', { lat: ud.lat, lng: ud.lng, detail: ud.name });
+      CityLife?.dropIn?.(up.lat, up.lng, { openShops: true });
       return;
     }
   }

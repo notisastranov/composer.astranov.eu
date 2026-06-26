@@ -44,10 +44,9 @@ const CityLife = {
     const nearby = this.nearbyVendors(lat, lng);
     if (nearby.length) {
       Commerce.vendors = nearby.concat((Commerce.vendors || []).filter(v => !nearby.includes(v))).slice(0, 40);
-      Commerce.showOnGlobe();
-    } else {
-      Commerce?.showOnGlobe?.();
     }
+    Commerce?.showOnGlobe?.();
+    GlobeEntity?.syncVendors?.(Commerce.vendors);
 
     const drivers = Commerce?.fetchNearbyDrivers ? await Commerce.fetchNearbyDrivers(lat, lng) : [];
     Commerce?.showDriversOnGlobe?.(drivers);
@@ -95,14 +94,11 @@ const CityLife = {
 
   _tickFriends() {
     const markers = window._friendMarkers || [];
-    (window.others || []).forEach((u, i) => {
+    (window.others || []).forEach((u) => {
       u.lat += (Math.random() - 0.5) * 0.0012;
       u.lng += (Math.random() - 0.5) * 0.0012;
-      const m = markers[i];
-      if (!m) return;
-      const p = latLngToPos(u.lat, u.lng, 1.025);
-      m.position.set(p.x, p.y, p.z);
     });
+    GlobeEntity?.syncFriends?.(window.others);
   },
 
   async locateAndDropIn() {

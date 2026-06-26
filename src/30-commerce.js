@@ -86,16 +86,9 @@ const Commerce = {
     this.markers.forEach(m => { if (m.parent) m.parent.remove(m); });
     this.markers = [];
     if (!this.vendors.length) return;
-    MapDepict?.action('vendor', { vendors: this.vendors, detail: this.vendors.length + ' shops' });
-    this.vendors.forEach(v => {
-      const p = latLngToPos(v.lat, v.lng, 1.028);
-      const col = /bar|restaurant|fast_food|food/.test(v.category || '') ? 0xff8844 : 0xffcc44;
-      const m = new THREE.Mesh(new THREE.SphereGeometry(0.014, 8, 8), new THREE.MeshBasicMaterial({ color: col }));
-      m.position.set(p.x, p.y, p.z);
-      m.userData = { vendor: v };
-      globePivot.add(m);
-      this.markers.push(m);
-    });
+    GlobeEntity?.syncVendors?.(this.vendors);
+    this.markers = [...(GlobeEntity?.entities?.values() || [])].filter(e => e.type === 'vendor').map(e => e.mesh);
+    MapDepict?.setHud?.('Καταστήματα', this.vendors.length + ' shops · zoom in · tap for menu');
     this.flyToVendor(this.vendors[0]);
   },
 
@@ -136,15 +129,8 @@ const Commerce = {
 
   showDriversOnGlobe(drivers) {
     this.clearDriverMarkers();
-    (drivers || []).forEach(d => {
-      if (d.field_lat == null) return;
-      const p = latLngToPos(d.field_lat, d.field_lng, 1.026);
-      const m = new THREE.Mesh(new THREE.SphereGeometry(0.012, 8, 8), new THREE.MeshBasicMaterial({ color: 0x4488ff }));
-      m.position.set(p.x, p.y, p.z);
-      m.userData = { driver: d };
-      globePivot.add(m);
-      this.driverMarkers.push(m);
-    });
+    GlobeEntity?.syncDrivers?.(drivers || []);
+    this.driverMarkers = [...(GlobeEntity?.entities?.values() || [])].filter(e => e.type === 'driver').map(e => e.mesh);
   },
 
   parseWantedItems(text) {

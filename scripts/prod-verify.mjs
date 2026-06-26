@@ -57,6 +57,7 @@ await check('assemble + syntax', () => {
     'SuperSpace', 'superspace-hud', 'locateForMedia', 'GlobeVideo',
     'CityLife', 'city-life-chip', 'bindInputBar', 'scenario',
     'SuperAdd', 'super-add-fab', 'globe-super-add',
+    'GlobeEntity', 'globe-entity-labels', 'globe-entity-hud',
   ];
   const missing = superCli.filter(m => !html.includes(m));
   if (missing.length) throw new Error('Super CLI missing: ' + missing.join(', '));
