@@ -10,9 +10,18 @@ const AciCli = {
     const toggle = document.getElementById('aci-cli-toggle');
     const send = document.getElementById('globe-deck-send');
     if (toggle) toggle.onclick = () => this.toggle();
-    if (send) send.onclick = () => {
+    if (send) send.onclick = e => {
+      e.preventDefault();
+      e.stopPropagation();
       const line = (input?.value || '').trim();
-      if (line) { input.value = ''; this.buffer = ''; this.run(line); }
+      if (!line) {
+        GlobeDeck?.expand('Super CLI');
+        input?.focus();
+        return;
+      }
+      input.value = '';
+      this.buffer = '';
+      this.run(line);
     };
     if (input) {
       input.addEventListener('keydown', e => this.onKey(e));

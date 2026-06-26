@@ -52,13 +52,16 @@
   #aci-stop { background:rgba(120,20,40,0.45); border-color:rgba(255,80,100,0.5); color:#faa; }
   #news-ticker { display:none; margin:8px 8px 0; padding:6px 12px; background:rgba(10,0,20,0.75); border:1px solid rgba(180,100,255,0.3); border-radius:14px; font:11px system-ui; color:#ddaaff; white-space:nowrap; overflow:hidden; pointer-events:auto; }
   #zoom-label { position:fixed; top:10px; left:10px; z-index:40; font:11px system-ui; color:rgba(150,220,255,0.7); pointer-events:none; }
-  #globe-deck { display:flex; flex-direction:column; margin:0 8px 6px; max-height:40px; background:rgba(0,4,12,0.94); border:1px solid rgba(0,255,160,0.35); border-radius:14px; pointer-events:auto; font:12px/1.4 ui-monospace,monospace; overflow:hidden; transition:max-height 0.22s ease; }
+  #globe-deck { display:flex; flex-direction:column; margin:0 8px 6px; background:rgba(0,4,12,0.94); border:1px solid rgba(0,255,160,0.35); border-radius:14px; pointer-events:auto; font:12px/1.4 ui-monospace,monospace; overflow:hidden; transition:max-height 0.22s ease; }
+  #globe-deck.collapsed { max-height:120px; }
   #globe-deck.expanded { max-height:min(56vh,520px); }
   #globe-deck.expanded.has-stage { max-height:min(72vh,640px); }
   #super-cli-bar { display:flex; gap:5px; padding:6px 8px; flex-wrap:wrap; align-items:center; justify-content:center; border-bottom:1px solid rgba(0,255,160,0.12); flex-shrink:0; background:rgba(0,8,18,0.5); }
   #super-cli-bar button { background:rgba(0,100,180,0.35); border:1px solid rgba(0,200,255,0.4); color:#aaf; border-radius:50%; width:34px; height:34px; cursor:pointer; font-size:13px; flex-shrink:0; }
   #super-cli-bar #aci-stop { background:rgba(120,20,40,0.45); border-color:rgba(255,80,100,0.5); color:#faa; }
-  #super-cli-bar #aci-cli-toggle { border-radius:10px; width:auto; padding:0 10px; font-size:12px; border-radius:50%; width:34px; }
+  #super-cli-bar #aci-cli-toggle { border-radius:50%; width:34px; }
+  #super-cli-bar #globe-deck-send { border-radius:10px; width:auto; padding:0 10px; font-size:12px; }
+  #globe-deck.collapsed #globe-deck-input-row { display:none; }
   #aci-bar { display:none !important; }
   #news-ticker { display:none !important; }
   #drive-guide { display:none !important; }
@@ -147,22 +150,23 @@
     <div id="news-ticker">Astranov Collective Intelligence — loading news…</div>
     <div id="globe-deck" class="collapsed">
       <div id="globe-deck-header">
-        <span id="globe-deck-title">Collective — globe deck</span>
+        <span id="globe-deck-title">Super CLI — Collective</span>
         <span id="globe-deck-preview"></span>
         <button id="globe-deck-handle" type="button" title="Tap or swipe to expand/collapse">▔</button>
       </div>
+      <div id="super-cli-bar">
+        <button id="aci-login" title="Sign in with Google" type="button">G</button>
+        <button id="aci-cli-toggle" title="Expand/collapse Super CLI" type="button">💻</button>
+        <button id="aci-stop" title="Stop" type="button">🛑</button>
+        <button id="aci-mic" title="Voice" type="button">🎤</button>
+        <button id="aci-locate" title="Locate me" type="button">🎯</button>
+        <button id="aci-order" title="Order" type="button">🛒</button>
+        <button id="aci-batch" title="Batch" type="button">🔗</button>
+        <button id="aci-vhf" title="PMR radio" type="button">📡</button>
+        <button id="aci-call" title="Phone" type="button">☎️</button>
+        <button id="globe-deck-send" type="button" title="Send">➡</button>
+      </div>
       <div id="globe-deck-body">
-        <div id="super-cli-bar">
-          <button id="aci-login" title="Sign in with Google" type="button">G</button>
-          <button id="aci-cli-toggle" title="Expand/collapse Super CLI" type="button">💻</button>
-          <button id="aci-stop" title="Stop" type="button">🛑</button>
-          <button id="aci-mic" title="Voice" type="button">🎤</button>
-          <button id="aci-locate" title="Locate me" type="button">🎯</button>
-          <button id="aci-order" title="Order" type="button">🛒</button>
-          <button id="aci-batch" title="Batch" type="button">🔗</button>
-          <button id="aci-vhf" title="PMR radio" type="button">📡</button>
-          <button id="aci-call" title="Phone" type="button">☎️</button>
-        </div>
         <div id="globe-deck-log"></div>
         <div id="globe-deck-stage">
     <div id="sat-radio">
@@ -202,7 +206,6 @@
         <div id="globe-deck-input-row">
           <span id="aci-cli-prompt">collective $</span>
           <input id="aci-cli-in" type="text" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="type message · Enter or ➡" />
-          <button id="globe-deck-send" type="button" title="Send">➡</button>
         </div>
       </div>
     </div>
@@ -1310,9 +1313,18 @@ const AciCli = {
     const toggle = document.getElementById('aci-cli-toggle');
     const send = document.getElementById('globe-deck-send');
     if (toggle) toggle.onclick = () => this.toggle();
-    if (send) send.onclick = () => {
+    if (send) send.onclick = e => {
+      e.preventDefault();
+      e.stopPropagation();
       const line = (input?.value || '').trim();
-      if (line) { input.value = ''; this.buffer = ''; this.run(line); }
+      if (!line) {
+        GlobeDeck?.expand('Super CLI');
+        input?.focus();
+        return;
+      }
+      input.value = '';
+      this.buffer = '';
+      this.run(line);
     };
     if (input) {
       input.addEventListener('keydown', e => this.onKey(e));
