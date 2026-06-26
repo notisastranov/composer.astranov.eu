@@ -59,20 +59,19 @@
   #cosmic-guide .cg-item b { color:#9df; font-weight:600; }
   #cosmic-guide .cg-item i { color:#6a8; font-size:9px; }
   #globe-deck { display:flex; flex-direction:column; margin:0 8px 6px; background:rgba(0,4,12,0.94); border:1px solid rgba(0,255,160,0.35); border-radius:14px; pointer-events:auto; font:12px/1.4 ui-monospace,monospace; overflow:hidden; transition:max-height 0.22s ease; }
-  #globe-deck.collapsed { max-height:120px; }
+  #globe-deck.collapsed { max-height:168px; }
   #globe-deck.expanded { max-height:min(56vh,520px); }
   #globe-deck.expanded.has-stage { max-height:min(72vh,640px); }
   #super-cli-bar { display:flex; gap:5px; padding:6px 8px; flex-wrap:wrap; align-items:center; justify-content:center; border-bottom:1px solid rgba(0,255,160,0.12); flex-shrink:0; background:rgba(0,8,18,0.5); }
   #super-cli-bar button { background:rgba(0,100,180,0.35); border:1px solid rgba(0,200,255,0.4); color:#aaf; border-radius:50%; width:34px; height:34px; cursor:pointer; font-size:13px; flex-shrink:0; }
   #super-cli-bar #aci-stop { background:rgba(120,20,40,0.45); border-color:rgba(255,80,100,0.5); color:#faa; }
   #super-cli-bar #aci-cli-toggle { border-radius:50%; width:34px; }
-  #super-cli-bar #globe-deck-send { border-radius:10px; width:auto; padding:0 10px; font-size:12px; }
   #super-cli-bar button[hidden] { display:none !important; }
   #super-cli-bar #aci-locate.deck-btn-active { background:rgba(0,140,80,0.5); border-color:rgba(0,255,160,0.65); color:#8fc; box-shadow:0 0 8px rgba(0,255,160,0.25); }
   #super-cli-bar #aci-hold.deck-btn-active { background:rgba(180,120,0,0.55); border-color:rgba(255,200,80,0.7); color:#fd8; box-shadow:0 0 10px rgba(255,180,40,0.35); }
   #globe-deck.session-held #aci-hold { animation:hold-pulse 1.6s ease-in-out infinite; }
   @keyframes hold-pulse { 0%,100%{ box-shadow:0 0 6px rgba(255,180,40,0.2); } 50%{ box-shadow:0 0 14px rgba(255,180,40,0.55); } }
-  #globe-deck.collapsed #globe-deck-input-row { display:none; }
+  #globe-deck-input-row { display:flex !important; }
   #globe-deck-log, #globe-deck-stage { -webkit-overflow-scrolling:touch; touch-action:pan-y; }
   #aci-bar { display:none !important; }
   #news-ticker { display:none !important; }
@@ -118,10 +117,20 @@
   .yt-n { font-weight:700; color:#f88; min-width:18px; }
   .yt-meta b { display:block; font-size:11px; margin-bottom:2px; }
   .yt-meta small { color:#9ab; font-size:10px; }
-  #globe-deck-input-row { display:flex; align-items:center; gap:6px; padding:8px 10px; border-top:1px solid rgba(0,255,160,0.15); flex-shrink:0; }
-  #aci-cli-prompt { color:#6fc; flex-shrink:0; font-size:11px; }
-  #aci-cli-in { flex:1; background:transparent; border:none; color:#e8f4ff; font:inherit; outline:none; min-width:0; }
+  #globe-deck-input-row { display:flex; align-items:center; gap:6px; padding:8px 10px; border-top:1px solid rgba(0,255,160,0.15); flex-shrink:0; background:rgba(0,6,14,0.96); }
+  #aci-cli-prompt { color:#6fc; flex-shrink:0; font-size:11px; display:none; }
+  #globe-deck.expanded #aci-cli-prompt { display:inline; }
+  #aci-cli-in { flex:1; background:rgba(0,20,40,0.45); border:1px solid rgba(0,200,255,0.25); border-radius:10px; color:#e8f4ff; font:inherit; outline:none; min-width:0; padding:8px 10px; font-size:13px; }
+  #aci-cli-in:focus { border-color:rgba(0,255,200,0.55); box-shadow:0 0 0 2px rgba(0,255,160,0.12); }
+  #aci-cli-in.voice-live { border-color:rgba(255,180,60,0.65); color:#ffe8c8; }
+  #globe-deck-input-row .deck-input-btn { background:rgba(0,100,180,0.45); border:1px solid rgba(0,200,255,0.5); color:#cef; border-radius:50%; width:40px; height:40px; cursor:pointer; font-size:16px; flex-shrink:0; display:inline-flex; align-items:center; justify-content:center; touch-action:manipulation; }
+  #globe-deck-input-row #aci-mic.deck-btn-active, #globe-deck-input-row #aci-mic.listening { background:rgba(180,80,0,0.55); border-color:rgba(255,180,60,0.75); color:#fd8; box-shadow:0 0 10px rgba(255,160,40,0.35); }
+  #globe-deck-input-row #globe-deck-send { border-radius:12px; width:44px; font-size:15px; font-weight:700; }
+  #globe-deck-input-row #aci-voice.speaking { background:rgba(100,40,160,0.55); border-color:rgba(200,120,255,0.7); }
   #aci-cli-toggle { display:inline-flex; background:rgba(0,60,40,0.5); border:1px solid rgba(0,255,160,0.4); color:#6fc; border-radius:50%; width:38px; height:38px; cursor:pointer; font-size:15px; flex-shrink:0; align-items:center; justify-content:center; }
+  #city-life-chip { display:none; position:fixed; bottom:88px; left:12px; z-index:118; max-width:240px; padding:8px 12px; border-radius:12px; background:rgba(0,20,12,0.88); border:1px solid rgba(0,255,160,0.4); font:10px/1.4 system-ui; color:#9fd; pointer-events:none; }
+  #city-life-chip.open { display:block; }
+  #city-life-chip b { color:#6fc; }
   #vendor-menu { display:none; background:rgba(8,6,0,0.94); pointer-events:auto; font:12px/1.4 system-ui; overflow:hidden; flex-direction:column; }
   #vendor-menu.open, #vendor-menu.deck-active { display:flex; }
   #vm-header { display:flex; justify-content:space-between; align-items:center; padding:8px 12px; background:rgba(60,30,0,0.45); color:#fc8; border-bottom:1px solid rgba(255,170,60,0.25); }
@@ -176,6 +185,7 @@
 <body>
   <div id="globe"></div>
   <div id="superspace-hud"></div>
+  <div id="city-life-chip"></div>
   <div id="zoom-label">EARTH</div>
   <div id="cosmic-guide"></div>
   <div id="user-chip"></div>
@@ -193,13 +203,11 @@
         <button id="aci-cli-toggle" title="Expand/collapse Astranov Command Line" type="button">💻</button>
         <button id="aci-stop" title="Stop" type="button">🛑</button>
         <button id="aci-hold" title="Hold session — pause mic &amp; tasks for noisy places" type="button" aria-pressed="false">⏸</button>
-        <button id="aci-mic" title="Voice" type="button">🎤</button>
-        <button id="aci-locate" title="Locate me" type="button">🎯</button>
+        <button id="aci-locate" title="Locate me — city view" type="button">🎯</button>
         <button id="aci-order" title="Order" type="button">🛒</button>
         <button id="aci-batch" title="Batch" type="button">🔗</button>
         <button id="aci-vhf" title="PMR radio" type="button">📡</button>
         <button id="aci-call" title="Phone" type="button">☎️</button>
-        <button id="globe-deck-send" type="button" title="Send">➡</button>
       </div>
       <div id="globe-deck-body">
         <div id="globe-deck-log"></div>
@@ -248,10 +256,13 @@
       <div id="vm-body"><div id="vm-list"></div><div id="vm-detail" style="display:none"><button id="vm-back" type="button">← όλα τα καταστήματα</button><div id="vm-empty" style="display:none"></div><div id="vm-items"></div><button id="vm-request" type="button" style="display:none">Ζήτησε μενού από κατάστημα</button><button id="vm-place" type="button">Παραγγελία</button></div><div id="vm-compare" style="display:none"><button id="vm-compare-back" type="button">← όλα τα καταστήματα</button><div id="vm-wanted"></div><div id="vm-matches"></div><div id="vm-drivers"></div><div id="vm-balance"></div><button id="vm-confirm-pay" type="button" style="display:none">Επιβεβαίωση &amp; Πληρωμή</button></div></div>
     </div>
         </div>
-        <div id="globe-deck-input-row">
-          <span id="aci-cli-prompt">collective $</span>
-          <input id="aci-cli-in" type="text" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="type or tap 🎤 · Enter or ➡" />
-        </div>
+      </div>
+      <div id="globe-deck-input-row">
+        <span id="aci-cli-prompt">collective $</span>
+        <input id="aci-cli-in" type="text" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="type or tap 🎤 · Enter or ➡" />
+        <button id="aci-mic" class="deck-input-btn" type="button" title="Voice — live transcript">🎤</button>
+        <button id="aci-voice" class="deck-input-btn" type="button" title="AI voice — hear reply">🔊</button>
+        <button id="globe-deck-send" class="deck-input-btn" type="button" title="Send">➡</button>
       </div>
     </div>
     <input id="aci-input" placeholder="" style="display:none" />
@@ -828,6 +839,9 @@ function userIntervene() {
   GlobeVideo?.stop?.();
   GlobeVideo?.hide?.();
   SuperSpace?.stop?.();
+  document.getElementById('aci-cli-in')?.classList.remove('voice-live');
+  document.getElementById('aci-mic')?.classList.remove('listening', 'deck-btn-active');
+  document.getElementById('aci-voice')?.classList.remove('speaking');
   const cliIn = document.getElementById('aci-cli-in');
   if (cliIn) cliIn.placeholder = 'type or tap 🎤 · Enter or ➡';
   GlobeControl?.userTookGlobe?.('stop');
@@ -1116,7 +1130,7 @@ const GlobeDeck = {
     this._gesturesBound = true;
     let sy = 0, st = 0, sx = 0, moved = false;
     const scrollable = t => t?.closest?.('#globe-deck-log, #globe-deck-stage, #globe-deck-input-row');
-    const interactive = t => t?.closest?.('button, input, a, #super-cli-bar button');
+    const interactive = t => t?.closest?.('button, input, a, #super-cli-bar button, #globe-deck-input-row button, #globe-deck-input-row input');
 
     deck.addEventListener('touchstart', e => {
       if (e.touches.length !== 1 || interactive(e.target)) return;
@@ -1354,7 +1368,7 @@ const GlobeDeck = {
       'think', 'evolve', 'teach', 'stats', 'owner', 'seed', 'distill', 'council',
       'mode', 'locate', 'gps', 'me', 'drive', 'news', 'roles', 'claim', 'field_stats',
       'deploy', 'help', '?', 'clear', 'logout', 'connect', 'open', 'vendor',
-      'dev', 'ui', 'brain', 'status', 'space', 'superspace',
+      'dev', 'ui', 'brain', 'status', 'space', 'superspace', 'scenario',
     ]);
     return one.has((cmd || '').toLowerCase());
   },
@@ -1379,22 +1393,24 @@ const SuperCli = {
   _context: 'idle',
   title: ACL_TITLE,
 
-  CORE: ['aci-login', 'aci-cli-toggle', 'aci-stop', 'aci-hold', 'globe-deck-send'],
+  CORE: ['aci-login', 'aci-cli-toggle', 'aci-stop', 'aci-hold'],
+  INPUT_BTNS: ['aci-mic', 'aci-voice', 'globe-deck-send'],
   CONTEXT_BTNS: {
-    idle: ['aci-mic', 'aci-locate', 'aci-order', 'aci-batch', 'aci-vhf', 'aci-call'],
-    guest: ['aci-mic', 'aci-locate', 'aci-order', 'aci-vhf', 'aci-call'],
-    commerce: ['aci-mic', 'aci-locate', 'aci-order'],
+    idle: ['aci-locate', 'aci-order', 'aci-batch', 'aci-vhf', 'aci-call'],
+    guest: ['aci-locate', 'aci-order', 'aci-vhf', 'aci-call'],
+    commerce: ['aci-locate', 'aci-order'],
     batch: ['aci-batch', 'aci-vhf', 'aci-locate'],
-    radio: ['aci-vhf', 'aci-mic', 'aci-call'],
+    radio: ['aci-vhf', 'aci-call'],
     drive: ['aci-locate', 'aci-order', 'aci-stop'],
-    phone: ['aci-call', 'aci-mic'],
-    news: ['aci-mic', 'aci-locate'],
+    phone: ['aci-call'],
+    news: ['aci-locate'],
   },
 
   init() {
     if (this._bound) return;
     this._bound = true;
     this.bindToolbar();
+    this.bindInputBar();
     this.setContext(this.inferContext());
     GlobeDeck?.setTitle(ACL_TITLE);
   },
@@ -1419,6 +1435,57 @@ const SuperCli = {
     bar.querySelectorAll('button').forEach(btn => {
       btn.hidden = !allowed.has(btn.id);
     });
+    this.INPUT_BTNS.forEach(id => {
+      const b = document.getElementById(id);
+      if (b) b.hidden = false;
+    });
+  },
+
+  bindInputBar() {
+    const mic = document.getElementById('aci-mic');
+    const voice = document.getElementById('aci-voice');
+    const send = document.getElementById('globe-deck-send');
+    if (mic && !mic._superBound) {
+      mic._superBound = true;
+      mic.onclick = e => {
+        e.preventDefault(); e.stopPropagation();
+        GlobeDeck?.expand?.(ACL_TITLE);
+        document.getElementById('aci-cli-in')?.focus();
+        if (SessionHold?.isHeld?.()) { SessionHold.resume(); return; }
+        if (Voice?.speaking) { userIntervene?.(); return; }
+        if (isListening || voiceSessionActive) userIntervene?.();
+        else startVoiceOptions?.();
+      };
+    }
+    if (voice && !voice._superBound) {
+      voice._superBound = true;
+      voice.onclick = e => {
+        e.preventDefault(); e.stopPropagation();
+        GlobeDeck?.expand?.(ACL_TITLE);
+        if (Voice?.speaking) { Voice.flush?.(); voice.classList.remove('speaking'); return; }
+        const preview = document.getElementById('globe-deck-preview')?.textContent
+          || document.querySelector('#globe-deck-log .deck-reply:last-child')?.textContent
+          || document.querySelector('#globe-deck-log .deck-ok:last-child')?.textContent
+          || 'Astranov Collective ready.';
+        voice.classList.add('speaking');
+        speak(String(preview).slice(0, 200), () => {
+          voice.classList.remove('speaking');
+          scheduleVoiceResume?.();
+        }, true);
+      };
+    }
+    if (send && !send._superBound) {
+      send._superBound = true;
+      send.onclick = e => {
+        e.preventDefault(); e.stopPropagation();
+        const input = document.getElementById('aci-cli-in');
+        const line = (input?.value || '').trim();
+        GlobeDeck?.expand?.(ACL_TITLE);
+        if (!line) { input?.focus(); return; }
+        if (input) input.value = '';
+        if (AciCli) { AciCli.buffer = ''; AciCli.run(line); }
+      };
+    }
   },
 
   bindToolbar() {
@@ -1427,11 +1494,6 @@ const SuperCli = {
       'aci-cli-toggle': () => GlobeDeck?.toggle(),
       'aci-stop': () => userIntervene?.(),
       'aci-hold': () => SessionHold?.toggle?.(),
-      'aci-mic': () => {
-        if (SessionHold?.isHeld?.()) { SessionHold.resume(); return; }
-        if (Voice?.speaking || voiceSessionActive) userIntervene?.();
-        else startVoiceOptions?.();
-      },
       'aci-locate': () => this.run('locate'),
       'aci-order': () => this.run('order'),
       'aci-batch': () => this.run('batch'),
@@ -1474,6 +1536,7 @@ const SuperCli = {
           AciCli?.print('Locate released — globe is yours', 'ok');
           break;
         }
+        GlobeDeck?.expand?.(ACL_TITLE);
         locateMe?.();
         GlobeDeck?.finishCliIfOneShot('locate');
         break;
@@ -1582,7 +1645,7 @@ Object.assign(SuperCli, {
       'teach', 'stats', 'owner', 'seed', 'distill', 'council', 'mode', 'batch', 'vendors',
       'shops', 'order', 'vendor', 'ping', 'locate', 'gps', 'me', 'vhf', 'call', 'phone',
       'drive', 'news', 'roles', 'claim', 'field_stats', 'hold', 'resume', 'stop',
-      'youtube', 'yt', 'watch', 'play', 'space',
+      'youtube', 'yt', 'watch', 'play', 'space', 'scenario',
     ]);
     return known.has(c);
   },
@@ -1640,7 +1703,8 @@ Object.assign(SuperCli, {
     this.out('ui show batch|radio|vendor|youtube · ui hide · ui fly athens · ui zoom galaxy', 'ok');
     this.out('youtube <search> · watch <url> · play 2 (pick result)', 'ok');
     this.out('space locate <topic> · space status — brain places media on globe/cosmos', 'ok');
-    this.out('Tri-UI: SuperCli + SuperVoice + SuperSpace work together', 'dim');
+    this.out('scenario wake|city|groceries|youtube|reviews|list — real user flows', 'ok');
+    this.out('Tri-UI: SuperCli + SuperVoice + SuperSpace · mic+send at bottom bar', 'dim');
     this.out('brain think|evolve|teach|coders|listen on|off|status · brain order <task>', owner ? 'ok' : 'dim');
     this.out('locate · order · batch · vhf · coders · deploy · think · type anything', 'ok');
     if (owner) this.out('Owner: brain order <task> = execute · coders <task> = explicit order', 'dim');
@@ -1854,6 +1918,13 @@ Object.assign(SuperCli, {
     return { error: 'unknown brain subcommand' };
   },
 
+  async cmdScenario(parts, rest) {
+    const name = (parts[1] || 'list').toLowerCase();
+    const topic = parts.slice(2).join(' ') || rest.replace(/^[^\s]+\s*/, '');
+    await CityLife?.run?.(name, topic);
+    return { ok: true };
+  },
+
   async cmdSpace(parts, rest) {
     const sub = (parts[1] || 'status').toLowerCase();
     if (sub === 'status') {
@@ -1913,6 +1984,10 @@ Object.assign(SuperCli, {
       }
       if (cmd === 'space' || cmd === 'superspace') {
         await this.cmdSpace(parts, rest);
+        return { handled: true };
+      }
+      if (cmd === 'scenario' || cmd === 'day') {
+        await this.cmdScenario(parts, rest);
         return { handled: true };
       }
       if (cmd === 'status') {
@@ -1983,21 +2058,8 @@ const AciCli = {
   init() {
     const input = document.getElementById('aci-cli-in');
     const toggle = document.getElementById('aci-cli-toggle');
-    const send = document.getElementById('globe-deck-send');
     if (toggle) toggle.onclick = () => this.toggle();
-    if (send) send.onclick = e => {
-      e.preventDefault();
-      e.stopPropagation();
-      const line = (input?.value || '').trim();
-      if (!line) {
-        GlobeDeck?.expand(SuperCli?.title || 'Astranov Command Line');
-        input?.focus();
-        return;
-      }
-      input.value = '';
-      this.buffer = '';
-      this.run(line);
-    };
+    SuperCli?.bindInputBar?.();
     if (input) {
       input.addEventListener('keydown', e => this.onKey(e));
       input.addEventListener('input', () => { this.buffer = input.value; });
@@ -5455,6 +5517,212 @@ const SuperSpace = {
 };
 window.SuperSpace = SuperSpace;
 
+// === CITY LIFE — real-user scenarios: locate → city → shops · drivers · friends · news ===
+const CityLife = {
+  CITY_ZOOM: 1.12,
+  NEARBY_KM: 12,
+  _friendTimer: null,
+  _lastDrop: null,
+
+  init() {
+    this._startFriendMotion();
+  },
+
+  userPos() {
+    return window._lastPos || { lat: 36.44, lng: 28.22 };
+  },
+
+  ensureEarthView() {
+    if (CosmicZoom) CosmicZoom.level = 'earth';
+    CosmicZoom?.update?.(this.CITY_ZOOM);
+    cityLevel = true;
+  },
+
+  flyToCity(lat, lng, label) {
+    this.ensureEarthView();
+    const p = latLngToPos(lat, lng, 1.04);
+    if (typeof flyToPoint === 'function') flyToPoint(new THREE.Vector3(p.x, p.y, p.z), this.CITY_ZOOM);
+    GlobeControl?.engageFollow?.('locate');
+    GlobeControl?.noteAutoFly?.();
+    MapDepict?.pulse?.(lat, lng, 0x00ffcc, label || 'Your city', 14000);
+  },
+
+  nearbyVendors(lat, lng) {
+    const list = Commerce?.vendors || [];
+    return list.filter(v => v.lat != null && Commerce.haversineKm(lat, lng, v.lat, v.lng) <= this.NEARBY_KM);
+  },
+
+  async dropIn(lat, lng, opts) {
+    opts = opts || {};
+    window._lastPos = { lat, lng };
+    userLocated = true;
+    this._lastDrop = { lat, lng, t: Date.now() };
+    this.flyToCity(lat, lng, opts.label || 'Your city');
+
+    if (Commerce?.loadVendors) await Commerce.loadVendors();
+    const nearby = this.nearbyVendors(lat, lng);
+    if (nearby.length) {
+      Commerce.vendors = nearby.concat((Commerce.vendors || []).filter(v => !nearby.includes(v))).slice(0, 40);
+      Commerce.showOnGlobe();
+    } else {
+      Commerce?.showOnGlobe?.();
+    }
+
+    const drivers = Commerce?.fetchNearbyDrivers ? await Commerce.fetchNearbyDrivers(lat, lng) : [];
+    Commerce?.showDriversOnGlobe?.(drivers);
+    this._pulseFriends();
+    this._showLocalNews(lat, lng);
+    this._updateChip(nearby.length, drivers.length);
+
+    const msg = nearby.length + ' shops · ' + drivers.length + ' drivers · ' + (window.others?.length || 0) + ' friends nearby';
+    GlobeDeck?.setPreview('🏙 ' + msg);
+    AciCli?.print('◎ City view · ' + msg, 'ok');
+    ACIControl?.reply('City level — tap a shop on globe or type: order groceries · scenario list');
+    FieldBrain?.pulse?.('city', msg, { role: 'client', props: { lat, lng, shops: nearby.length } });
+
+    if (opts.openShops && nearby.length) {
+      GlobeDeck?.expand?.(SuperCli?.title || 'Astranov Command Line');
+      await Commerce?.showPicker?.();
+    }
+    return { vendors: nearby, drivers, lat, lng };
+  },
+
+  _pulseFriends() {
+    (window.others || []).forEach(u => {
+      MapDepict?.pulse?.(u.lat, u.lng, 0xffaa33, (u.emoji || '') + ' ' + u.name, 15000);
+    });
+  },
+
+  _showLocalNews(lat, lng) {
+    NewsFeed?.fetch?.();
+    const item = (NewsFeed?.items || [])[0] || 'News near you';
+    MapDepict?.action?.('news', { lat, lng, detail: item.slice(0, 55), worldLat: lat, worldLng: lng });
+    if (!GlobeDeck?.thinking) GlobeDeck?.setPreview('📰 ' + item.slice(0, 72));
+  },
+
+  _updateChip(shops, drivers) {
+    const el = document.getElementById('city-life-chip');
+    if (!el) return;
+    el.classList.add('open');
+    el.innerHTML = '<b>City</b> · ' + shops + ' shops · ' + drivers + ' drivers · friends live';
+  },
+
+  _startFriendMotion() {
+    if (this._friendTimer) return;
+    this._friendTimer = setInterval(() => this._tickFriends(), 3500);
+  },
+
+  _tickFriends() {
+    const markers = window._friendMarkers || [];
+    (window.others || []).forEach((u, i) => {
+      u.lat += (Math.random() - 0.5) * 0.0012;
+      u.lng += (Math.random() - 0.5) * 0.0012;
+      const m = markers[i];
+      if (!m) return;
+      const p = latLngToPos(u.lat, u.lng, 1.025);
+      m.position.set(p.x, p.y, p.z);
+    });
+  },
+
+  async locateAndDropIn() {
+    return new Promise((resolve, reject) => {
+      if (!navigator.geolocation) { reject(new Error('no geolocation')); return; }
+      GlobeDeck?.setMapStatus('Locating…');
+      navigator.geolocation.getCurrentPosition(
+        async pos => {
+          const lat = pos.coords.latitude, lng = pos.coords.longitude;
+          placeMe(lat, lng, { quiet: false, fly: true, zoom: this.CITY_ZOOM, cityDrop: true });
+          const r = await this.dropIn(lat, lng);
+          resolve(r);
+        },
+        err => reject(err),
+        { enableHighAccuracy: true, timeout: 14000, maximumAge: 30000 }
+      );
+    });
+  },
+
+  SCENARIOS: {
+    wake: async () => {
+      AciCli?.print('scenario · wake — news on globe', 'cmd');
+      NewsFeed?.flash?.();
+      const u = CityLife.userPos();
+      await CityLife.dropIn(u.lat, u.lng, { label: 'Morning' });
+    },
+    news: async () => {
+      NewsFeed?.flash?.();
+      const u = CityLife.userPos();
+      CityLife._showLocalNews(u.lat, u.lng);
+    },
+    youtube: async (q) => {
+      await GlobeVideo?.find?.(q || 'interesting places earth documentary');
+    },
+    locate: async () => { await CityLife.locateAndDropIn(); },
+    city: async () => {
+      const u = CityLife.userPos();
+      await CityLife.dropIn(u.lat, u.lng, { openShops: true });
+    },
+    friends: async () => {
+      CityLife._pulseFriends();
+      AciCli?.print((window.others || []).map(u => u.name + ' · ' + u.lat.toFixed(3)).join(' · '), 'ok');
+    },
+    drivers: async () => {
+      const u = CityLife.userPos();
+      const d = await Commerce?.fetchNearbyDrivers?.(u.lat, u.lng);
+      Commerce?.showDriversOnGlobe?.(d);
+      AciCli?.print(d.length ? d.map(x => (x.display_name || 'Driver')).join(' · ') : 'no active drivers — order to summon', 'ok');
+    },
+    shops: async () => {
+      const u = CityLife.userPos();
+      await CityLife.dropIn(u.lat, u.lng, { openShops: true });
+    },
+    groceries: async () => { await Commerce?.smartOrder?.('pitogyra mpironia tsigareta'); },
+    order: async (rest) => { await Commerce?.smartOrder?.(rest || 'pitogyra beer'); },
+    reviews: async (rest) => {
+      const q = rest || 'best restaurant near me';
+      AciCli?.print('brain · reviews · ' + q, 'dim');
+      const r = await ACI?.think?.('Summarize Google-style reviews for: ' + q + '. Short bullet list, best pick.');
+      ACIControl?.reply(r || 'No reviews');
+    },
+    task: async (rest) => {
+      await AciCoders?.handleMessage?.(rest || 'find best grocery offer near me and assign driver');
+    },
+    assign: async (rest) => {
+      if (rest) await FieldBrain?.claimDelivery?.(rest);
+      else AciCli?.print('usage: scenario assign <order_id>', 'err');
+    },
+    explore: async () => {
+      const u = CityLife.userPos();
+      MapDepict?.action?.('explore', { lat: u.lat, lng: u.lng, detail: 'things to do' });
+      ACIControl?.reply('Drag globe · tap shops · type order or youtube');
+    },
+    list: async () => {
+      const names = Object.keys(CityLife.SCENARIOS).filter(k => k !== 'list').join(' · ');
+      AciCli?.print('scenarios: ' + names, 'ok');
+    },
+  },
+
+  async run(name, rest) {
+    const key = (name || 'list').toLowerCase();
+    const fn = this.SCENARIOS[key];
+    if (!fn) {
+      AciCli?.print('unknown scenario — try: scenario list', 'err');
+      return { error: 'unknown' };
+    }
+    try {
+      await fn(rest);
+      return { ok: true, scenario: key };
+    } catch (e) {
+      AciCli?.print('scenario error: ' + (e.message || e), 'err');
+      return { error: e.message };
+    }
+  },
+
+  listScenarios() {
+    return Object.keys(this.SCENARIOS).filter(k => k !== 'list');
+  },
+};
+window.CityLife = CityLife;
+
 // === YOUTUBE ON GLOBE — search + watch in Astranov Command Line deck ===
 const GlobeVideo = {
   _results: [],
@@ -6977,6 +7245,10 @@ function openVoiceCli() {
   GlobeDeck?.expand(title);
   if (window.AciCli) AciCli.open = true;
   SuperCli?.setContext?.(SuperCli.inferContext?.() || 'idle');
+  const input = document.getElementById('aci-cli-in');
+  const mic = document.getElementById('aci-mic');
+  if (input) input.classList.add('voice-live');
+  if (mic) mic.classList.add('listening', 'deck-btn-active');
 }
 
 function scheduleVoiceResume() {
@@ -7006,7 +7278,7 @@ async function submitVoiceToCli(transcript) {
   _voiceBusy = true;
   openVoiceCli();
   const input = document.getElementById('aci-cli-in');
-  if (input) { input.value = ''; if (AciCli) AciCli.buffer = ''; }
+  if (input && !input.value.trim()) { if (AciCli) AciCli.buffer = ''; }
 
   const low = line.toLowerCase();
   if (/^(hold|pause session|quiet mode|κράτα|κρατα|σίγαση|σιγαση)\b/.test(low)) {
@@ -7048,10 +7320,15 @@ async function submitVoiceToCli(transcript) {
     AciCli?.print('voice error: ' + (e.message || e), 'err');
   } finally {
     _voiceBusy = false;
+    const input = document.getElementById('aci-cli-in');
+    const mic = document.getElementById('aci-mic');
+    if (input) input.classList.remove('voice-live');
+    if (mic) mic.classList.remove('listening');
     scheduleVoiceResume();
   }
 }
 window.submitVoiceToCli = submitVoiceToCli;
+window.scheduleVoiceResume = scheduleVoiceResume;
 
 function initVoice() {
   if ('SpeechRecognition' in window || 'webkitSpeechRecognition' in window) {
@@ -7078,6 +7355,7 @@ function initVoice() {
 function startListeningForOptions() {
   if (sessionHeld || SessionHold?.isHeld?.()) return;
   if (!recognition || isListening || _voiceBusy || Voice.speaking) return;
+  openVoiceCli();
   isListening = true;
   try {
     recognition.start();
@@ -7105,9 +7383,12 @@ function handleVoiceCommand(event) {
     openVoiceCli();
     if (input) {
       input.value = draft;
+      input.classList.add('voice-live');
       if (AciCli) AciCli.buffer = draft;
+      input.scrollLeft = input.scrollWidth;
     }
     GlobeDeck?.setPreview('🎤 ' + draft.slice(0, 96));
+    GlobeDeck?.log?.('🎤 ' + draft, 'dim');
   }
 
   if (!final.trim()) return;
@@ -7177,8 +7458,11 @@ function placeMe(lat, lng, opts) {
     MapDepict.action('location', { lat, lng, detail: me ? me.name : 'You' });
   }
   if (shouldFly && typeof flyToPoint === 'function') {
-    flyToPoint(new THREE.Vector3(pos.x, pos.y, pos.z), opts.zoom || 1.38);
+    const z = opts.zoom || (opts.cityDrop ? (CityLife?.CITY_ZOOM || 1.12) : 1.38);
+    flyToPoint(new THREE.Vector3(pos.x, pos.y, pos.z), z);
+    cityLevel = z <= 1.25;
     GlobeControl?.noteAutoFly?.();
+    CosmicZoom?.update?.(z);
   } else if (shouldFly) {
     camera.position.set(pos.x*0.6, pos.y*0.6 + 0.4, 1.6);
     camera.lookAt(pos.x*0.2, pos.y*0.2, 0);
@@ -7192,33 +7476,45 @@ function locateMe() {
     ACIControl?.reply('Geolocation not supported');
     return;
   }
+  GlobeDeck?.expand?.(SuperCli?.title || 'Astranov Command Line');
   GlobeDeck?.setMapStatus('Locating…');
   GlobeControl?.engageFollow?.('locate');
   navigator.geolocation.getCurrentPosition(
-    pos => {
-      placeMe(pos.coords.latitude, pos.coords.longitude, { quiet: true, fly: true });
-      ACIControl?.reply('Located · ' + pos.coords.latitude.toFixed(2) + ', ' + pos.coords.longitude.toFixed(2));
+    async pos => {
+      const lat = pos.coords.latitude, lng = pos.coords.longitude;
+      placeMe(lat, lng, { quiet: false, fly: true, zoom: CityLife?.CITY_ZOOM || 1.12, cityDrop: true });
+      try {
+        const r = await CityLife?.dropIn?.(lat, lng);
+        const shops = r?.vendors?.length ?? 0;
+        ACIControl?.reply('City view · ' + lat.toFixed(2) + ', ' + lng.toFixed(2) + ' · ' + shops + ' shops nearby');
+      } catch (_) {
+        ACIControl?.reply('Located · ' + lat.toFixed(2) + ', ' + lng.toFixed(2));
+      }
     },
     () => {
-      ACIControl?.reply('Location denied — enable GPS');
+      ACIControl?.reply('Location denied — enable GPS in browser');
+      AciCli?.print('GPS denied — allow location for city view', 'err');
     },
-    { enableHighAccuracy: true, timeout: 12000, maximumAge: 60000 }
+    { enableHighAccuracy: true, timeout: 14000, maximumAge: 30000 }
   );
 }
 window.locateMe = locateMe;
 
 function showOtherUsers() {
+  const base = window._lastPos || { lat: 36.22, lng: 28.12 };
   others = [
-    {id:'o1', name:'Αξαδίνα', lat:36.21, lng:28.11, hidden:false, emoji:'🛸'},
-    {id:'o3', name:'Αξάς', lat:36.25, lng:28.15, hidden:false, emoji:'🛸'},
-    {id:'o2', name:'Σταύρος', lat:36.18, lng:28.09, hidden:false, emoji:'🍻'},
+    { id: 'o1', name: 'Αξαδίνα', lat: base.lat + 0.008, lng: base.lng + 0.006, hidden: false, emoji: '🛸' },
+    { id: 'o3', name: 'Αξάς', lat: base.lat - 0.005, lng: base.lng + 0.012, hidden: false, emoji: '🛸' },
+    { id: 'o2', name: 'Σταύρος', lat: base.lat + 0.004, lng: base.lng - 0.009, hidden: false, emoji: '🍻' },
   ];
+  window._friendMarkers = [];
   others.forEach(u => {
     const pos = latLngToPos(u.lat, u.lng, 1.025);
-    const m = new THREE.Mesh(new THREE.SphereGeometry(0.015,5,5), new THREE.MeshBasicMaterial({color: u.hidden ? 0x555 : 0xffaa33}));
+    const m = new THREE.Mesh(new THREE.SphereGeometry(0.015, 5, 5), new THREE.MeshBasicMaterial({ color: u.hidden ? 0x555 : 0xffaa33 }));
     m.position.set(pos.x, pos.y, pos.z);
     m.userData = u;
     globePivot.add(m);
+    window._friendMarkers.push(m);
   });
 }
 
@@ -7474,6 +7770,7 @@ GlobeVideo.init();
 DrivingView.init();
 CosmicZoom.init();
 SuperSpace.init();
+CityLife.init();
 if (typeof orbitalSats !== 'undefined') CosmicZoom.registerOrbitalSats(orbitalSats);
 Commerce.loadVendors().then(() => Commerce.initUI());
 NewsFeed.fetch();

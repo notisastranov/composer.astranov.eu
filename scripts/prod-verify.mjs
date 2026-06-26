@@ -55,6 +55,7 @@ await check('assemble + syntax', () => {
     'SessionHold', 'initBrain', 'aci-hold', 'preflightVerify',
     'cmdDev', 'cmdUi', 'cmdBrain', 'cmdSpace', 'submitVoiceToCli', 'async exec',
     'SuperSpace', 'superspace-hud', 'locateForMedia', 'GlobeVideo',
+    'CityLife', 'city-life-chip', 'bindInputBar', 'scenario',
   ];
   const missing = superCli.filter(m => !html.includes(m));
   if (missing.length) throw new Error('Super CLI missing: ' + missing.join(', '));

@@ -39,6 +39,10 @@ function openVoiceCli() {
   GlobeDeck?.expand(title);
   if (window.AciCli) AciCli.open = true;
   SuperCli?.setContext?.(SuperCli.inferContext?.() || 'idle');
+  const input = document.getElementById('aci-cli-in');
+  const mic = document.getElementById('aci-mic');
+  if (input) input.classList.add('voice-live');
+  if (mic) mic.classList.add('listening', 'deck-btn-active');
 }
 
 function scheduleVoiceResume() {
@@ -68,7 +72,7 @@ async function submitVoiceToCli(transcript) {
   _voiceBusy = true;
   openVoiceCli();
   const input = document.getElementById('aci-cli-in');
-  if (input) { input.value = ''; if (AciCli) AciCli.buffer = ''; }
+  if (input && !input.value.trim()) { if (AciCli) AciCli.buffer = ''; }
 
   const low = line.toLowerCase();
   if (/^(hold|pause session|quiet mode|κράτα|κρατα|σίγαση|σιγαση)\b/.test(low)) {
@@ -110,10 +114,15 @@ async function submitVoiceToCli(transcript) {
     AciCli?.print('voice error: ' + (e.message || e), 'err');
   } finally {
     _voiceBusy = false;
+    const input = document.getElementById('aci-cli-in');
+    const mic = document.getElementById('aci-mic');
+    if (input) input.classList.remove('voice-live');
+    if (mic) mic.classList.remove('listening');
     scheduleVoiceResume();
   }
 }
 window.submitVoiceToCli = submitVoiceToCli;
+window.scheduleVoiceResume = scheduleVoiceResume;
 
 function initVoice() {
   if ('SpeechRecognition' in window || 'webkitSpeechRecognition' in window) {
@@ -140,6 +149,7 @@ function initVoice() {
 function startListeningForOptions() {
   if (sessionHeld || SessionHold?.isHeld?.()) return;
   if (!recognition || isListening || _voiceBusy || Voice.speaking) return;
+  openVoiceCli();
   isListening = true;
   try {
     recognition.start();
@@ -167,9 +177,12 @@ function handleVoiceCommand(event) {
     openVoiceCli();
     if (input) {
       input.value = draft;
+      input.classList.add('voice-live');
       if (AciCli) AciCli.buffer = draft;
+      input.scrollLeft = input.scrollWidth;
     }
     GlobeDeck?.setPreview('🎤 ' + draft.slice(0, 96));
+    GlobeDeck?.log?.('🎤 ' + draft, 'dim');
   }
 
   if (!final.trim()) return;
@@ -239,8 +252,11 @@ function placeMe(lat, lng, opts) {
     MapDepict.action('location', { lat, lng, detail: me ? me.name : 'You' });
   }
   if (shouldFly && typeof flyToPoint === 'function') {
-    flyToPoint(new THREE.Vector3(pos.x, pos.y, pos.z), opts.zoom || 1.38);
+    const z = opts.zoom || (opts.cityDrop ? (CityLife?.CITY_ZOOM || 1.12) : 1.38);
+    flyToPoint(new THREE.Vector3(pos.x, pos.y, pos.z), z);
+    cityLevel = z <= 1.25;
     GlobeControl?.noteAutoFly?.();
+    CosmicZoom?.update?.(z);
   } else if (shouldFly) {
     camera.position.set(pos.x*0.6, pos.y*0.6 + 0.4, 1.6);
     camera.lookAt(pos.x*0.2, pos.y*0.2, 0);
@@ -254,33 +270,45 @@ function locateMe() {
     ACIControl?.reply('Geolocation not supported');
     return;
   }
+  GlobeDeck?.expand?.(SuperCli?.title || 'Astranov Command Line');
   GlobeDeck?.setMapStatus('Locating…');
   GlobeControl?.engageFollow?.('locate');
   navigator.geolocation.getCurrentPosition(
-    pos => {
-      placeMe(pos.coords.latitude, pos.coords.longitude, { quiet: true, fly: true });
-      ACIControl?.reply('Located · ' + pos.coords.latitude.toFixed(2) + ', ' + pos.coords.longitude.toFixed(2));
+    async pos => {
+      const lat = pos.coords.latitude, lng = pos.coords.longitude;
+      placeMe(lat, lng, { quiet: false, fly: true, zoom: CityLife?.CITY_ZOOM || 1.12, cityDrop: true });
+      try {
+        const r = await CityLife?.dropIn?.(lat, lng);
+        const shops = r?.vendors?.length ?? 0;
+        ACIControl?.reply('City view · ' + lat.toFixed(2) + ', ' + lng.toFixed(2) + ' · ' + shops + ' shops nearby');
+      } catch (_) {
+        ACIControl?.reply('Located · ' + lat.toFixed(2) + ', ' + lng.toFixed(2));
+      }
     },
     () => {
-      ACIControl?.reply('Location denied — enable GPS');
+      ACIControl?.reply('Location denied — enable GPS in browser');
+      AciCli?.print('GPS denied — allow location for city view', 'err');
     },
-    { enableHighAccuracy: true, timeout: 12000, maximumAge: 60000 }
+    { enableHighAccuracy: true, timeout: 14000, maximumAge: 30000 }
   );
 }
 window.locateMe = locateMe;
 
 function showOtherUsers() {
+  const base = window._lastPos || { lat: 36.22, lng: 28.12 };
   others = [
-    {id:'o1', name:'Αξαδίνα', lat:36.21, lng:28.11, hidden:false, emoji:'🛸'},
-    {id:'o3', name:'Αξάς', lat:36.25, lng:28.15, hidden:false, emoji:'🛸'},
-    {id:'o2', name:'Σταύρος', lat:36.18, lng:28.09, hidden:false, emoji:'🍻'},
+    { id: 'o1', name: 'Αξαδίνα', lat: base.lat + 0.008, lng: base.lng + 0.006, hidden: false, emoji: '🛸' },
+    { id: 'o3', name: 'Αξάς', lat: base.lat - 0.005, lng: base.lng + 0.012, hidden: false, emoji: '🛸' },
+    { id: 'o2', name: 'Σταύρος', lat: base.lat + 0.004, lng: base.lng - 0.009, hidden: false, emoji: '🍻' },
   ];
+  window._friendMarkers = [];
   others.forEach(u => {
     const pos = latLngToPos(u.lat, u.lng, 1.025);
-    const m = new THREE.Mesh(new THREE.SphereGeometry(0.015,5,5), new THREE.MeshBasicMaterial({color: u.hidden ? 0x555 : 0xffaa33}));
+    const m = new THREE.Mesh(new THREE.SphereGeometry(0.015, 5, 5), new THREE.MeshBasicMaterial({ color: u.hidden ? 0x555 : 0xffaa33 }));
     m.position.set(pos.x, pos.y, pos.z);
     m.userData = u;
     globePivot.add(m);
+    window._friendMarkers.push(m);
   });
 }
 

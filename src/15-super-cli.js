@@ -6,22 +6,24 @@ const SuperCli = {
   _context: 'idle',
   title: ACL_TITLE,
 
-  CORE: ['aci-login', 'aci-cli-toggle', 'aci-stop', 'aci-hold', 'globe-deck-send'],
+  CORE: ['aci-login', 'aci-cli-toggle', 'aci-stop', 'aci-hold'],
+  INPUT_BTNS: ['aci-mic', 'aci-voice', 'globe-deck-send'],
   CONTEXT_BTNS: {
-    idle: ['aci-mic', 'aci-locate', 'aci-order', 'aci-batch', 'aci-vhf', 'aci-call'],
-    guest: ['aci-mic', 'aci-locate', 'aci-order', 'aci-vhf', 'aci-call'],
-    commerce: ['aci-mic', 'aci-locate', 'aci-order'],
+    idle: ['aci-locate', 'aci-order', 'aci-batch', 'aci-vhf', 'aci-call'],
+    guest: ['aci-locate', 'aci-order', 'aci-vhf', 'aci-call'],
+    commerce: ['aci-locate', 'aci-order'],
     batch: ['aci-batch', 'aci-vhf', 'aci-locate'],
-    radio: ['aci-vhf', 'aci-mic', 'aci-call'],
+    radio: ['aci-vhf', 'aci-call'],
     drive: ['aci-locate', 'aci-order', 'aci-stop'],
-    phone: ['aci-call', 'aci-mic'],
-    news: ['aci-mic', 'aci-locate'],
+    phone: ['aci-call'],
+    news: ['aci-locate'],
   },
 
   init() {
     if (this._bound) return;
     this._bound = true;
     this.bindToolbar();
+    this.bindInputBar();
     this.setContext(this.inferContext());
     GlobeDeck?.setTitle(ACL_TITLE);
   },
@@ -46,6 +48,57 @@ const SuperCli = {
     bar.querySelectorAll('button').forEach(btn => {
       btn.hidden = !allowed.has(btn.id);
     });
+    this.INPUT_BTNS.forEach(id => {
+      const b = document.getElementById(id);
+      if (b) b.hidden = false;
+    });
+  },
+
+  bindInputBar() {
+    const mic = document.getElementById('aci-mic');
+    const voice = document.getElementById('aci-voice');
+    const send = document.getElementById('globe-deck-send');
+    if (mic && !mic._superBound) {
+      mic._superBound = true;
+      mic.onclick = e => {
+        e.preventDefault(); e.stopPropagation();
+        GlobeDeck?.expand?.(ACL_TITLE);
+        document.getElementById('aci-cli-in')?.focus();
+        if (SessionHold?.isHeld?.()) { SessionHold.resume(); return; }
+        if (Voice?.speaking) { userIntervene?.(); return; }
+        if (isListening || voiceSessionActive) userIntervene?.();
+        else startVoiceOptions?.();
+      };
+    }
+    if (voice && !voice._superBound) {
+      voice._superBound = true;
+      voice.onclick = e => {
+        e.preventDefault(); e.stopPropagation();
+        GlobeDeck?.expand?.(ACL_TITLE);
+        if (Voice?.speaking) { Voice.flush?.(); voice.classList.remove('speaking'); return; }
+        const preview = document.getElementById('globe-deck-preview')?.textContent
+          || document.querySelector('#globe-deck-log .deck-reply:last-child')?.textContent
+          || document.querySelector('#globe-deck-log .deck-ok:last-child')?.textContent
+          || 'Astranov Collective ready.';
+        voice.classList.add('speaking');
+        speak(String(preview).slice(0, 200), () => {
+          voice.classList.remove('speaking');
+          scheduleVoiceResume?.();
+        }, true);
+      };
+    }
+    if (send && !send._superBound) {
+      send._superBound = true;
+      send.onclick = e => {
+        e.preventDefault(); e.stopPropagation();
+        const input = document.getElementById('aci-cli-in');
+        const line = (input?.value || '').trim();
+        GlobeDeck?.expand?.(ACL_TITLE);
+        if (!line) { input?.focus(); return; }
+        if (input) input.value = '';
+        if (AciCli) { AciCli.buffer = ''; AciCli.run(line); }
+      };
+    }
   },
 
   bindToolbar() {
@@ -54,11 +107,6 @@ const SuperCli = {
       'aci-cli-toggle': () => GlobeDeck?.toggle(),
       'aci-stop': () => userIntervene?.(),
       'aci-hold': () => SessionHold?.toggle?.(),
-      'aci-mic': () => {
-        if (SessionHold?.isHeld?.()) { SessionHold.resume(); return; }
-        if (Voice?.speaking || voiceSessionActive) userIntervene?.();
-        else startVoiceOptions?.();
-      },
       'aci-locate': () => this.run('locate'),
       'aci-order': () => this.run('order'),
       'aci-batch': () => this.run('batch'),
@@ -101,6 +149,7 @@ const SuperCli = {
           AciCli?.print('Locate released — globe is yours', 'ok');
           break;
         }
+        GlobeDeck?.expand?.(ACL_TITLE);
         locateMe?.();
         GlobeDeck?.finishCliIfOneShot('locate');
         break;

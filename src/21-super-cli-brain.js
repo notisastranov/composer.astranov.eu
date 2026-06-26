@@ -56,7 +56,7 @@ Object.assign(SuperCli, {
       'teach', 'stats', 'owner', 'seed', 'distill', 'council', 'mode', 'batch', 'vendors',
       'shops', 'order', 'vendor', 'ping', 'locate', 'gps', 'me', 'vhf', 'call', 'phone',
       'drive', 'news', 'roles', 'claim', 'field_stats', 'hold', 'resume', 'stop',
-      'youtube', 'yt', 'watch', 'play', 'space',
+      'youtube', 'yt', 'watch', 'play', 'space', 'scenario',
     ]);
     return known.has(c);
   },
@@ -114,7 +114,8 @@ Object.assign(SuperCli, {
     this.out('ui show batch|radio|vendor|youtube · ui hide · ui fly athens · ui zoom galaxy', 'ok');
     this.out('youtube <search> · watch <url> · play 2 (pick result)', 'ok');
     this.out('space locate <topic> · space status — brain places media on globe/cosmos', 'ok');
-    this.out('Tri-UI: SuperCli + SuperVoice + SuperSpace work together', 'dim');
+    this.out('scenario wake|city|groceries|youtube|reviews|list — real user flows', 'ok');
+    this.out('Tri-UI: SuperCli + SuperVoice + SuperSpace · mic+send at bottom bar', 'dim');
     this.out('brain think|evolve|teach|coders|listen on|off|status · brain order <task>', owner ? 'ok' : 'dim');
     this.out('locate · order · batch · vhf · coders · deploy · think · type anything', 'ok');
     if (owner) this.out('Owner: brain order <task> = execute · coders <task> = explicit order', 'dim');
@@ -328,6 +329,13 @@ Object.assign(SuperCli, {
     return { error: 'unknown brain subcommand' };
   },
 
+  async cmdScenario(parts, rest) {
+    const name = (parts[1] || 'list').toLowerCase();
+    const topic = parts.slice(2).join(' ') || rest.replace(/^[^\s]+\s*/, '');
+    await CityLife?.run?.(name, topic);
+    return { ok: true };
+  },
+
   async cmdSpace(parts, rest) {
     const sub = (parts[1] || 'status').toLowerCase();
     if (sub === 'status') {
@@ -387,6 +395,10 @@ Object.assign(SuperCli, {
       }
       if (cmd === 'space' || cmd === 'superspace') {
         await this.cmdSpace(parts, rest);
+        return { handled: true };
+      }
+      if (cmd === 'scenario' || cmd === 'day') {
+        await this.cmdScenario(parts, rest);
         return { handled: true };
       }
       if (cmd === 'status') {

@@ -32,7 +32,7 @@ const GlobeDeck = {
     this._gesturesBound = true;
     let sy = 0, st = 0, sx = 0, moved = false;
     const scrollable = t => t?.closest?.('#globe-deck-log, #globe-deck-stage, #globe-deck-input-row');
-    const interactive = t => t?.closest?.('button, input, a, #super-cli-bar button');
+    const interactive = t => t?.closest?.('button, input, a, #super-cli-bar button, #globe-deck-input-row button, #globe-deck-input-row input');
 
     deck.addEventListener('touchstart', e => {
       if (e.touches.length !== 1 || interactive(e.target)) return;
@@ -270,7 +270,7 @@ const GlobeDeck = {
       'think', 'evolve', 'teach', 'stats', 'owner', 'seed', 'distill', 'council',
       'mode', 'locate', 'gps', 'me', 'drive', 'news', 'roles', 'claim', 'field_stats',
       'deploy', 'help', '?', 'clear', 'logout', 'connect', 'open', 'vendor',
-      'dev', 'ui', 'brain', 'status', 'space', 'superspace',
+      'dev', 'ui', 'brain', 'status', 'space', 'superspace', 'scenario',
     ]);
     return one.has((cmd || '').toLowerCase());
   },

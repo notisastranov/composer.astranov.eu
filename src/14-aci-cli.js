@@ -8,21 +8,8 @@ const AciCli = {
   init() {
     const input = document.getElementById('aci-cli-in');
     const toggle = document.getElementById('aci-cli-toggle');
-    const send = document.getElementById('globe-deck-send');
     if (toggle) toggle.onclick = () => this.toggle();
-    if (send) send.onclick = e => {
-      e.preventDefault();
-      e.stopPropagation();
-      const line = (input?.value || '').trim();
-      if (!line) {
-        GlobeDeck?.expand(SuperCli?.title || 'Astranov Command Line');
-        input?.focus();
-        return;
-      }
-      input.value = '';
-      this.buffer = '';
-      this.run(line);
-    };
+    SuperCli?.bindInputBar?.();
     if (input) {
       input.addEventListener('keydown', e => this.onKey(e));
       input.addEventListener('input', () => { this.buffer = input.value; });
