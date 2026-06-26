@@ -107,6 +107,10 @@ const GlobeEntity = {
       + '<div class="ge-text"><b>' + this.esc(entity.title) + '</b>'
       + '<span>' + this.esc(entity.description) + '</span></div>';
     label.style.display = 'none';
+    label.addEventListener('click', ev => {
+      ev.stopPropagation();
+      this.activate(entity);
+    });
     this._labelRoot?.appendChild(label);
     entity._labelEl = label;
 
@@ -184,13 +188,23 @@ const GlobeEntity = {
     this._hud?.classList.remove('open');
   },
 
+  flyTo(entity, targetZ = 1.32) {
+    if (!entity || entity.lat == null) return;
+    window._globeFly = null;
+    const fp = latLngToPos(entity.lat, entity.lng, 1.04);
+    if (typeof flyToPoint === 'function') flyToPoint(new THREE.Vector3(fp.x, fp.y, fp.z), targetZ);
+    GlobeControl?.noteAutoFly?.();
+    MapDepict?.pulse?.(entity.lat, entity.lng, 0x00ddff, entity.title || 'here', 7000);
+    GlobeDeck?.setPreview?.('◎ ' + (entity.title || 'location'));
+  },
+
   _defaultActionLabel(entity) {
     const map = {
       vendor: 'Open shop menu',
       driver: 'Request delivery',
       friend: 'Fly here',
       post: 'Watch / read',
-      me: 'City view',
+      me: 'Zoom to me',
       news: 'Read news',
       order: 'View order',
       media: 'Play media',
@@ -252,7 +266,9 @@ const GlobeEntity = {
         }
         break;
       case 'me':
-        CityLife?.dropIn?.(entity.lat, entity.lng, { openShops: true });
+        this.flyTo(entity, 1.3);
+        ACIControl?.reply('Zoomed to your location — city view');
+        setTimeout(() => CityLife?.dropIn?.(entity.lat, entity.lng, { openShops: true }), 450);
         break;
       case 'news':
         NewsFeed?.flash?.();
@@ -417,10 +433,15 @@ const GlobeEntity = {
       lat,
       lng,
       title: name || 'You',
-      description: 'Your location · tap for city view',
+      description: 'Your location · tap to zoom here',
       urgency: 2,
       persist: true,
-      onTap: () => CityLife?.dropIn?.(lat, lng, { openShops: true }),
+      _actionLabel: 'Zoom to me',
+      onTap: (e) => {
+        this.flyTo(e, 1.3);
+        ACIControl?.reply('Zoomed to your location');
+        setTimeout(() => CityLife?.dropIn?.(e.lat, e.lng, { openShops: true }), 450);
+      },
     });
   },
 

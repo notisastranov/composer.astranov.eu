@@ -100,7 +100,7 @@ const GlobeControl = {
   isEarthView() {
     const z = camera?.position?.z ?? 2.5;
     const level = CosmicZoom?.level || 'earth';
-    return level === 'earth' && z < 3.5;
+    return (level === 'earth' || level === 'orbit') && z < 4.5;
   },
 
   shouldAutoFly() {
