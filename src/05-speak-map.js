@@ -210,7 +210,7 @@ const MapDepict = {
 
   setHud(label, detail) {
     const line = detail ? label + ' — ' + detail : label;
-    GlobeDeck?.log(line, 'map');
+    GlobeDeck?.setMapStatus(line);
   },
 
   cancelAll() {
@@ -415,8 +415,8 @@ function userIntervene() {
   if (recognition) { try { recognition.stop(); } catch (_) {} }
   isListening = false;
   if (ACI) ACI.evolving = false;
-  GlobeDeck?.log((AstroGlyphs?.stop || '🛑') + ' Διακοπή — εσύ παίρνεις τον έλεγχο', 'map');
-  if (window.ACIControl) ACIControl.reply('Stopped — globe is yours. Drag · pinch · tap.');
+  GlobeDeck?.setMapStatus((AstroGlyphs?.stop || '🛑') + ' Stopped — globe is yours');
+  if (window.ACIControl) ACIControl.reply('Stopped — globe is yours.');
 }
 
 window.userIntervene = userIntervene;

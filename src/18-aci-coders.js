@@ -59,11 +59,7 @@ const AciCoders = {
     this.armed = true;
     this.engine = 'composer';
     this.updateHud();
-    if (AciCli) {
-      AciCli.print('◇ Coders team ONLINE — talk normally', 'ok');
-      AciCli.print('  ask: why Composer down? · try XAI Grok · skip Anthropic · credits?', 'dim');
-      AciCli.print('  or give a build task in plain language', 'dim');
-    }
+    if (AciCli) AciCli.print('Coders team ON — talk normally · coders exit to leave', 'ok');
     const msg = intro && intro.trim().length > 0
       ? intro.trim()
       : 'Coders team online. Report Composer status, fallback roster, and await my instructions.';
@@ -141,18 +137,9 @@ const AciCoders = {
       if (this.history.length > 20) this.history = this.history.slice(-20);
     }
 
-    if (AciCli) {
-      if (r.composer_status && !r.composer_status.ok) {
-        AciCli.print('Composer: down — ' + (r.composer_status.reason || 'unknown'), 'dim');
-      } else if (r.composer_status?.ok) {
-        AciCli.print('Composer: up', 'dim');
-      }
-      if (r.fallback_prefs?.force) AciCli.print('prefs force → ' + r.fallback_prefs.force, 'dim');
-      if (r.fallback_prefs?.skip?.length) AciCli.print('prefs skip → ' + r.fallback_prefs.skip.join(', '), 'dim');
-      AciCli.print((r.label || 'Coders Team') + ': ' + text.slice(0, 900), r.ok !== false ? 'out' : 'err');
-      if (r.pending && r.summon_id) AciCli.print('polling #' + r.summon_id + '…', 'dim');
-    }
-    ACIControl?.reply((r.label || 'Coders Team') + ': ' + text.slice(0, 150));
+    const reply = text.slice(0, 900);
+    ACIControl?.reply(reply.slice(0, 280));
+    if (r.pending && r.summon_id && AciCli) AciCli.print('Composer queued #' + r.summon_id, 'dim');
 
     if (r.pending && r.summon_id) this.startPoll(r.summon_id);
     else this.stopPoll();
@@ -209,8 +196,10 @@ const AciCoders = {
 
     try {
       GlobeDeck?.setThinking(true, 'Coders — thinking…');
-      if (/locate\s+me|locate\s+button|🎯|📍/i.test(m)) {
+      if (/^locate\s*(me|button)?$/i.test(m.trim()) || /^🎯|📍$/.test(m.trim())) {
         locateMe();
+        GlobeDeck?.setThinking(false);
+        return { ok: true, located: true };
       }
 
       let q = null;

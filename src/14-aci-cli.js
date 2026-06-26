@@ -52,9 +52,6 @@ const AciCli = {
   async openOnLogin() {
     if (!Auth?.user) return;
     this.show();
-    if (window.AciConnect && !window._aciConnected) {
-      await AciConnect.connect(false);
-    }
     if (window.AciCoders) {
       await AciCoders.ensureBridge();
       AciCoders.armed = true;
@@ -91,8 +88,7 @@ const AciCli = {
     GlobeDeck?.expand('Guest — type a message (think) or tap G to sign in');
     if (!this._guestWelcomed) {
       this._guestWelcomed = true;
-      this.print('Guest mode — free text goes to ACI think', 'dim');
-      this.print('Sign in with G for Coders team + orders', 'dim');
+      this.print('Guest — type to talk to ACI · G to sign in', 'dim');
     }
     document.getElementById('aci-cli-in')?.focus();
   },
@@ -102,16 +98,10 @@ const AciCli = {
     this.open = true;
     if (!this._welcomed) {
       this._welcomed = true;
-      this.print('Collective CLI — tasks & conversation (globe stays primary)');
-      if (Auth.isOwner) {
-        this.print('OWNER — seed · distill · council · evolve · deploy');
-      }
-      this.print('coders = open Coders team — talk normally, control fallbacks');
-      this.print('vendors · order · think <prompt> · help');
+      this.print('Globe deck — type to talk to ACI · help for commands', 'dim');
     }
-    GlobeDeck?.expand('Collective CLI — tasks & conversation');
+    GlobeDeck?.expand('Collective — talk here');
     document.getElementById('aci-cli-in')?.focus();
-    MapDepict?.action('think', { detail: 'CLI open' });
   },
 
   hide() {
@@ -180,32 +170,7 @@ const AciCli = {
 
     try {
       if (cmd === 'help' || cmd === '?') {
-        this.print('think <prompt>  — ask collective AI');
-        this.print('evolve [reason]  — autonomous evolution');
-        this.print('teach <text>     — store memory / neuron');
-        this.print('stats | owner    — memory / authority status');
-        this.print('mode <athenian|spartan|myrmidon>');
-        this.print('batch              — install node + launch work-together batch');
-        this.print('vendors | order [items] | vendor menu | vendor requests | vhf | drive | news');
-        this.print('  order pitogyra mpironia tsigareta — compare vendors on globe');
-        if (Auth?.isOwner) {
-          this.print('--- OWNER (notisastranov@gmail.com) ---');
-          this.print('seed             — founding neurons');
-          this.print('distill          — brain distillation');
-          this.print('council list     — council cases');
-          this.print('council convene <title> | <desc>');
-        }
-        this.print('coders                     — open conversational Coders team');
-        this.print('<any text>                 — control fallbacks, ask status, give tasks');
-        this.print('  e.g. why Composer down? · try XAI Grok · skip Anthropic');
-        this.print('coders list | poll <id> | exit');
-        this.print('connect | open     — link collective AI');
-        this.print('deploy <task>      — deployment plan (owner)');
-        this.print('roles              — your hats: client+driver+vendor');
-        this.print('claim <order_id>   — take delivery (any logged-in driver)');
-        if (Auth?.isOwner) this.print('field_stats        — field usage → brain (owner)');
-        this.print('clear | exit | logout');
-        this.print('…or any free text → think');
+        ACIControl?.reply('Commands: order · vendors · coders · batch · vhf · locate · connect · clear · exit. Free text → ACI think.');
         GlobeDeck?.finishCliIfOneShot(cmd);
         return;
       }
@@ -241,12 +206,9 @@ const AciCli = {
       if (cmd === 'logout') { await Auth.signOut(); this.print('signed out', 'ok'); return; }
 
       if (cmd === 'think') {
-        if (!rest) { this.print('usage: think <prompt>', 'err'); return; }
-        this.print('…', 'dim');
-        if (!window._aciConnected) await AciConnect.connect(false);
+        if (!rest) { ACIControl?.reply('usage: think <prompt>'); return; }
         const r = await ACI.think(rest);
-        this.print(r || '(empty)', 'out');
-        ACIControl?.reply(r);
+        ACIControl?.reply(r || '(empty)');
         if (voiceSessionActive && Voice.shouldSpeak(r)) speak(r.slice(0, 200));
         GlobeDeck?.finishCliIfOneShot(cmd);
         return;
@@ -358,7 +320,6 @@ const AciCli = {
       }
       if (cmd === 'ping') {
         const r = await ACI.think('ping');
-        this.print(r || 'pong', 'ok');
         ACIControl?.reply(r || 'pong');
         GlobeDeck?.finishCliIfOneShot(cmd);
         return;
@@ -411,16 +372,11 @@ const AciCli = {
         else await AciCoders?.chat(task);
         return;
       }
-      if (Auth?.user && !window._aciConnected) await AciConnect.connect(false);
-      GlobeDeck?.setThinking(true, 'ACI — thinking…');
       const ans = await ACI.think(line);
-      GlobeDeck?.setThinking(false);
       if (ans) {
-        this.print(ans, 'out');
         ACIControl?.reply(ans);
         if (voiceSessionActive && Voice.shouldSpeak(ans)) speak(ans.slice(0, 200));
       } else {
-        this.print('(no response — try again)', 'err');
         ACIControl?.reply('No response — try again');
       }
       GlobeDeck?.finishCliIfOneShot('think');

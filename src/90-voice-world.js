@@ -88,10 +88,9 @@ function requestLocationIfNeeded(onLocated) {
     return;
   }
   navigator.geolocation.getCurrentPosition(pos => {
-    placeMe(pos.coords.latitude, pos.coords.longitude);
+    placeMe(pos.coords.latitude, pos.coords.longitude, { quiet: true });
     window._lastPos = { lat: pos.coords.latitude, lng: pos.coords.longitude };
     userLocated = true;
-    MapDepict.action('location', { lat: pos.coords.latitude, lng: pos.coords.longitude, detail: 'GPS' });
     if (onLocated) onLocated();
   }, () => {
     if (onLocated) onLocated();
@@ -100,7 +99,8 @@ function requestLocationIfNeeded(onLocated) {
 
 
 
-function placeMe(lat, lng) {
+function placeMe(lat, lng, opts) {
+  const quiet = opts && opts.quiet;
   window._lastPos = { lat, lng };
   if (window._meMarker && window._meMarker.parent) window._meMarker.parent.remove(window._meMarker);
   const pos = latLngToPos(lat, lng, 1.03);
@@ -110,34 +110,34 @@ function placeMe(lat, lng) {
   globePivot.add(m);
   window._meMarker = m;
   userLocated = true;
-  MapDepict.action('location', { lat, lng, detail: me ? me.name : 'You' });
+  if (quiet) {
+    MapDepict.pulse(lat, lng, 0x00ffcc, 'You', 6000);
+    GlobeDeck?.setMapStatus('📍 ' + lat.toFixed(2) + ', ' + lng.toFixed(2));
+  } else {
+    MapDepict.action('location', { lat, lng, detail: me ? me.name : 'You' });
+  }
   if (typeof flyToPoint === 'function') {
     flyToPoint(new THREE.Vector3(pos.x, pos.y, pos.z), 1.38);
   } else {
     camera.position.set(pos.x*0.6, pos.y*0.6 + 0.4, 1.6);
     camera.lookAt(pos.x*0.2, pos.y*0.2, 0);
   }
-  FieldBrain?.pulse('location', 'locate me', { role: 'client' });
+  if (!quiet) FieldBrain?.pulse('location', 'locate me', { role: 'client' });
 }
 
 function locateMe() {
   if (!navigator.geolocation) {
-    ACIControl?.reply('Geolocation not supported in this browser');
+    ACIControl?.reply('Geolocation not supported');
     return;
   }
-  ACIControl?.reply('Locating you…');
-  AciCli?.print('locating…', 'dim');
+  GlobeDeck?.setMapStatus('Locating…');
   navigator.geolocation.getCurrentPosition(
     pos => {
-      placeMe(pos.coords.latitude, pos.coords.longitude);
-      const msg = 'You · ' + pos.coords.latitude.toFixed(4) + ', ' + pos.coords.longitude.toFixed(4);
-      ACIControl?.reply(msg);
-      AciCli?.print('located · ' + msg, 'ok');
+      placeMe(pos.coords.latitude, pos.coords.longitude, { quiet: true });
+      ACIControl?.reply('Located · ' + pos.coords.latitude.toFixed(2) + ', ' + pos.coords.longitude.toFixed(2));
     },
-    err => {
-      const msg = 'Location denied or unavailable — enable GPS for locate me';
-      ACIControl?.reply(msg);
-      AciCli?.print(msg, 'err');
+    () => {
+      ACIControl?.reply('Location denied — enable GPS');
     },
     { enableHighAccuracy: true, timeout: 12000, maximumAge: 60000 }
   );

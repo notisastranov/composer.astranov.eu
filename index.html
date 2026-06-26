@@ -504,7 +504,7 @@ const MapDepict = {
 
   setHud(label, detail) {
     const line = detail ? label + ' — ' + detail : label;
-    GlobeDeck?.log(line, 'map');
+    GlobeDeck?.setMapStatus(line);
   },
 
   cancelAll() {
@@ -709,8 +709,8 @@ function userIntervene() {
   if (recognition) { try { recognition.stop(); } catch (_) {} }
   isListening = false;
   if (ACI) ACI.evolving = false;
-  GlobeDeck?.log((AstroGlyphs?.stop || '🛑') + ' Διακοπή — εσύ παίρνεις τον έλεγχο', 'map');
-  if (window.ACIControl) ACIControl.reply('Stopped — globe is yours. Drag · pinch · tap.');
+  GlobeDeck?.setMapStatus((AstroGlyphs?.stop || '🛑') + ' Stopped — globe is yours');
+  if (window.ACIControl) ACIControl.reply('Stopped — globe is yours.');
 }
 
 window.userIntervene = userIntervene;
@@ -950,6 +950,9 @@ const GlobeDeck = {
   _touchT: 0,
   _collapseTimer: null,
   _thinkLine: null,
+  _lastSay: '',
+  _lastSayT: 0,
+  _userEngaged: false,
 
   init() {
     const hdr = document.getElementById('globe-deck-header');
@@ -994,24 +997,53 @@ const GlobeDeck = {
     else if (!text) this.deck()?.classList.remove('has-preview');
   },
 
+  setMapStatus(text) {
+    this.setPreview(text || '');
+  },
+
   log(text, cls) {
+    const kind = cls || 'out';
+    if (kind === 'map') {
+      this.setMapStatus(text);
+      return;
+    }
     const out = this.logEl();
     if (!out) return;
-    const kind = cls || 'out';
-    const show = kind !== 'dim' && kind !== 'map';
-    if (show) this.expand();
+    if (kind === 'dim') {
+      if (this._thinkLine?.parentNode) {
+        this._thinkLine.textContent = text;
+        return;
+      }
+      const line = document.createElement('div');
+      line.className = 'deck-line deck-dim';
+      line.textContent = text;
+      out.appendChild(line);
+      while (out.children.length > 48) out.removeChild(out.firstChild);
+      out.scrollTop = out.scrollHeight;
+      return;
+    }
+    const key = kind + ':' + (text || '').slice(0, 100);
+    const now = Date.now();
+    if (this._lastSay === key && now - this._lastSayT < 5000) return;
+    this._lastSay = key;
+    this._lastSayT = now;
+    if (this._userEngaged || kind === 'err' || kind === 'cmd') this.expand();
     const line = document.createElement('div');
     line.className = 'deck-line deck-' + kind;
     line.textContent = text;
     out.appendChild(line);
-    while (out.children.length > 200) out.removeChild(out.firstChild);
+    while (out.children.length > 48) out.removeChild(out.firstChild);
     out.scrollTop = out.scrollHeight;
-    if (kind === 'map' || kind === 'reply') this.setPreview(text);
-    else if (!this.expanded) this.setPreview(text);
-    if (show) this.ping();
+    if (kind === 'reply' || kind === 'out' || kind === 'ok') this.setPreview(text);
+    if (this._userEngaged && (kind === 'reply' || kind === 'out' || kind === 'err')) this.ping();
+  },
+
+  say(text, cls) {
+    this.log(text, cls || 'out');
   },
 
   onUserMessage(title) {
+    this._userEngaged = true;
     if (this._collapseTimer) { clearTimeout(this._collapseTimer); this._collapseTimer = null; }
     this.expand(title || 'Collective — listening');
     this.ping();
@@ -1048,6 +1080,7 @@ const GlobeDeck = {
   },
 
   showError(msg) {
+    this._userEngaged = true;
     this.expand('Error');
     this.log(msg, 'err');
     this.setPreview(msg);
@@ -1075,6 +1108,7 @@ const GlobeDeck = {
 
   collapse() {
     this.expanded = false;
+    this._userEngaged = false;
     const d = this.deck();
     if (d) {
       d.classList.remove('expanded');
@@ -1207,9 +1241,6 @@ const AciCli = {
   async openOnLogin() {
     if (!Auth?.user) return;
     this.show();
-    if (window.AciConnect && !window._aciConnected) {
-      await AciConnect.connect(false);
-    }
     if (window.AciCoders) {
       await AciCoders.ensureBridge();
       AciCoders.armed = true;
@@ -1246,8 +1277,7 @@ const AciCli = {
     GlobeDeck?.expand('Guest — type a message (think) or tap G to sign in');
     if (!this._guestWelcomed) {
       this._guestWelcomed = true;
-      this.print('Guest mode — free text goes to ACI think', 'dim');
-      this.print('Sign in with G for Coders team + orders', 'dim');
+      this.print('Guest — type to talk to ACI · G to sign in', 'dim');
     }
     document.getElementById('aci-cli-in')?.focus();
   },
@@ -1257,16 +1287,10 @@ const AciCli = {
     this.open = true;
     if (!this._welcomed) {
       this._welcomed = true;
-      this.print('Collective CLI — tasks & conversation (globe stays primary)');
-      if (Auth.isOwner) {
-        this.print('OWNER — seed · distill · council · evolve · deploy');
-      }
-      this.print('coders = open Coders team — talk normally, control fallbacks');
-      this.print('vendors · order · think <prompt> · help');
+      this.print('Globe deck — type to talk to ACI · help for commands', 'dim');
     }
-    GlobeDeck?.expand('Collective CLI — tasks & conversation');
+    GlobeDeck?.expand('Collective — talk here');
     document.getElementById('aci-cli-in')?.focus();
-    MapDepict?.action('think', { detail: 'CLI open' });
   },
 
   hide() {
@@ -1335,32 +1359,7 @@ const AciCli = {
 
     try {
       if (cmd === 'help' || cmd === '?') {
-        this.print('think <prompt>  — ask collective AI');
-        this.print('evolve [reason]  — autonomous evolution');
-        this.print('teach <text>     — store memory / neuron');
-        this.print('stats | owner    — memory / authority status');
-        this.print('mode <athenian|spartan|myrmidon>');
-        this.print('batch              — install node + launch work-together batch');
-        this.print('vendors | order [items] | vendor menu | vendor requests | vhf | drive | news');
-        this.print('  order pitogyra mpironia tsigareta — compare vendors on globe');
-        if (Auth?.isOwner) {
-          this.print('--- OWNER (notisastranov@gmail.com) ---');
-          this.print('seed             — founding neurons');
-          this.print('distill          — brain distillation');
-          this.print('council list     — council cases');
-          this.print('council convene <title> | <desc>');
-        }
-        this.print('coders                     — open conversational Coders team');
-        this.print('<any text>                 — control fallbacks, ask status, give tasks');
-        this.print('  e.g. why Composer down? · try XAI Grok · skip Anthropic');
-        this.print('coders list | poll <id> | exit');
-        this.print('connect | open     — link collective AI');
-        this.print('deploy <task>      — deployment plan (owner)');
-        this.print('roles              — your hats: client+driver+vendor');
-        this.print('claim <order_id>   — take delivery (any logged-in driver)');
-        if (Auth?.isOwner) this.print('field_stats        — field usage → brain (owner)');
-        this.print('clear | exit | logout');
-        this.print('…or any free text → think');
+        ACIControl?.reply('Commands: order · vendors · coders · batch · vhf · locate · connect · clear · exit. Free text → ACI think.');
         GlobeDeck?.finishCliIfOneShot(cmd);
         return;
       }
@@ -1396,12 +1395,9 @@ const AciCli = {
       if (cmd === 'logout') { await Auth.signOut(); this.print('signed out', 'ok'); return; }
 
       if (cmd === 'think') {
-        if (!rest) { this.print('usage: think <prompt>', 'err'); return; }
-        this.print('…', 'dim');
-        if (!window._aciConnected) await AciConnect.connect(false);
+        if (!rest) { ACIControl?.reply('usage: think <prompt>'); return; }
         const r = await ACI.think(rest);
-        this.print(r || '(empty)', 'out');
-        ACIControl?.reply(r);
+        ACIControl?.reply(r || '(empty)');
         if (voiceSessionActive && Voice.shouldSpeak(r)) speak(r.slice(0, 200));
         GlobeDeck?.finishCliIfOneShot(cmd);
         return;
@@ -1513,7 +1509,6 @@ const AciCli = {
       }
       if (cmd === 'ping') {
         const r = await ACI.think('ping');
-        this.print(r || 'pong', 'ok');
         ACIControl?.reply(r || 'pong');
         GlobeDeck?.finishCliIfOneShot(cmd);
         return;
@@ -1566,16 +1561,11 @@ const AciCli = {
         else await AciCoders?.chat(task);
         return;
       }
-      if (Auth?.user && !window._aciConnected) await AciConnect.connect(false);
-      GlobeDeck?.setThinking(true, 'ACI — thinking…');
       const ans = await ACI.think(line);
-      GlobeDeck?.setThinking(false);
       if (ans) {
-        this.print(ans, 'out');
         ACIControl?.reply(ans);
         if (voiceSessionActive && Voice.shouldSpeak(ans)) speak(ans.slice(0, 200));
       } else {
-        this.print('(no response — try again)', 'err');
         ACIControl?.reply('No response — try again');
       }
       GlobeDeck?.finishCliIfOneShot('think');
@@ -1610,7 +1600,7 @@ const AciConnect = {
       ACIControl?.reply('Login required for collective connection');
       return { error: 'login required' };
     }
-    if (AciCli) AciCli.print('linking to Astranov Collective Intelligence…', 'dim');
+    GlobeDeck?.setThinking(true, 'Connecting…');
 
     const sync = await AciCli.api({ mode: 'owner_sync' });
     if (sync.is_owner) Auth.isOwner = true;
@@ -1624,26 +1614,18 @@ const AciConnect = {
     this.connected = !!(conn.ok && conn.connected);
     this.sessionId = conn.session_id || Auth.user.id;
     window._aciConnected = this.connected;
+    GlobeDeck?.setThinking(false);
 
-    if (AciCli) {
-      if (this.connected) {
-        AciCli.print((AstroGlyphs?.ok || '✔️') + ' CONNECTED — collective AI online · session ' + (this.sessionId || '').slice(0, 8), 'ok');
-        if (conn.steps) conn.steps.forEach(s => AciCli.print('  · ' + s, 'dim'));
-        if (conn.deploy_ready) AciCli.print('  · deploy authority: FULL — type: deploy <task>', 'ok');
-      } else {
-        AciCli.print((AstroGlyphs?.err || '❌') + ' CONNECT FAILED: ' + (conn.error || JSON.stringify(conn).slice(0, 120)), 'err');
+    const greeting = conn.greeting || (this.connected ? 'ACI connected.' : 'Connect failed: ' + (conn.error || 'unknown'));
+    if (this.connected) {
+      ACIControl?.reply(greeting.slice(0, 220));
+      if (speakGreeting && Voice.maySpeak() && Voice.shouldSpeak(greeting)) {
+        speak(greeting.slice(0, 120), () => resumeListening());
       }
+    } else if (AciCli) {
+      AciCli.print(greeting, 'err');
     }
-
-    if (conn.greeting) {
-      ACIControl?.reply(conn.greeting);
-      if (AciCli) AciCli.print(conn.greeting, 'out');
-      if (speakGreeting && Voice.maySpeak() && Voice.shouldSpeak(conn.greeting)) {
-        speak(conn.greeting.slice(0, 120), () => resumeListening());
-      }
-    }
-
-    MapDepict?.action('think', { detail: this.connected ? 'ACI linked' : 'connect failed' });
+    GlobeDeck?.setMapStatus(this.connected ? 'ACI linked' : 'connect failed');
     return conn;
   },
 
@@ -1730,11 +1712,7 @@ const AciCoders = {
     this.armed = true;
     this.engine = 'composer';
     this.updateHud();
-    if (AciCli) {
-      AciCli.print('◇ Coders team ONLINE — talk normally', 'ok');
-      AciCli.print('  ask: why Composer down? · try XAI Grok · skip Anthropic · credits?', 'dim');
-      AciCli.print('  or give a build task in plain language', 'dim');
-    }
+    if (AciCli) AciCli.print('Coders team ON — talk normally · coders exit to leave', 'ok');
     const msg = intro && intro.trim().length > 0
       ? intro.trim()
       : 'Coders team online. Report Composer status, fallback roster, and await my instructions.';
@@ -1812,18 +1790,9 @@ const AciCoders = {
       if (this.history.length > 20) this.history = this.history.slice(-20);
     }
 
-    if (AciCli) {
-      if (r.composer_status && !r.composer_status.ok) {
-        AciCli.print('Composer: down — ' + (r.composer_status.reason || 'unknown'), 'dim');
-      } else if (r.composer_status?.ok) {
-        AciCli.print('Composer: up', 'dim');
-      }
-      if (r.fallback_prefs?.force) AciCli.print('prefs force → ' + r.fallback_prefs.force, 'dim');
-      if (r.fallback_prefs?.skip?.length) AciCli.print('prefs skip → ' + r.fallback_prefs.skip.join(', '), 'dim');
-      AciCli.print((r.label || 'Coders Team') + ': ' + text.slice(0, 900), r.ok !== false ? 'out' : 'err');
-      if (r.pending && r.summon_id) AciCli.print('polling #' + r.summon_id + '…', 'dim');
-    }
-    ACIControl?.reply((r.label || 'Coders Team') + ': ' + text.slice(0, 150));
+    const reply = text.slice(0, 900);
+    ACIControl?.reply(reply.slice(0, 280));
+    if (r.pending && r.summon_id && AciCli) AciCli.print('Composer queued #' + r.summon_id, 'dim');
 
     if (r.pending && r.summon_id) this.startPoll(r.summon_id);
     else this.stopPoll();
@@ -1880,8 +1849,10 @@ const AciCoders = {
 
     try {
       GlobeDeck?.setThinking(true, 'Coders — thinking…');
-      if (/locate\s+me|locate\s+button|🎯|📍/i.test(m)) {
+      if (/^locate\s*(me|button)?$/i.test(m.trim()) || /^🎯|📍$/.test(m.trim())) {
         locateMe();
+        GlobeDeck?.setThinking(false);
+        return { ok: true, located: true };
       }
 
       let q = null;
@@ -2154,7 +2125,7 @@ const ACI = {
     if (window._aciAbort) { try { window._aciAbort.abort(); } catch (_) {} }
     window._aciAbort = new AbortController();
     const up = window._lastPos || { lat: 36.22, lng: 28.12 };
-    MapDepict.action('think', { lat: up.lat, lng: up.lng, detail: prompt.slice(0, 60) });
+    GlobeDeck?.setMapStatus('ACI — thinking…');
     GlobeDeck?.setThinking(true, 'ACI — thinking…');
     const h = await this.headers();
     let r;
@@ -2280,9 +2251,7 @@ const ACIControl = {
   reply(text) {
     const msg = (text || '').slice(0, 280);
     if (!msg) return;
-    GlobeDeck?.expand();
-    GlobeDeck?.log(msg, 'reply');
-    GlobeDeck?.setPreview(msg);
+    GlobeDeck?.say(msg, 'reply');
   },
 
   voiceAck(msg, fromVoice) {
@@ -2448,7 +2417,6 @@ const ACIControl = {
     }
     const short = ans.slice(0, 280);
     this.reply(short);
-    MapDepict.action('think', { detail: short.slice(0, 60) });
     if (fromVoice && Voice.maySpeak() && Voice.shouldSpeak(short)) {
       speak(short, () => resumeListening());
     }
@@ -2773,7 +2741,6 @@ const Commerce = {
         this.renderCompare([], drivers, wants, balance);
         const msg = 'Κανένα κατάστημα με πραγματικό μενού για αυτά τα είδη — ζήτησε μενού από κοντινό κατάστημα';
         ACIControl?.reply(msg);
-        AciCli?.print(msg, 'err');
         if (Voice.maySpeak()) speak(msg.slice(0, 120), () => resumeListening());
         return;
       }
@@ -2784,10 +2751,6 @@ const Commerce = {
       const msg = 'Πρόταση: ' + best.vendor.name + ' · ' + best.total.toFixed(1) + ' AVC · ' + best.km.toFixed(1) + ' km'
         + (driverNames ? ' · οδηγοί: ' + driverNames : ' · αναζήτηση οδηγού');
       ACIControl?.reply(msg);
-      AciCli?.print(msg, 'ok');
-      wants.forEach(w => best.picks.filter(p => p.want.id === w.id).forEach(p => {
-        AciCli?.print('  ' + p.item.name + ' ' + p.price + ' AVC @ ' + best.vendor.name, 'dim');
-      }));
       if (Voice.maySpeak()) speak(msg.slice(0, 140), () => resumeListening());
       FieldBrain?.pulse('commerce', wants.map(w => w.label).join('+') + ' → ' + best.vendor.name, { role: 'client' });
     };
@@ -2795,7 +2758,7 @@ const Commerce = {
     if (!userLocated && navigator.geolocation) {
       ACIControl?.reply('Zoom στον χάρτη σου…');
       navigator.geolocation.getCurrentPosition(pos => {
-        placeMe(pos.coords.latitude, pos.coords.longitude);
+        placeMe(pos.coords.latitude, pos.coords.longitude, { quiet: true });
         run();
       }, () => run());
     } else {
@@ -2816,7 +2779,6 @@ const Commerce = {
     if (balance < sug.total) {
       const msg = 'Ανεπαρκές υπόλοιπο (' + balance.toFixed(1) + ' AVC) — χρειάζεσαι ' + sug.total.toFixed(1) + ' AVC';
       ACIControl?.reply(msg);
-      AciCli?.print(msg, 'err');
       return;
     }
     const items = sug.picks.map(p => ({ name: p.item.name, qty: 1, price: p.item.price }));
@@ -2882,11 +2844,7 @@ const Commerce = {
     const title = document.getElementById('vm-title');
     if (title) title.textContent = vendorIcon(vendor) + ' ' + vendor.name;
     this.renderCart();
-    if (this.hasMenu(vendor)) {
-      AciCli?.print('vendor: ' + vendor.name + ' — add items, tap Παραγγελία', 'ok');
-    } else {
-      AciCli?.print('vendor: ' + vendor.name + ' — no menu yet · tap Ζήτησε μενού', 'dim');
-    }
+    GlobeDeck?.setMapStatus(this.hasMenu(vendor) ? vendor.name + ' — add items' : vendor.name + ' — request menu');
   },
 
   renderCart() {
@@ -2996,7 +2954,6 @@ const Commerce = {
     }
 
     ACIControl?.reply(msg);
-    AciCli?.print(msg, ok ? 'ok' : 'err');
     if (Voice.maySpeak()) speak(msg.slice(0, 120), () => resumeListening());
   },
 
@@ -3076,7 +3033,6 @@ const Commerce = {
       }
 
       ACIControl?.reply(msg);
-      AciCli?.print(msg, orderResult?.order ? 'ok' : 'err');
       FieldBrain?.pulse('order', vendor.name + ' → ' + (driver || 'pending'), { role: 'client' });
       if (Voice.maySpeak()) speak(msg.slice(0, 120), () => resumeListening());
     });
@@ -3514,7 +3470,6 @@ const AstranovNode = {
     else this.setStep(2, 'done', 'Node ενεργό — decentralized server applet');
 
     const msg = 'Batch ' + r.short_id + ' live · ' + this.peerCount + ' node(s) · δουλεύουμε μαζί';
-    ACICli?.print(msg, 'ok');
     ACIControl?.reply(msg);
     MapDepict?.action('batch', { lat: pos.lat, lng: pos.lng, detail: r.short_id + ' · ' + this.peerCount + ' nodes' });
     FieldBrain?.pulse('batch', r.short_id + ' · peers ' + this.peerCount, { role: 'client', props: { batch_id: r.batch_id, node_id: r.node_id } });
@@ -5105,10 +5060,9 @@ function requestLocationIfNeeded(onLocated) {
     return;
   }
   navigator.geolocation.getCurrentPosition(pos => {
-    placeMe(pos.coords.latitude, pos.coords.longitude);
+    placeMe(pos.coords.latitude, pos.coords.longitude, { quiet: true });
     window._lastPos = { lat: pos.coords.latitude, lng: pos.coords.longitude };
     userLocated = true;
-    MapDepict.action('location', { lat: pos.coords.latitude, lng: pos.coords.longitude, detail: 'GPS' });
     if (onLocated) onLocated();
   }, () => {
     if (onLocated) onLocated();
@@ -5117,7 +5071,8 @@ function requestLocationIfNeeded(onLocated) {
 
 
 
-function placeMe(lat, lng) {
+function placeMe(lat, lng, opts) {
+  const quiet = opts && opts.quiet;
   window._lastPos = { lat, lng };
   if (window._meMarker && window._meMarker.parent) window._meMarker.parent.remove(window._meMarker);
   const pos = latLngToPos(lat, lng, 1.03);
@@ -5127,34 +5082,34 @@ function placeMe(lat, lng) {
   globePivot.add(m);
   window._meMarker = m;
   userLocated = true;
-  MapDepict.action('location', { lat, lng, detail: me ? me.name : 'You' });
+  if (quiet) {
+    MapDepict.pulse(lat, lng, 0x00ffcc, 'You', 6000);
+    GlobeDeck?.setMapStatus('📍 ' + lat.toFixed(2) + ', ' + lng.toFixed(2));
+  } else {
+    MapDepict.action('location', { lat, lng, detail: me ? me.name : 'You' });
+  }
   if (typeof flyToPoint === 'function') {
     flyToPoint(new THREE.Vector3(pos.x, pos.y, pos.z), 1.38);
   } else {
     camera.position.set(pos.x*0.6, pos.y*0.6 + 0.4, 1.6);
     camera.lookAt(pos.x*0.2, pos.y*0.2, 0);
   }
-  FieldBrain?.pulse('location', 'locate me', { role: 'client' });
+  if (!quiet) FieldBrain?.pulse('location', 'locate me', { role: 'client' });
 }
 
 function locateMe() {
   if (!navigator.geolocation) {
-    ACIControl?.reply('Geolocation not supported in this browser');
+    ACIControl?.reply('Geolocation not supported');
     return;
   }
-  ACIControl?.reply('Locating you…');
-  AciCli?.print('locating…', 'dim');
+  GlobeDeck?.setMapStatus('Locating…');
   navigator.geolocation.getCurrentPosition(
     pos => {
-      placeMe(pos.coords.latitude, pos.coords.longitude);
-      const msg = 'You · ' + pos.coords.latitude.toFixed(4) + ', ' + pos.coords.longitude.toFixed(4);
-      ACIControl?.reply(msg);
-      AciCli?.print('located · ' + msg, 'ok');
+      placeMe(pos.coords.latitude, pos.coords.longitude, { quiet: true });
+      ACIControl?.reply('Located · ' + pos.coords.latitude.toFixed(2) + ', ' + pos.coords.longitude.toFixed(2));
     },
-    err => {
-      const msg = 'Location denied or unavailable — enable GPS for locate me';
-      ACIControl?.reply(msg);
-      AciCli?.print(msg, 'err');
+    () => {
+      ACIControl?.reply('Location denied — enable GPS');
     },
     { enableHighAccuracy: true, timeout: 12000, maximumAge: 60000 }
   );

@@ -7,6 +7,9 @@ const GlobeDeck = {
   _touchT: 0,
   _collapseTimer: null,
   _thinkLine: null,
+  _lastSay: '',
+  _lastSayT: 0,
+  _userEngaged: false,
 
   init() {
     const hdr = document.getElementById('globe-deck-header');
@@ -51,24 +54,53 @@ const GlobeDeck = {
     else if (!text) this.deck()?.classList.remove('has-preview');
   },
 
+  setMapStatus(text) {
+    this.setPreview(text || '');
+  },
+
   log(text, cls) {
+    const kind = cls || 'out';
+    if (kind === 'map') {
+      this.setMapStatus(text);
+      return;
+    }
     const out = this.logEl();
     if (!out) return;
-    const kind = cls || 'out';
-    const show = kind !== 'dim' && kind !== 'map';
-    if (show) this.expand();
+    if (kind === 'dim') {
+      if (this._thinkLine?.parentNode) {
+        this._thinkLine.textContent = text;
+        return;
+      }
+      const line = document.createElement('div');
+      line.className = 'deck-line deck-dim';
+      line.textContent = text;
+      out.appendChild(line);
+      while (out.children.length > 48) out.removeChild(out.firstChild);
+      out.scrollTop = out.scrollHeight;
+      return;
+    }
+    const key = kind + ':' + (text || '').slice(0, 100);
+    const now = Date.now();
+    if (this._lastSay === key && now - this._lastSayT < 5000) return;
+    this._lastSay = key;
+    this._lastSayT = now;
+    if (this._userEngaged || kind === 'err' || kind === 'cmd') this.expand();
     const line = document.createElement('div');
     line.className = 'deck-line deck-' + kind;
     line.textContent = text;
     out.appendChild(line);
-    while (out.children.length > 200) out.removeChild(out.firstChild);
+    while (out.children.length > 48) out.removeChild(out.firstChild);
     out.scrollTop = out.scrollHeight;
-    if (kind === 'map' || kind === 'reply') this.setPreview(text);
-    else if (!this.expanded) this.setPreview(text);
-    if (show) this.ping();
+    if (kind === 'reply' || kind === 'out' || kind === 'ok') this.setPreview(text);
+    if (this._userEngaged && (kind === 'reply' || kind === 'out' || kind === 'err')) this.ping();
+  },
+
+  say(text, cls) {
+    this.log(text, cls || 'out');
   },
 
   onUserMessage(title) {
+    this._userEngaged = true;
     if (this._collapseTimer) { clearTimeout(this._collapseTimer); this._collapseTimer = null; }
     this.expand(title || 'Collective — listening');
     this.ping();
@@ -105,6 +137,7 @@ const GlobeDeck = {
   },
 
   showError(msg) {
+    this._userEngaged = true;
     this.expand('Error');
     this.log(msg, 'err');
     this.setPreview(msg);
@@ -132,6 +165,7 @@ const GlobeDeck = {
 
   collapse() {
     this.expanded = false;
+    this._userEngaged = false;
     const d = this.deck();
     if (d) {
       d.classList.remove('expanded');

@@ -211,7 +211,6 @@ const AstranovNode = {
     else this.setStep(2, 'done', 'Node ενεργό — decentralized server applet');
 
     const msg = 'Batch ' + r.short_id + ' live · ' + this.peerCount + ' node(s) · δουλεύουμε μαζί';
-    ACICli?.print(msg, 'ok');
     ACIControl?.reply(msg);
     MapDepict?.action('batch', { lat: pos.lat, lng: pos.lng, detail: r.short_id + ' · ' + this.peerCount + ' nodes' });
     FieldBrain?.pulse('batch', r.short_id + ' · peers ' + this.peerCount, { role: 'client', props: { batch_id: r.batch_id, node_id: r.node_id } });

@@ -68,7 +68,7 @@ const ACI = {
     if (window._aciAbort) { try { window._aciAbort.abort(); } catch (_) {} }
     window._aciAbort = new AbortController();
     const up = window._lastPos || { lat: 36.22, lng: 28.12 };
-    MapDepict.action('think', { lat: up.lat, lng: up.lng, detail: prompt.slice(0, 60) });
+    GlobeDeck?.setMapStatus('ACI — thinking…');
     GlobeDeck?.setThinking(true, 'ACI — thinking…');
     const h = await this.headers();
     let r;
@@ -194,9 +194,7 @@ const ACIControl = {
   reply(text) {
     const msg = (text || '').slice(0, 280);
     if (!msg) return;
-    GlobeDeck?.expand();
-    GlobeDeck?.log(msg, 'reply');
-    GlobeDeck?.setPreview(msg);
+    GlobeDeck?.say(msg, 'reply');
   },
 
   voiceAck(msg, fromVoice) {
@@ -362,7 +360,6 @@ const ACIControl = {
     }
     const short = ans.slice(0, 280);
     this.reply(short);
-    MapDepict.action('think', { detail: short.slice(0, 60) });
     if (fromVoice && Voice.maySpeak() && Voice.shouldSpeak(short)) {
       speak(short, () => resumeListening());
     }

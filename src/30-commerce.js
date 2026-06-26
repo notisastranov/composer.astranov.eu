@@ -315,7 +315,6 @@ const Commerce = {
         this.renderCompare([], drivers, wants, balance);
         const msg = 'Κανένα κατάστημα με πραγματικό μενού για αυτά τα είδη — ζήτησε μενού από κοντινό κατάστημα';
         ACIControl?.reply(msg);
-        AciCli?.print(msg, 'err');
         if (Voice.maySpeak()) speak(msg.slice(0, 120), () => resumeListening());
         return;
       }
@@ -326,10 +325,6 @@ const Commerce = {
       const msg = 'Πρόταση: ' + best.vendor.name + ' · ' + best.total.toFixed(1) + ' AVC · ' + best.km.toFixed(1) + ' km'
         + (driverNames ? ' · οδηγοί: ' + driverNames : ' · αναζήτηση οδηγού');
       ACIControl?.reply(msg);
-      AciCli?.print(msg, 'ok');
-      wants.forEach(w => best.picks.filter(p => p.want.id === w.id).forEach(p => {
-        AciCli?.print('  ' + p.item.name + ' ' + p.price + ' AVC @ ' + best.vendor.name, 'dim');
-      }));
       if (Voice.maySpeak()) speak(msg.slice(0, 140), () => resumeListening());
       FieldBrain?.pulse('commerce', wants.map(w => w.label).join('+') + ' → ' + best.vendor.name, { role: 'client' });
     };
@@ -337,7 +332,7 @@ const Commerce = {
     if (!userLocated && navigator.geolocation) {
       ACIControl?.reply('Zoom στον χάρτη σου…');
       navigator.geolocation.getCurrentPosition(pos => {
-        placeMe(pos.coords.latitude, pos.coords.longitude);
+        placeMe(pos.coords.latitude, pos.coords.longitude, { quiet: true });
         run();
       }, () => run());
     } else {
@@ -358,7 +353,6 @@ const Commerce = {
     if (balance < sug.total) {
       const msg = 'Ανεπαρκές υπόλοιπο (' + balance.toFixed(1) + ' AVC) — χρειάζεσαι ' + sug.total.toFixed(1) + ' AVC';
       ACIControl?.reply(msg);
-      AciCli?.print(msg, 'err');
       return;
     }
     const items = sug.picks.map(p => ({ name: p.item.name, qty: 1, price: p.item.price }));
@@ -424,11 +418,7 @@ const Commerce = {
     const title = document.getElementById('vm-title');
     if (title) title.textContent = vendorIcon(vendor) + ' ' + vendor.name;
     this.renderCart();
-    if (this.hasMenu(vendor)) {
-      AciCli?.print('vendor: ' + vendor.name + ' — add items, tap Παραγγελία', 'ok');
-    } else {
-      AciCli?.print('vendor: ' + vendor.name + ' — no menu yet · tap Ζήτησε μενού', 'dim');
-    }
+    GlobeDeck?.setMapStatus(this.hasMenu(vendor) ? vendor.name + ' — add items' : vendor.name + ' — request menu');
   },
 
   renderCart() {
@@ -538,7 +528,6 @@ const Commerce = {
     }
 
     ACIControl?.reply(msg);
-    AciCli?.print(msg, ok ? 'ok' : 'err');
     if (Voice.maySpeak()) speak(msg.slice(0, 120), () => resumeListening());
   },
 
@@ -618,7 +607,6 @@ const Commerce = {
       }
 
       ACIControl?.reply(msg);
-      AciCli?.print(msg, orderResult?.order ? 'ok' : 'err');
       FieldBrain?.pulse('order', vendor.name + ' → ' + (driver || 'pending'), { role: 'client' });
       if (Voice.maySpeak()) speak(msg.slice(0, 120), () => resumeListening());
     });

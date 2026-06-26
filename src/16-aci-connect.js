@@ -19,7 +19,7 @@ const AciConnect = {
       ACIControl?.reply('Login required for collective connection');
       return { error: 'login required' };
     }
-    if (AciCli) AciCli.print('linking to Astranov Collective Intelligence…', 'dim');
+    GlobeDeck?.setThinking(true, 'Connecting…');
 
     const sync = await AciCli.api({ mode: 'owner_sync' });
     if (sync.is_owner) Auth.isOwner = true;
@@ -33,26 +33,18 @@ const AciConnect = {
     this.connected = !!(conn.ok && conn.connected);
     this.sessionId = conn.session_id || Auth.user.id;
     window._aciConnected = this.connected;
+    GlobeDeck?.setThinking(false);
 
-    if (AciCli) {
-      if (this.connected) {
-        AciCli.print((AstroGlyphs?.ok || '✔️') + ' CONNECTED — collective AI online · session ' + (this.sessionId || '').slice(0, 8), 'ok');
-        if (conn.steps) conn.steps.forEach(s => AciCli.print('  · ' + s, 'dim'));
-        if (conn.deploy_ready) AciCli.print('  · deploy authority: FULL — type: deploy <task>', 'ok');
-      } else {
-        AciCli.print((AstroGlyphs?.err || '❌') + ' CONNECT FAILED: ' + (conn.error || JSON.stringify(conn).slice(0, 120)), 'err');
+    const greeting = conn.greeting || (this.connected ? 'ACI connected.' : 'Connect failed: ' + (conn.error || 'unknown'));
+    if (this.connected) {
+      ACIControl?.reply(greeting.slice(0, 220));
+      if (speakGreeting && Voice.maySpeak() && Voice.shouldSpeak(greeting)) {
+        speak(greeting.slice(0, 120), () => resumeListening());
       }
+    } else if (AciCli) {
+      AciCli.print(greeting, 'err');
     }
-
-    if (conn.greeting) {
-      ACIControl?.reply(conn.greeting);
-      if (AciCli) AciCli.print(conn.greeting, 'out');
-      if (speakGreeting && Voice.maySpeak() && Voice.shouldSpeak(conn.greeting)) {
-        speak(conn.greeting.slice(0, 120), () => resumeListening());
-      }
-    }
-
-    MapDepict?.action('think', { detail: this.connected ? 'ACI linked' : 'connect failed' });
+    GlobeDeck?.setMapStatus(this.connected ? 'ACI linked' : 'connect failed');
     return conn;
   },
 
