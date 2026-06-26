@@ -199,6 +199,9 @@ const ACIControl = {
     const low = text.toLowerCase().trim();
     const say = (msg) => this.voiceAck(msg, fromVoice);
 
+    const routed = await SuperCli?.exec?.(text, { fromVoice });
+    if (routed?.handled) return { executed: true, action: 'supercli' };
+
     if (/^(hold|pause session|quiet mode|κράτα|κρατα|σίγαση|σιγαση)\b/.test(low)) {
       SessionHold?.hold?.();
       return { executed: true, action: 'hold' };

@@ -1,0 +1,382 @@
+// === SUPER CLI BRAIN — full command of collective intelligence + UI ===
+Object.assign(SuperCli, {
+  devMode: false,
+  _devKey: 'astranov-dev-mode',
+
+  PANELS: {
+    vendor: 'vendor-menu', vendors: 'vendor-menu', order: 'vendor-menu', shop: 'vendor-menu',
+    batch: 'node-batch', node: 'node-batch',
+    radio: 'sat-radio', vhf: 'sat-radio', pmr: 'sat-radio',
+  },
+
+  CITIES: {
+    athens: [37.98, 23.73], athina: [37.98, 23.73], rhodes: [36.44, 28.22], rodos: [36.44, 28.22],
+    london: [51.51, -0.13], paris: [48.86, 2.35], berlin: [52.52, 13.41], rome: [41.90, 12.50],
+    newyork: [40.71, -74.01], tokyo: [35.68, 139.69], sydney: [-33.87, 151.21],
+  },
+
+  ZOOM: { earth: 2.2, orbit: 4.4, leo: 4.4, solar: 8, system: 8, galaxy: 16 },
+
+  initBrain() {
+    try {
+      this.devMode = sessionStorage.getItem(this._devKey) === '1';
+      if (this.devMode) this._applyDevHud();
+    } catch (_) {}
+  },
+
+  _applyDevHud() {
+    if (!this.devMode) return;
+    GlobeDeck?.setTitle(ACL_TITLE + ' · DEV');
+    GlobeDeck?.setPreview('DEV — brain + UI under command line');
+  },
+
+  _setDevMode(on) {
+    this.devMode = !!on;
+    try { sessionStorage.setItem(this._devKey, on ? '1' : '0'); } catch (_) {}
+    if (on) {
+      this._applyDevHud();
+      AciCoders?.autoStart?.();
+      GlobeDeck.activeTask = 'coders';
+    } else {
+      GlobeDeck?.setTitle(ACL_TITLE);
+    }
+    this.setContext(this.inferContext());
+  },
+
+  parseParts(line) {
+    return (line.match(/(?:[^\s"]+|"[^"]*")+/g) || []).map(p => p.replace(/^"|"$/g, ''));
+  },
+
+  isStructuredCmd(cmd) {
+    const c = (cmd || '').toLowerCase();
+    const known = new Set([
+      'help', '?', 'dev', 'ui', 'brain', 'coders', 'composer', 'cursor', 'grok', 'summon',
+      'connect', 'open', 'deploy', 'clear', 'exit', 'close', 'logout', 'think', 'evolve',
+      'teach', 'stats', 'owner', 'seed', 'distill', 'council', 'mode', 'batch', 'vendors',
+      'shops', 'order', 'vendor', 'ping', 'locate', 'gps', 'me', 'vhf', 'call', 'phone',
+      'drive', 'news', 'roles', 'claim', 'field_stats', 'hold', 'resume', 'stop',
+    ]);
+    return known.has(c);
+  },
+
+  out(text, cls) { AciCli?.print(text, cls || 'out'); },
+
+  zoomTo(level) {
+    const z = this.ZOOM[(level || 'earth').toLowerCase()] || this.ZOOM.earth;
+    window._globeFly = {
+      fromY: globePivot.rotation.y,
+      fromX: globePivot.rotation.x,
+      fromZ: camera.position.z,
+      toY: globePivot.rotation.y,
+      toX: globePivot.rotation.x,
+      toZ: z,
+      t0: performance.now(),
+      dur: 900,
+    };
+    CosmicZoom.update(z);
+    this.out('zoom → ' + (level || 'earth') + ' (z=' + z + ')', 'ok');
+  },
+
+  async flyTo(lat, lng, label) {
+    const p = latLngToPos(lat, lng, 1.04);
+    if (typeof flyToPoint === 'function') flyToPoint(new THREE.Vector3(p.x, p.y, p.z), 1.48);
+    MapDepict?.pulse?.(lat, lng, 0x00ddff, label || 'fly', 8000);
+    GlobeControl?.noteAutoFly?.();
+    this.out('fly → ' + (label || lat.toFixed(2) + ', ' + lng.toFixed(2)), 'ok');
+  },
+
+  statusSnapshot() {
+    return {
+      devMode: this.devMode,
+      context: this._context,
+      deck: { expanded: GlobeDeck?.expanded, task: GlobeDeck?.activeTask, thinking: GlobeDeck?.thinking },
+      brain: {
+        neurons: ACI?.neurons?.length || 0,
+        thinkMode: ACI?.thinkMode || 'default',
+        codersListening: !!AciCoders?._listening,
+        codersEngine: AciCoders?.engine,
+        cause: AciCoders?.CAUSE,
+      },
+      batch: { id: AstranovNode?.shortId, peers: AstranovNode?.peerCount },
+      globe: { level: CosmicZoom?.level, follow: GlobeControl?.followMode, exploring: GlobeControl?.userExploring },
+      user: Auth?.user ? (Auth.user.email?.split('@')[0] || 'user') : 'guest',
+      owner: !!Auth?.isOwner,
+    };
+  },
+
+  printHelp() {
+    const owner = Auth?.isOwner;
+    this.out('── Astranov Command Line — brain + UI + dev ──', 'dim');
+    this.out('dev on|off · dev task <msg> · dev peers · dev deploy · dev status', 'ok');
+    this.out('ui show batch|radio|vendor · ui hide · ui fly athens · ui zoom galaxy', 'ok');
+    this.out('brain think|evolve|teach|coders|listen on|off|status · brain order <task>', owner ? 'ok' : 'dim');
+    this.out('locate · order · batch · vhf · coders · deploy · think · type anything', 'ok');
+    if (owner) this.out('Owner: brain order <task> = execute · coders <task> = explicit order', 'dim');
+    ACIControl?.reply('Full command: dev on · ui status · brain status · then build');
+    GlobeDeck?.finishCliIfOneShot('help');
+  },
+
+  async cmdDev(parts) {
+    const sub = (parts[1] || 'status').toLowerCase();
+    const rest = parts.slice(2).join(' ');
+
+    if (sub === 'on' || sub === 'start') {
+      this._setDevMode(true);
+      GlobeDeck?.expand(ACL_TITLE + ' · DEV');
+      await AciCoders?.autoStart?.();
+      this.out('DEV on — brain + UI under your command · peers see tasks', 'ok');
+      ACIControl?.reply('Dev mode on — type tasks, ui commands, or brain orders');
+      return { ok: true };
+    }
+    if (sub === 'off' || sub === 'stop') {
+      this._setDevMode(false);
+      this.out('DEV off', 'ok');
+      return { ok: true };
+    }
+    if (sub === 'task' || sub === 'broadcast') {
+      if (!rest) { this.out('usage: dev task <message>', 'err'); return { error: 'empty' }; }
+      if (AstranovNode?.batchId) AstranovNode.broadcastTask(rest);
+      else this.out('no batch — run batch first', 'dim');
+      GlobeDeck.activeTask = 'coders';
+      await AciCoders?.handleMessage(rest);
+      return { ok: true };
+    }
+    if (sub === 'peers') {
+      this.out('batch ' + (AstranovNode?.shortId || '—') + ' · peers ' + (AstranovNode?.peerCount ?? 0), 'ok');
+      GlobeDeck?.finishCliIfOneShot('dev');
+      return { ok: true };
+    }
+    if (sub === 'deploy') {
+      await AciConnect?.deploy(rest || 'continue deployment');
+      GlobeDeck?.finishCliIfOneShot('deploy');
+      return { ok: true };
+    }
+    if (sub === 'connect') {
+      await AciConnect?.connect(true);
+      GlobeDeck?.finishCliIfOneShot('connect');
+      return { ok: true };
+    }
+    if (sub === 'status') {
+      this.out(JSON.stringify(this.statusSnapshot(), null, 0).slice(0, 700), 'out');
+      GlobeDeck?.finishCliIfOneShot('dev');
+      return { ok: true };
+    }
+    this.out('usage: dev on|off|task|peers|deploy|connect|status', 'err');
+    return { error: 'unknown dev subcommand' };
+  },
+
+  async cmdUi(parts) {
+    const sub = (parts[1] || 'status').toLowerCase();
+    const rest = parts.slice(2).join(' ');
+
+    if (sub === 'show' || sub === 'open') {
+      const key = (parts[2] || '').toLowerCase();
+      const panel = this.PANELS[key];
+      if (panel) {
+        GlobeDeck?.showStage(panel, key === 'batch' || key === 'node' ? 'batch' : key === 'radio' || key === 'vhf' ? 'radio' : 'commerce');
+        if (key === 'vendor' || key === 'order') await Commerce?.showPicker?.();
+        if (key === 'batch' || key === 'node') AstranovNode?.showPanel?.();
+        if (key === 'radio' || key === 'vhf') Comms?.startVHF?.();
+        this.setContext(this.inferContext());
+        this.out('ui show → ' + key, 'ok');
+        return { ok: true };
+      }
+      if (key === 'deck' || key === 'cli') {
+        GlobeDeck?.expand(ACL_TITLE);
+        document.getElementById('aci-cli-in')?.focus();
+        return { ok: true };
+      }
+      this.out('usage: ui show vendor|batch|radio|deck', 'err');
+      return { error: 'unknown panel' };
+    }
+    if (sub === 'hide' || sub === 'close') {
+      GlobeDeck?.hideStage();
+      this.out('ui hidden', 'ok');
+      this.setContext(this.inferContext());
+      return { ok: true };
+    }
+    if (sub === 'expand') { GlobeDeck?.expand(ACL_TITLE); return { ok: true }; }
+    if (sub === 'collapse') { GlobeDeck?.collapse(); return { ok: true }; }
+    if (sub === 'toggle') { GlobeDeck?.toggle(); return { ok: true }; }
+    if (sub === 'zoom') {
+      this.zoomTo(parts[2] || 'earth');
+      GlobeDeck?.finishCliIfOneShot('ui');
+      return { ok: true };
+    }
+    if (sub === 'fly' || sub === 'go') {
+      const a = parts[2], b = parts[3];
+      if (a && b && !isNaN(parseFloat(a))) {
+        await this.flyTo(parseFloat(a), parseFloat(b), rest || 'target');
+        return { ok: true };
+      }
+      const city = (a || '').toLowerCase().replace(/\s/g, '');
+      const c = this.CITIES[city];
+      if (c) { await this.flyTo(c[0], c[1], city); return { ok: true }; }
+      this.out('usage: ui fly athens | ui fly 36.4 28.2', 'err');
+      return { error: 'bad fly' };
+    }
+    if (sub === 'title') {
+      GlobeDeck?.setTitle(rest || ACL_TITLE);
+      this.out('title set', 'ok');
+      return { ok: true };
+    }
+    if (sub === 'stop') {
+      userIntervene?.();
+      return { ok: true };
+    }
+    if (sub === 'status') {
+      this.out(JSON.stringify(this.statusSnapshot().deck, null, 0) + ' · ' + CosmicZoom?.level, 'out');
+      GlobeDeck?.finishCliIfOneShot('ui');
+      return { ok: true };
+    }
+    this.out('usage: ui show|hide|fly|zoom|expand|collapse|status', 'err');
+    return { error: 'unknown ui subcommand' };
+  },
+
+  async cmdBrain(parts) {
+    const sub = (parts[1] || 'status').toLowerCase();
+    const rest = parts.slice(2).join(' ');
+
+    if (sub === 'think') {
+      if (!rest) { ACIControl?.reply('usage: brain think <prompt>'); return { error: 'empty' }; }
+      const r = await ACI.think(rest);
+      ACIControl?.reply(r || '(empty)');
+      GlobeDeck?.finishCliIfOneShot('think');
+      return { ok: true, text: r };
+    }
+    if (sub === 'evolve') {
+      this.out('evolving…', 'dim');
+      const r = await ACI.evolve(rest || 'cli');
+      this.out(JSON.stringify(r || { ok: true }).slice(0, 400), 'out');
+      GlobeDeck?.finishCliIfOneShot('evolve');
+      return { ok: true };
+    }
+    if (sub === 'teach') {
+      if (!rest) { this.out('usage: brain teach <content>', 'err'); return { error: 'empty' }; }
+      await ACI.teach(rest);
+      this.out('remembered · neuron spawned', 'ok');
+      GlobeDeck?.finishCliIfOneShot('teach');
+      return { ok: true };
+    }
+    if (sub === 'stats' || sub === 'owner') {
+      const r = await AciCli.api({ mode: sub === 'owner' ? 'owner_sync' : 'stats' });
+      this.out(JSON.stringify(r, null, 0).slice(0, 600), 'out');
+      if (r.is_owner) Auth.isOwner = true;
+      GlobeDeck?.finishCliIfOneShot(sub);
+      return { ok: true };
+    }
+    if (sub === 'seed' || sub === 'distill' || sub === 'council') {
+      if (!Auth?.isOwner) { this.out('owner only', 'err'); return { error: 'owner' }; }
+      const body = { mode: sub };
+      if (sub === 'council') {
+        body.council_mode = (parts[2] || 'list').toLowerCase();
+        if (body.council_mode === 'convene') {
+          body.title = parts[3] || 'CLI case';
+          body.description = parts.slice(4).join(' ') || body.title;
+        }
+      }
+      const r = await AciCli.api(body);
+      this.out(JSON.stringify(r).slice(0, 600), 'out');
+      GlobeDeck?.finishCliIfOneShot(sub);
+      return { ok: true };
+    }
+    if (sub === 'mode') {
+      ACI.thinkMode = rest || '';
+      this.out('brain mode: ' + (ACI.thinkMode || 'default'), 'ok');
+      GlobeDeck?.finishCliIfOneShot('mode');
+      return { ok: true };
+    }
+    if (sub === 'listen') {
+      const on = (parts[2] || 'on').toLowerCase();
+      if (on === 'off') { AciCoders?.stopListening?.(); this.out('coders listen off', 'ok'); }
+      else { AciCoders?.startListening?.(); this.out('coders listen on', 'ok'); }
+      return { ok: true };
+    }
+    if (sub === 'coders' || sub === 'chat') {
+      GlobeDeck.activeTask = 'coders';
+      await AciCoders?.handleMessage(rest || 'status');
+      return { ok: true };
+    }
+    if (sub === 'order' || sub === 'execute') {
+      if (!Auth?.isOwner) { this.out('owner only — brain order <task>', 'err'); return { error: 'owner' }; }
+      GlobeDeck.activeTask = 'coders';
+      await AciCoders?.handleMessage('coders ' + rest);
+      return { ok: true };
+    }
+    if (sub === 'ping') {
+      const r = await ACI.think('ping');
+      ACIControl?.reply(r || 'pong');
+      GlobeDeck?.finishCliIfOneShot('ping');
+      return { ok: true };
+    }
+    if (sub === 'status') {
+      const s = this.statusSnapshot().brain;
+      s.batch = this.statusSnapshot().batch;
+      s.devMode = this.devMode;
+      this.out(JSON.stringify(s, null, 0), 'out');
+      GlobeDeck?.finishCliIfOneShot('brain');
+      return { ok: true };
+    }
+    this.out('usage: brain think|evolve|teach|coders|listen|order|status', 'err');
+    return { error: 'unknown brain subcommand' };
+  },
+
+  async devBrain(line) {
+    GlobeDeck.activeTask = 'coders';
+    AciCoders?.observeActivity?.('dev', line.slice(0, 120));
+    if (AstranovNode?.batchId) AstranovNode.broadcastTask(line);
+    await AciCoders?.handleMessage(line);
+    return { ok: true };
+  },
+
+  async exec(line, opts = {}) {
+    const raw = String(line || '').trim();
+    if (!raw) return { handled: false };
+    const parts = this.parseParts(raw);
+    const cmd = (parts[0] || '').toLowerCase();
+    const rest = parts.slice(1).join(' ');
+
+    try {
+      if (cmd === 'help' || cmd === '?') {
+        this.printHelp();
+        return { handled: true };
+      }
+      if (cmd === 'dev') {
+        await this.cmdDev(parts);
+        return { handled: true };
+      }
+      if (cmd === 'ui') {
+        await this.cmdUi(parts);
+        return { handled: true };
+      }
+      if (cmd === 'brain') {
+        await this.cmdBrain(parts);
+        return { handled: true };
+      }
+      if (cmd === 'status') {
+        this.out(JSON.stringify(this.statusSnapshot(), null, 0).slice(0, 800), 'out');
+        GlobeDeck?.finishCliIfOneShot('status');
+        return { handled: true };
+      }
+
+      if (this.devMode && !this.isStructuredCmd(cmd)) {
+        await this.devBrain(raw);
+        return { handled: true };
+      }
+    } catch (e) {
+      GlobeDeck?.setThinking(false);
+      const msg = 'exec error: ' + (e.message || e);
+      this.out(msg, 'err');
+      GlobeDeck?.showError(msg);
+      return { handled: true, error: msg };
+    }
+
+    return { handled: false };
+  },
+});
+
+const _superInit = SuperCli.init.bind(SuperCli);
+SuperCli.init = function () {
+  _superInit();
+  SuperCli.initBrain();
+};

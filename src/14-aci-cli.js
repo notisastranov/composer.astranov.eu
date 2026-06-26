@@ -96,7 +96,7 @@ const AciCli = {
     GlobeDeck?.expand('Coders online — Justice → Truth → Freedom · G to sign in');
     if (!this._guestWelcomed) {
       this._guestWelcomed = true;
-      this.print('Coders always on — type anything · G for full brain sync', 'dim');
+      this.print('Coders always on — dev on · ui status · brain status · G for sync', 'dim');
     }
     document.getElementById('aci-cli-in')?.focus();
   },
@@ -107,7 +107,7 @@ const AciCli = {
     AciCoders?.autoStart?.();
     if (!this._welcomed) {
       this._welcomed = true;
-      this.print('Coders always on — type anything · help for commands', 'dim');
+      this.print('Coders always on — dev on for full brain+UI · help', 'dim');
     }
     GlobeDeck?.expand('Collective Coders — talk here');
     document.getElementById('aci-cli-in')?.focus();
@@ -168,25 +168,21 @@ const AciCli = {
     }
   },
 
-  async run(line) {
+  async run(line, opts = {}) {
     GlobeDeck?.onUserMessage('CLI — ' + line.slice(0, 40));
     this.history.push(line);
     this.histIdx = -1;
     this.saveHistory();
     this.print((document.getElementById('aci-cli-prompt')?.textContent || '$') + ' ' + line, 'cmd');
 
+    const routed = await SuperCli?.exec?.(line, opts);
+    if (routed?.handled) return;
+
     const parts = line.match(/(?:[^\s"]+|"[^"]*")+/g) || [];
     const cmd = (parts[0] || '').toLowerCase().replace(/^"|"$/g, '');
     const rest = parts.slice(1).map(p => p.replace(/^"|"$/g, '')).join(' ');
 
     try {
-      if (cmd === 'help' || cmd === '?') {
-        ACIControl?.reply(Auth?.isOwner
-          ? 'Owner: explicit coders … = EXECUTE ORDER. You alone judge cause priority. Also: batch · order · vendors · locate.'
-          : 'Coders always on. Commands: order · vendors · batch · vhf · locate. Just type.');
-        GlobeDeck?.finishCliIfOneShot(cmd);
-        return;
-      }
       if (cmd === 'coders' || cmd === 'composer' || cmd === 'cursor' ||
           (cmd === 'summon' && /^coders?$/i.test(parts[1] || ''))) {
         const task = cmd === 'summon' ? parts.slice(2).join(' ')
