@@ -125,7 +125,7 @@ const AciCli = {
     GlobeDeck?.log(text, cls || 'out');
   },
 
-  async api(body) {
+  async api(body, opts = {}) {
     const headers = { 'Content-Type': 'application/json', apikey: SB_KEY };
     if (Auth?.ensureSession) {
       const session = await Auth.ensureSession();
@@ -137,10 +137,11 @@ const AciCli = {
     } else {
       headers.Authorization = 'Bearer ' + SB_KEY;
     }
+    const timeoutMs = opts.timeoutMs || (body.fast ? 28000 : 55000);
     const j = await fetchJson(SB_URL + '/functions/v1/aci', {
       method: 'POST', headers,
       body: JSON.stringify({ ...body, cli_user: Auth?.user?.id, cli_email: Auth?.user?.email })
-    }, 55000);
+    }, timeoutMs);
     if (j._httpStatus === 401) j.error = j.error || 'login required — tap G to sign in';
     return j;
   },

@@ -170,6 +170,8 @@ const Voice = {
 
     const gen = ++this._gen;
     this.stopped = false;
+    this.speaking = true;
+    window.syncHandsFreeBtn?.();
     this.releaseAudio();
     try { speechSynthesis.cancel(); } catch (_) {}
 
@@ -189,7 +191,10 @@ const Voice = {
       if (window.ACIControl) ACIControl.reply(clean.slice(0, 160));
     }
 
-    if (gen === this._gen) this.speaking = false;
+    if (gen === this._gen) {
+      this.speaking = false;
+      window.syncHandsFreeBtn?.();
+    }
     if (onEnd && gen === this._gen && !this.stopped) onEnd();
   }
 };
@@ -433,10 +438,9 @@ function userIntervene() {
   SuperAdd?.stop?.();
   GlobeEntity?.clearSelection?.();
   document.getElementById('aci-cli-in')?.classList.remove('voice-live');
-  document.getElementById('aci-mic')?.classList.remove('listening', 'deck-btn-active');
-  document.getElementById('aci-voice')?.classList.remove('speaking');
+  document.getElementById('aci-handsfree')?.classList.remove('listening', 'deck-btn-active', 'speaking');
   const cliIn = document.getElementById('aci-cli-in');
-  if (cliIn) cliIn.placeholder = 'type or tap 🎤 · Enter or ➡';
+  if (cliIn) cliIn.placeholder = 'type or tap 🎧 · Enter or ➡';
   GlobeControl?.userTookGlobe?.('stop');
   if (window.PmrRadio) PmrRadio.hide();
   if (window.DrivingView) DrivingView.deactivate();

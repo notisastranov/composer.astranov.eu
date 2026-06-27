@@ -69,7 +69,7 @@
   #aci-bar { display:flex; gap:6px; padding:8px 10px; margin:0 8px 8px; background:rgba(0,8,18,0.82); border:1px solid rgba(0,180,255,0.35); border-radius:24px; pointer-events:auto; backdrop-filter:blur(12px); align-items:center; justify-content:center; flex-wrap:wrap; }
   #aci-bar button { font-size:17px; line-height:1; }
   #aci-input, #aci-send { display:none !important; }
-  #aci-mic, #aci-send, #aci-order, #aci-locate, #aci-vhf, #aci-call, #aci-stop, #aci-login { background:rgba(0,100,180,0.35); border:1px solid rgba(0,200,255,0.4); color:#aaf; border-radius:50%; width:38px; height:38px; cursor:pointer; font-size:14px; flex-shrink:0; }
+  #aci-handsfree, #aci-send, #aci-order, #aci-locate, #aci-vhf, #aci-call, #aci-stop, #aci-login { background:rgba(0,100,180,0.35); border:1px solid rgba(0,200,255,0.4); color:#aaf; border-radius:50%; width:38px; height:38px; cursor:pointer; font-size:14px; flex-shrink:0; }
   #aci-locate { font-size:16px; }
   #aci-login { font-weight:700; font-size:13px; }
   #aci-stop { background:rgba(120,20,40,0.45); border-color:rgba(255,80,100,0.5); color:#faa; }
@@ -153,9 +153,9 @@
   #aci-cli-in:focus { border-color:rgba(0,255,200,0.55); box-shadow:0 0 0 2px rgba(0,255,160,0.12); }
   #aci-cli-in.voice-live { border-color:rgba(255,180,60,0.65); color:#ffe8c8; }
   #globe-deck-input-row .deck-input-btn { background:rgba(0,100,180,0.45); border:1px solid rgba(0,200,255,0.5); color:#cef; border-radius:50%; width:40px; height:40px; cursor:pointer; font-size:16px; flex-shrink:0; display:inline-flex; align-items:center; justify-content:center; touch-action:manipulation; }
-  #globe-deck-input-row #aci-mic.deck-btn-active, #globe-deck-input-row #aci-mic.listening { background:rgba(180,80,0,0.55); border-color:rgba(255,180,60,0.75); color:#fd8; box-shadow:0 0 10px rgba(255,160,40,0.35); }
+  #globe-deck-input-row #aci-handsfree.deck-btn-active, #globe-deck-input-row #aci-handsfree.listening { background:rgba(180,80,0,0.55); border-color:rgba(255,180,60,0.75); color:#fd8; box-shadow:0 0 10px rgba(255,160,40,0.35); }
   #globe-deck-input-row #globe-deck-send { border-radius:12px; width:44px; font-size:15px; font-weight:700; }
-  #globe-deck-input-row #aci-voice.speaking { background:rgba(100,40,160,0.55); border-color:rgba(200,120,255,0.7); }
+  #globe-deck-input-row #aci-handsfree.speaking { background:rgba(100,40,160,0.55); border-color:rgba(200,120,255,0.7); box-shadow:0 0 10px rgba(200,120,255,0.35); }
   #aci-cli-toggle { display:inline-flex; background:rgba(0,60,40,0.5); border:1px solid rgba(0,255,160,0.4); color:#6fc; border-radius:50%; width:38px; height:38px; cursor:pointer; font-size:15px; flex-shrink:0; align-items:center; justify-content:center; }
   #city-life-chip { display:none; position:fixed; bottom:88px; left:12px; z-index:118; max-width:240px; padding:8px 12px; border-radius:12px; background:rgba(0,20,12,0.88); border:1px solid rgba(0,255,160,0.4); font:10px/1.4 system-ui; color:#9fd; pointer-events:none; }
   #city-life-chip.open { display:block; }
@@ -455,9 +455,8 @@
       </div>
       <div id="globe-deck-input-row">
         <span id="aci-cli-prompt">collective $</span>
-        <input id="aci-cli-in" type="text" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="type or tap 🎤 · Enter or ➡" />
-        <button id="aci-mic" class="deck-input-btn" type="button" title="Voice — live transcript">🎤</button>
-        <button id="aci-voice" class="deck-input-btn" type="button" title="AI voice — hear reply">🔊</button>
+        <input id="aci-cli-in" type="text" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="type or tap 🎧 · Enter or ➡" />
+        <button id="aci-handsfree" class="deck-input-btn" type="button" title="AI hands-free — listen &amp; speak">🎧</button>
         <button id="globe-deck-send" class="deck-input-btn" type="button" title="Send">➡</button>
       </div>
     </div>
@@ -792,6 +791,8 @@ const Voice = {
 
     const gen = ++this._gen;
     this.stopped = false;
+    this.speaking = true;
+    window.syncHandsFreeBtn?.();
     this.releaseAudio();
     try { speechSynthesis.cancel(); } catch (_) {}
 
@@ -811,7 +812,10 @@ const Voice = {
       if (window.ACIControl) ACIControl.reply(clean.slice(0, 160));
     }
 
-    if (gen === this._gen) this.speaking = false;
+    if (gen === this._gen) {
+      this.speaking = false;
+      window.syncHandsFreeBtn?.();
+    }
     if (onEnd && gen === this._gen && !this.stopped) onEnd();
   }
 };
@@ -1055,10 +1059,9 @@ function userIntervene() {
   SuperAdd?.stop?.();
   GlobeEntity?.clearSelection?.();
   document.getElementById('aci-cli-in')?.classList.remove('voice-live');
-  document.getElementById('aci-mic')?.classList.remove('listening', 'deck-btn-active');
-  document.getElementById('aci-voice')?.classList.remove('speaking');
+  document.getElementById('aci-handsfree')?.classList.remove('listening', 'deck-btn-active', 'speaking');
   const cliIn = document.getElementById('aci-cli-in');
-  if (cliIn) cliIn.placeholder = 'type or tap 🎤 · Enter or ➡';
+  if (cliIn) cliIn.placeholder = 'type or tap 🎧 · Enter or ➡';
   GlobeControl?.userTookGlobe?.('stop');
   if (window.PmrRadio) PmrRadio.hide();
   if (window.DrivingView) DrivingView.deactivate();
@@ -1803,7 +1806,7 @@ const SuperCli = {
 
   // Top bar: login + Super Add only — everything else via CLI (locate, order, batch, vhf, theme, hold, stop…)
   TOOLBAR_VISIBLE: ['aci-login', 'super-add-fab'],
-  INPUT_BTNS: ['aci-mic', 'aci-voice', 'globe-deck-send'],
+  INPUT_BTNS: ['aci-handsfree', 'globe-deck-send'],
 
   init() {
     if (this._bound) return;
@@ -1842,36 +1845,20 @@ const SuperCli = {
   },
 
   bindInputBar() {
-    const mic = document.getElementById('aci-mic');
-    const voice = document.getElementById('aci-voice');
+    const hf = document.getElementById('aci-handsfree');
     const send = document.getElementById('globe-deck-send');
-    if (mic && !mic._superBound) {
-      mic._superBound = true;
-      mic.onclick = e => {
+    if (hf && !hf._superBound) {
+      hf._superBound = true;
+      hf.onclick = e => {
         e.preventDefault(); e.stopPropagation();
         GlobeDeck?.expand?.(ACL_TITLE);
         document.getElementById('aci-cli-in')?.focus();
         if (SessionHold?.isHeld?.()) { SessionHold.resume(); return; }
-        if (Voice?.speaking) { userIntervene?.(); return; }
-        if (isListening || voiceSessionActive) userIntervene?.();
-        else startVoiceOptions?.();
-      };
-    }
-    if (voice && !voice._superBound) {
-      voice._superBound = true;
-      voice.onclick = e => {
-        e.preventDefault(); e.stopPropagation();
-        GlobeDeck?.expand?.(ACL_TITLE);
-        if (Voice?.speaking) { Voice.flush?.(); voice.classList.remove('speaking'); return; }
-        const preview = document.getElementById('globe-deck-preview')?.textContent
-          || document.querySelector('#globe-deck-log .deck-reply:last-child')?.textContent
-          || document.querySelector('#globe-deck-log .deck-ok:last-child')?.textContent
-          || 'Astranov Collective ready.';
-        voice.classList.add('speaking');
-        speak(String(preview).slice(0, 200), () => {
-          voice.classList.remove('speaking');
-          scheduleVoiceResume?.();
-        }, true);
+        if (Voice?.speaking || isListening || voiceSessionActive || window._handsFreeVoice) {
+          userIntervene?.();
+          return;
+        }
+        startVoiceOptions?.();
       };
     }
     if (send && !send._superBound) {
@@ -2635,7 +2622,7 @@ const AciCli = {
     GlobeDeck?.log(text, cls || 'out');
   },
 
-  async api(body) {
+  async api(body, opts = {}) {
     const headers = { 'Content-Type': 'application/json', apikey: SB_KEY };
     if (Auth?.ensureSession) {
       const session = await Auth.ensureSession();
@@ -2647,10 +2634,11 @@ const AciCli = {
     } else {
       headers.Authorization = 'Bearer ' + SB_KEY;
     }
+    const timeoutMs = opts.timeoutMs || (body.fast ? 28000 : 55000);
     const j = await fetchJson(SB_URL + '/functions/v1/aci', {
       method: 'POST', headers,
       body: JSON.stringify({ ...body, cli_user: Auth?.user?.id, cli_email: Auth?.user?.email })
-    }, 55000);
+    }, timeoutMs);
     if (j._httpStatus === 401) j.error = j.error || 'login required — tap G to sign in';
     return j;
   },
@@ -3045,7 +3033,8 @@ const AciCoders = {
   _lastListenAt: 0,
 
   CAUSE: 'Justice → Truth → Freedom',
-  LISTEN_MS: 75000,
+  LISTEN_MS: 120000,
+  _cliBusy: false,
   EVOLVE_MS: 180000,
 
   loadPrefs() {
@@ -3131,7 +3120,7 @@ const AciCoders = {
   },
 
   async listenTick() {
-    if (this._listenBusy) return;
+    if (this._cliBusy || this._listenBusy) return;
     this._listenBusy = true;
     this._listenTicks++;
     try {
@@ -3433,8 +3422,6 @@ const AciCoders = {
       role: Auth?.user ? 'client' : 'anon',
       props: { coders: true, guest: !!r.guest, always_on: true },
     });
-    if (this._activityCount >= 2) setTimeout(() => this.listenTick(), 4000);
-
     return r;
   },
 
@@ -3475,19 +3462,23 @@ const AciCoders = {
 
     if (Auth?.user && !(await this.ensureSession())) return { error: 'session expired' };
 
+    const build = this.isBuildTask(m);
+    const fast = !build && !this.wantsComposer(m);
+
     GlobeDeck?.onUserMessage(Auth?.user ? 'Coders' : 'Coders · guest');
     if (GlobeDeck) GlobeDeck.activeTask = 'coders';
-    MapDepict?.action('think', { detail: 'coders: ' + m.slice(0, 40) });
+    if (!fast) MapDepict?.action('think', { detail: 'coders: ' + m.slice(0, 40) });
 
+    this._cliBusy = true;
     try {
-      GlobeDeck?.setThinking(true, 'Coders — ' + this.CAUSE + '…');
+      GlobeDeck?.setThinking(true, fast ? 'Coders…' : ('Coders — ' + this.CAUSE + '…'));
       if (/^locate\s*(me|button)?$/i.test(m.trim()) || /^🎯|📍$/.test(m.trim())) {
         locateMe();
         GlobeDeck?.setThinking(false);
         return { ok: true, located: true };
       }
 
-      if (Auth?.user && this.wantsComposer(m) && this.isBuildTask(m)) {
+      if (Auth?.user && this.wantsComposer(m) && build) {
         const q = await this.queueCoder(m, 'composer');
         GlobeDeck?.setThinking(false);
         if (q.text && !q.error) {
@@ -3498,12 +3489,13 @@ const AciCoders = {
       const r = await AciCli.api({
         mode: 'coders_chat',
         message: m,
-        history: this.history.slice(-10),
+        fast,
+        history: this.history.slice(fast ? -4 : -8),
         fallback_prefs: this.fallbackPrefs,
-      });
+      }, { timeoutMs: fast ? 28000 : 55000 });
 
       if (r.error) {
-        if (Auth?.user) {
+        if (Auth?.user && build) {
           const q = await this.queueCoder(m, 'grok');
           if (q.text && !q.error) {
             GlobeDeck?.setThinking(false);
@@ -3515,7 +3507,7 @@ const AciCoders = {
         return r;
       }
 
-      if (Auth?.user && !r.text && !r.response && this.isBuildTask(m)) {
+      if (Auth?.user && build && !r.text && !r.response && !r.summon_id) {
         const q = await this.queueCoder(m, 'grok');
         if (q.text) {
           r.text = q.text;
@@ -3531,11 +3523,13 @@ const AciCoders = {
       GlobeDeck?.setThinking(false);
       const msg = String(e.message || e);
       GlobeDeck?.showError('Coders failed: ' + msg);
-      if (Auth?.user) {
+      if (Auth?.user && build) {
         const q = await this.queueCoder(m, 'grok');
         if (q.text) return this._applyResponse({ ...q, team: true }, m);
       }
       return { error: msg };
+    } finally {
+      this._cliBusy = false;
     }
   },
 
@@ -10231,11 +10225,21 @@ function initUser() {
 try { initUser(); } catch(e){ console.warn('User init skipped:', e.message); }
 
 // Let user explore the globe freely first
-console.log('%c[Astranov] Globe UI: drag rotate · wheel/pinch zoom · tap/double-tap fly. 💻 CLI for tasks. 🎤 mic optional.', 'color:#00ddff');
+console.log('%c[Astranov] Globe UI: drag rotate · wheel/pinch zoom · tap/double-tap fly. 💻 CLI for tasks. 🎧 hands-free optional.', 'color:#00ddff');
 
 // Voice → Astranov Command Line (live transcript in input, same path as typing)
 let _voiceBusy = false;
 window._handsFreeVoice = false;
+
+function syncHandsFreeBtn() {
+  const btn = document.getElementById('aci-handsfree');
+  if (!btn) return;
+  const on = voiceSessionActive || window._handsFreeVoice;
+  btn.classList.toggle('deck-btn-active', on);
+  btn.classList.toggle('listening', isListening);
+  btn.classList.toggle('speaking', !!Voice?.speaking);
+}
+window.syncHandsFreeBtn = syncHandsFreeBtn;
 
 function openVoiceCli() {
   const title = window.SuperCli?.title || 'Astranov Command Line';
@@ -10243,9 +10247,8 @@ function openVoiceCli() {
   if (window.AciCli) AciCli.open = true;
   SuperCli?.setContext?.(SuperCli.inferContext?.() || 'idle');
   const input = document.getElementById('aci-cli-in');
-  const mic = document.getElementById('aci-mic');
   if (input) input.classList.add('voice-live');
-  if (mic) mic.classList.add('listening', 'deck-btn-active');
+  syncHandsFreeBtn();
 }
 
 function scheduleVoiceResume() {
@@ -10257,7 +10260,7 @@ function scheduleVoiceResume() {
     const on = voiceSessionActive || window._handsFreeVoice;
     if (!on || !voiceEnabled || isListening || Voice.speaking || _voiceBusy) return;
     startListeningForOptions();
-  }, window._handsFreeVoice ? 450 : 700);
+  }, window._handsFreeVoice ? 280 : 500);
 }
 
 function voiceWantsAciControl(line) {
@@ -10328,9 +10331,8 @@ async function submitVoiceToCli(transcript) {
   } finally {
     _voiceBusy = false;
     const input = document.getElementById('aci-cli-in');
-    const mic = document.getElementById('aci-mic');
     if (input) input.classList.remove('voice-live');
-    if (mic) mic.classList.remove('listening');
+    syncHandsFreeBtn();
     scheduleVoiceResume();
   }
 }
@@ -10364,6 +10366,7 @@ function startListeningForOptions() {
   if (!recognition || isListening || _voiceBusy || Voice.speaking) return;
   openVoiceCli();
   isListening = true;
+  syncHandsFreeBtn();
   try {
     recognition.start();
   } catch (e) {
@@ -10394,8 +10397,8 @@ function handleVoiceCommand(event) {
       if (AciCli) AciCli.buffer = draft;
       input.scrollLeft = input.scrollWidth;
     }
-    GlobeDeck?.setPreview('🎤 ' + draft.slice(0, 96));
-    GlobeDeck?.log?.('🎤 ' + draft, 'dim');
+    GlobeDeck?.setPreview('🎧 ' + draft.slice(0, 96));
+    syncHandsFreeBtn();
   }
 
   if (!final.trim()) return;
@@ -10421,12 +10424,13 @@ function startVoiceOptions() {
   voiceEnabled = true;
   window._handsFreeVoice = true;
   openVoiceCli();
-  AciCli?.print('🎤 hands-free — speak anytime (locate, order, batch, help, stop)', 'dim');
+  AciCli?.print('🎧 AI hands-free — speak anytime (locate, order, batch, help, stop)', 'dim');
   const input = document.getElementById('aci-cli-in');
-  if (input) input.placeholder = '🎤 hands-free listening…';
-  ACIControl.reply('Hands-free on — Astranov Command Line');
+  if (input) input.placeholder = '🎧 hands-free listening…';
+  ACIControl.reply('Hands-free on — listen & speak');
   AstranovSession?.push?.();
-  speak('Listening.', () => startListeningForOptions(), true);
+  syncHandsFreeBtn();
+  startListeningForOptions();
 }
 
 function stopHandsFree() {

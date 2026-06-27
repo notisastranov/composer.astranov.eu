@@ -8,7 +8,7 @@ const SuperCli = {
 
   // Top bar: login + Super Add only — everything else via CLI (locate, order, batch, vhf, theme, hold, stop…)
   TOOLBAR_VISIBLE: ['aci-login', 'super-add-fab'],
-  INPUT_BTNS: ['aci-mic', 'aci-voice', 'globe-deck-send'],
+  INPUT_BTNS: ['aci-handsfree', 'globe-deck-send'],
 
   init() {
     if (this._bound) return;
@@ -47,36 +47,20 @@ const SuperCli = {
   },
 
   bindInputBar() {
-    const mic = document.getElementById('aci-mic');
-    const voice = document.getElementById('aci-voice');
+    const hf = document.getElementById('aci-handsfree');
     const send = document.getElementById('globe-deck-send');
-    if (mic && !mic._superBound) {
-      mic._superBound = true;
-      mic.onclick = e => {
+    if (hf && !hf._superBound) {
+      hf._superBound = true;
+      hf.onclick = e => {
         e.preventDefault(); e.stopPropagation();
         GlobeDeck?.expand?.(ACL_TITLE);
         document.getElementById('aci-cli-in')?.focus();
         if (SessionHold?.isHeld?.()) { SessionHold.resume(); return; }
-        if (Voice?.speaking) { userIntervene?.(); return; }
-        if (isListening || voiceSessionActive) userIntervene?.();
-        else startVoiceOptions?.();
-      };
-    }
-    if (voice && !voice._superBound) {
-      voice._superBound = true;
-      voice.onclick = e => {
-        e.preventDefault(); e.stopPropagation();
-        GlobeDeck?.expand?.(ACL_TITLE);
-        if (Voice?.speaking) { Voice.flush?.(); voice.classList.remove('speaking'); return; }
-        const preview = document.getElementById('globe-deck-preview')?.textContent
-          || document.querySelector('#globe-deck-log .deck-reply:last-child')?.textContent
-          || document.querySelector('#globe-deck-log .deck-ok:last-child')?.textContent
-          || 'Astranov Collective ready.';
-        voice.classList.add('speaking');
-        speak(String(preview).slice(0, 200), () => {
-          voice.classList.remove('speaking');
-          scheduleVoiceResume?.();
-        }, true);
+        if (Voice?.speaking || isListening || voiceSessionActive || window._handsFreeVoice) {
+          userIntervene?.();
+          return;
+        }
+        startVoiceOptions?.();
       };
     }
     if (send && !send._superBound) {

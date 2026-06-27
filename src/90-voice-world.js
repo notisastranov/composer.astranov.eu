@@ -32,11 +32,21 @@ function initUser() {
 try { initUser(); } catch(e){ console.warn('User init skipped:', e.message); }
 
 // Let user explore the globe freely first
-console.log('%c[Astranov] Globe UI: drag rotate · wheel/pinch zoom · tap/double-tap fly. 💻 CLI for tasks. 🎤 mic optional.', 'color:#00ddff');
+console.log('%c[Astranov] Globe UI: drag rotate · wheel/pinch zoom · tap/double-tap fly. 💻 CLI for tasks. 🎧 hands-free optional.', 'color:#00ddff');
 
 // Voice → Astranov Command Line (live transcript in input, same path as typing)
 let _voiceBusy = false;
 window._handsFreeVoice = false;
+
+function syncHandsFreeBtn() {
+  const btn = document.getElementById('aci-handsfree');
+  if (!btn) return;
+  const on = voiceSessionActive || window._handsFreeVoice;
+  btn.classList.toggle('deck-btn-active', on);
+  btn.classList.toggle('listening', isListening);
+  btn.classList.toggle('speaking', !!Voice?.speaking);
+}
+window.syncHandsFreeBtn = syncHandsFreeBtn;
 
 function openVoiceCli() {
   const title = window.SuperCli?.title || 'Astranov Command Line';
@@ -44,9 +54,8 @@ function openVoiceCli() {
   if (window.AciCli) AciCli.open = true;
   SuperCli?.setContext?.(SuperCli.inferContext?.() || 'idle');
   const input = document.getElementById('aci-cli-in');
-  const mic = document.getElementById('aci-mic');
   if (input) input.classList.add('voice-live');
-  if (mic) mic.classList.add('listening', 'deck-btn-active');
+  syncHandsFreeBtn();
 }
 
 function scheduleVoiceResume() {
@@ -58,7 +67,7 @@ function scheduleVoiceResume() {
     const on = voiceSessionActive || window._handsFreeVoice;
     if (!on || !voiceEnabled || isListening || Voice.speaking || _voiceBusy) return;
     startListeningForOptions();
-  }, window._handsFreeVoice ? 450 : 700);
+  }, window._handsFreeVoice ? 280 : 500);
 }
 
 function voiceWantsAciControl(line) {
@@ -129,9 +138,8 @@ async function submitVoiceToCli(transcript) {
   } finally {
     _voiceBusy = false;
     const input = document.getElementById('aci-cli-in');
-    const mic = document.getElementById('aci-mic');
     if (input) input.classList.remove('voice-live');
-    if (mic) mic.classList.remove('listening');
+    syncHandsFreeBtn();
     scheduleVoiceResume();
   }
 }
@@ -165,6 +173,7 @@ function startListeningForOptions() {
   if (!recognition || isListening || _voiceBusy || Voice.speaking) return;
   openVoiceCli();
   isListening = true;
+  syncHandsFreeBtn();
   try {
     recognition.start();
   } catch (e) {
@@ -195,8 +204,8 @@ function handleVoiceCommand(event) {
       if (AciCli) AciCli.buffer = draft;
       input.scrollLeft = input.scrollWidth;
     }
-    GlobeDeck?.setPreview('🎤 ' + draft.slice(0, 96));
-    GlobeDeck?.log?.('🎤 ' + draft, 'dim');
+    GlobeDeck?.setPreview('🎧 ' + draft.slice(0, 96));
+    syncHandsFreeBtn();
   }
 
   if (!final.trim()) return;
@@ -222,12 +231,13 @@ function startVoiceOptions() {
   voiceEnabled = true;
   window._handsFreeVoice = true;
   openVoiceCli();
-  AciCli?.print('🎤 hands-free — speak anytime (locate, order, batch, help, stop)', 'dim');
+  AciCli?.print('🎧 AI hands-free — speak anytime (locate, order, batch, help, stop)', 'dim');
   const input = document.getElementById('aci-cli-in');
-  if (input) input.placeholder = '🎤 hands-free listening…';
-  ACIControl.reply('Hands-free on — Astranov Command Line');
+  if (input) input.placeholder = '🎧 hands-free listening…';
+  ACIControl.reply('Hands-free on — listen & speak');
   AstranovSession?.push?.();
-  speak('Listening.', () => startListeningForOptions(), true);
+  syncHandsFreeBtn();
+  startListeningForOptions();
 }
 
 function stopHandsFree() {

@@ -21,7 +21,8 @@ const AciCoders = {
   _lastListenAt: 0,
 
   CAUSE: 'Justice → Truth → Freedom',
-  LISTEN_MS: 75000,
+  LISTEN_MS: 120000,
+  _cliBusy: false,
   EVOLVE_MS: 180000,
 
   loadPrefs() {
@@ -107,7 +108,7 @@ const AciCoders = {
   },
 
   async listenTick() {
-    if (this._listenBusy) return;
+    if (this._cliBusy || this._listenBusy) return;
     this._listenBusy = true;
     this._listenTicks++;
     try {
@@ -409,8 +410,6 @@ const AciCoders = {
       role: Auth?.user ? 'client' : 'anon',
       props: { coders: true, guest: !!r.guest, always_on: true },
     });
-    if (this._activityCount >= 2) setTimeout(() => this.listenTick(), 4000);
-
     return r;
   },
 
@@ -451,19 +450,23 @@ const AciCoders = {
 
     if (Auth?.user && !(await this.ensureSession())) return { error: 'session expired' };
 
+    const build = this.isBuildTask(m);
+    const fast = !build && !this.wantsComposer(m);
+
     GlobeDeck?.onUserMessage(Auth?.user ? 'Coders' : 'Coders · guest');
     if (GlobeDeck) GlobeDeck.activeTask = 'coders';
-    MapDepict?.action('think', { detail: 'coders: ' + m.slice(0, 40) });
+    if (!fast) MapDepict?.action('think', { detail: 'coders: ' + m.slice(0, 40) });
 
+    this._cliBusy = true;
     try {
-      GlobeDeck?.setThinking(true, 'Coders — ' + this.CAUSE + '…');
+      GlobeDeck?.setThinking(true, fast ? 'Coders…' : ('Coders — ' + this.CAUSE + '…'));
       if (/^locate\s*(me|button)?$/i.test(m.trim()) || /^🎯|📍$/.test(m.trim())) {
         locateMe();
         GlobeDeck?.setThinking(false);
         return { ok: true, located: true };
       }
 
-      if (Auth?.user && this.wantsComposer(m) && this.isBuildTask(m)) {
+      if (Auth?.user && this.wantsComposer(m) && build) {
         const q = await this.queueCoder(m, 'composer');
         GlobeDeck?.setThinking(false);
         if (q.text && !q.error) {
@@ -474,12 +477,13 @@ const AciCoders = {
       const r = await AciCli.api({
         mode: 'coders_chat',
         message: m,
-        history: this.history.slice(-10),
+        fast,
+        history: this.history.slice(fast ? -4 : -8),
         fallback_prefs: this.fallbackPrefs,
-      });
+      }, { timeoutMs: fast ? 28000 : 55000 });
 
       if (r.error) {
-        if (Auth?.user) {
+        if (Auth?.user && build) {
           const q = await this.queueCoder(m, 'grok');
           if (q.text && !q.error) {
             GlobeDeck?.setThinking(false);
@@ -491,7 +495,7 @@ const AciCoders = {
         return r;
       }
 
-      if (Auth?.user && !r.text && !r.response && this.isBuildTask(m)) {
+      if (Auth?.user && build && !r.text && !r.response && !r.summon_id) {
         const q = await this.queueCoder(m, 'grok');
         if (q.text) {
           r.text = q.text;
@@ -507,11 +511,13 @@ const AciCoders = {
       GlobeDeck?.setThinking(false);
       const msg = String(e.message || e);
       GlobeDeck?.showError('Coders failed: ' + msg);
-      if (Auth?.user) {
+      if (Auth?.user && build) {
         const q = await this.queueCoder(m, 'grok');
         if (q.text) return this._applyResponse({ ...q, team: true }, m);
       }
       return { error: msg };
+    } finally {
+      this._cliBusy = false;
     }
   },
 

@@ -325,26 +325,34 @@ serve(async (req) => {
       const isGuest = !caller.callerId
       const incomingPrefs = (body.fallback_prefs || {}) as FallbackPrefs
       const prefs = parseFallbackDirectives(message, incomingPrefs)
-      const composer = await checkComposerStatus(base, anon)
-      const roster = providerRoster(caller.isOwner)
-      const openSummons = await sb.from('cic_queue').select('id', { count: 'exact', head: true })
-        .eq('reason', 'coder_summon').eq('status', 'open')
-
-      const statusCtx = JSON.stringify({
-        composer,
-        roster,
-        fallback_prefs: prefs,
-        open_summons: openSummons.count ?? 0,
-        always_on: true,
-        guest: isGuest,
-        note: 'Anthropic is fallback only for owner — NOT Cursor Composer. Cannot read credit balances via API.',
-      }, null, 0)
 
       const explicitOrder = body.explicit_order === true && caller.isOwner && !isGuest
       const causeRuling = caller.isOwner
         ? String(body.cause_ruling || (incomingPrefs as { causeJudge?: string }).causeJudge || '').trim().slice(0, 500)
         : ''
       const ownerJudge = body.owner_judge === true && caller.isOwner && !!causeRuling
+      const fastChat = body.fast === true && !explicitOrder && !ownerJudge && !isBuildTask(message)
+
+      const roster = providerRoster(caller.isOwner)
+      let composer: Record<string, unknown>
+      let statusCtx: string
+      if (fastChat) {
+        composer = { fast: true }
+        statusCtx = '{"fast_chat":true}'
+      } else {
+        composer = await checkComposerStatus(base, anon)
+        const openSummons = await sb.from('cic_queue').select('id', { count: 'exact', head: true })
+          .eq('reason', 'coder_summon').eq('status', 'open')
+        statusCtx = JSON.stringify({
+          composer,
+          roster,
+          fallback_prefs: prefs,
+          open_summons: openSummons.count ?? 0,
+          always_on: true,
+          guest: isGuest,
+          note: 'Anthropic is fallback only for owner — NOT Cursor Composer. Cannot read credit balances via API.',
+        }, null, 0)
+      }
 
       let causeBlock = COLLECTIVE_CAUSE
       if (ownerJudge && causeRuling) {
@@ -363,21 +371,32 @@ serve(async (req) => {
         ? `OWNER EXECUTE ORDER (not conversational — run now): ${message}`
         : message
 
-      const result = await invokeFn(base, anon, caller.authToken, 'aicycle', {
-        prompt: orderPrompt,
-        profile_id: caller.callerId || undefined,
-        mode: 'coders_team',
-        fallback_prefs: prefs,
-        history: Array.isArray(body.history) ? body.history : [],
-        agent_system: `${causeBlock}\n\n${guestNote}\n\nLIVE STATUS:\n${statusCtx}`,
-      })
+      const history = Array.isArray(body.history) ? body.history : []
+      const result = fastChat
+        ? await invokeFn(base, anon, caller.authToken, 'aicycle', {
+          prompt: message,
+          profile_id: caller.callerId || undefined,
+          mode: 'coders',
+          coder_engine: 'grok',
+          fallback_prefs: prefs,
+          history,
+          agent_system: `${causeBlock}\n\n${guestNote}\n\nFast CLI — answer concisely for live coding on astranov.eu.`,
+        })
+        : await invokeFn(base, anon, caller.authToken, 'aicycle', {
+          prompt: orderPrompt,
+          profile_id: caller.callerId || undefined,
+          mode: 'coders_team',
+          fallback_prefs: prefs,
+          history,
+          agent_system: `${causeBlock}\n\n${guestNote}\n\nLIVE STATUS:\n${statusCtx}`,
+        })
 
       let action: Record<string, unknown> | null = null
       const force = String(prefs.force || '').toLowerCase()
       const tryLlm = /try\s+(xai\s+)?grok|use\s+(xai\s+)?grok|try\s+groq|use\s+groq|try\s+anthropic|probe|test\s+(grok|xai|anthropic)/i.test(message)
-      const runBuild = (explicitOrder || isBuildTask(message)) && force !== 'composer' && !tryLlm
+      const runBuild = !fastChat && (explicitOrder || isBuildTask(message)) && force !== 'composer' && !tryLlm
 
-      if (tryLlm && force && force !== 'composer' && caller.callerId) {
+      if (!fastChat && tryLlm && force && force !== 'composer' && caller.callerId) {
         const probe = await invokeFn(base, anon, caller.authToken, 'aicycle', {
           prompt: 'Reply with exactly: online',
           profile_id: caller.callerId,
@@ -389,7 +408,7 @@ serve(async (req) => {
         action = { type: 'probe', force, via: probe.via, ok: !!(probe.text || probe.response) }
       }
 
-      if (!isGuest && (runBuild || explicitOrder || (isBuildTask(message) && force === 'composer'))) {
+      if (!fastChat && !isGuest && (runBuild || explicitOrder || (isBuildTask(message) && force === 'composer'))) {
         const engine = force === 'composer' ? 'composer' : 'grok'
         const inner = await invokeFn(base, anon, caller.authToken, 'aci', {
           mode: 'coders',
@@ -422,7 +441,7 @@ serve(async (req) => {
       }
 
       let text = String(result.text || result.response || '').trim()
-      if (!text || /^coders team listening\.?$/i.test(text)) {
+      if (!fastChat && (!text || /^coders team listening\.?$/i.test(text))) {
         const fb = await invokeFn(base, anon, caller.authToken, 'aicycle', {
           prompt: message,
           profile_id: caller.callerId,
@@ -430,13 +449,15 @@ serve(async (req) => {
           coder_engine: 'grok',
           fallback: true,
           fallback_prefs: prefs,
-          history: Array.isArray(body.history) ? body.history : [],
+          history,
           agent_system: 'Coders team sync fallback — answer immediately.',
         })
         text = String(fb.text || fb.response || '').trim()
           || 'Coders online — no model responded; try again shortly.'
+      } else if (fastChat && !text) {
+        text = 'Coders online — try again shortly.'
       }
-      const via = String(result.via || 'team')
+      const via = String(result.via || (fastChat ? 'grok/fast' : 'team'))
       let full = text
       if (action?.type === 'probe') {
         full += `\n\n[Probe ${action.force}: ${action.ok ? 'online via ' + action.via : 'failed'}]`
@@ -448,7 +469,7 @@ serve(async (req) => {
         full += `\n\n[Action: ${tag} #${action.summon_id || '?'} · ${action.via || action.engine}]`
       }
 
-      if (memoryOwnerId && full) {
+      if (!fastChat && memoryOwnerId && full) {
         try {
           await sb.from('ai_memory').insert({
             profile_id: memoryOwnerId,
@@ -465,6 +486,7 @@ serve(async (req) => {
         ok: true,
         team: true,
         always_on: true,
+        fast: fastChat,
         guest: isGuest,
         owner: caller.isOwner,
         explicit_order: explicitOrder,
