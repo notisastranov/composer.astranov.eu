@@ -182,7 +182,7 @@ const ACIControl = {
     SuperCli?.init?.();
   },
   reply(text) {
-    const msg = (ArcangeloDialect?.sanitizeUi?.(text) ?? text || '').slice(0, 280);
+    const msg = String(ArcangeloDialect?.sanitizeUi?.(text) ?? text ?? '').slice(0, 280);
     if (!msg) return;
     GlobeDeck?.say(msg, 'reply');
   },
