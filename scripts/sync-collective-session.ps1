@@ -116,9 +116,16 @@ switch ($Action) {
     }
     Patch-Summary $dest
     Remove-Item $staging -Recurse -Force
+
+    $required = @('summary.json', 'updates.jsonl')
+    $missing = $required | Where-Object { -not (Test-Path (Join-Path $dest $_)) }
+    if ($missing.Count) {
+      Write-Error ("Install incomplete - missing: " + ($missing -join ', '))
+    }
+
     Write-Host "Installed session for this PC -> $dest" -ForegroundColor Green
-    Write-Host "Launch with: aci" -ForegroundColor Cyan
-    Write-Host "Or: grok --cwd `"$WORKSPACE`" --resume $COLLECTIVE_ID"
+    Write-Host "Launch: open NEW PowerShell, cd `$env:USERPROFILE, run: aci" -ForegroundColor Cyan
+    Write-Host "Do NOT use /resume (FS_NOT_FOUND on cloud-only entries)." -ForegroundColor Yellow
     break
   }
 }

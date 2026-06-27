@@ -103,7 +103,7 @@ function Invoke-AstranovGrok {
     `$out.Add(`$a)
   }
   if (`$out -notcontains '--resume') { `$out.Insert(0, `$cid); `$out.Insert(0, '--resume') }
-  if (`$out -notcontains '--cwd') { `$out.Insert(0, `$env:USERPROFILE); `$out.Insert(0, '--cwd') }
+  Set-Location `$env:USERPROFILE
   & `$grokb @out
 }
 if (-not (Get-Command grok-native -ErrorAction SilentlyContinue)) {

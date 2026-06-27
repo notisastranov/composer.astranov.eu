@@ -4,35 +4,47 @@ if (-not $COLLECTIVE_ID) { $COLLECTIVE_ID = '019efdcc-ee91-7572-9b29-240c4edaa26
 $env:GROK_MEMORY = '1'
 $WORKSPACE = $env:USERPROFILE
 $REPO = Join-Path $WORKSPACE 'Documents\GitHub\Astranov'
-if (Test-Path (Join-Path $REPO 'package.json')) {
-  Set-Location $REPO
-} else {
-  Set-Location $WORKSPACE
-}
+$SYNC = Join-Path $REPO 'scripts\sync-collective-session.ps1'
 
 function Get-EncodedCwd([string]$Path) {
   return [uri]::EscapeDataString((Resolve-Path $Path).Path)
 }
 
+function Get-GrokExe {
+  $cmd = Get-Command grok-native -CommandType Application -ErrorAction SilentlyContinue
+  if ($cmd) { return $cmd.Source }
+  $cmd = Get-Command grok -CommandType Application -ErrorAction SilentlyContinue
+  if ($cmd) { return $cmd.Source }
+  $fallback = Join-Path $env:USERPROFILE '.grok\bin\grok.exe'
+  if (Test-Path $fallback) { return $fallback }
+  return $null
+}
+
+Set-Location $WORKSPACE
 $enc = Get-EncodedCwd $WORKSPACE
 $sessionDir = Join-Path $env:USERPROFILE ".grok\sessions\$enc\$COLLECTIVE_ID"
-if (-not (Test-Path $sessionDir)) {
+$updates = Join-Path $sessionDir 'updates.jsonl'
+$summary = Join-Path $sessionDir 'summary.json'
+
+if (-not (Test-Path $updates) -or -not (Test-Path $summary)) {
   $zip = Join-Path $REPO '.collective-exports\aci-session-pack.zip'
-  $sync = Join-Path $REPO 'scripts\sync-collective-session.ps1'
-  if ((Test-Path $zip) -and (Test-Path $sync)) {
+  if ((Test-Path $zip) -and (Test-Path $SYNC)) {
     Write-Host 'Installing collective session for this PC...' -ForegroundColor Yellow
-    & $sync -Action install -ZipPath $zip
+    & $SYNC -Action install -ZipPath $zip
   } else {
-    Write-Host "Session not on this PC (path not found)." -ForegroundColor Red
-    Write-Host "On your main PC run: scripts\sync-collective-session.ps1 -Action pack"
-    Write-Host "Copy aci-session-pack.zip here, then run aci again."
+    Write-Host 'FS_NOT_FOUND: session files missing on this PC.' -ForegroundColor Red
+    Write-Host "Expected: $sessionDir"
+    Write-Host ''
+    Write-Host 'Fix: copy aci-session-pack.zip from main PC, then run:'
+    Write-Host "  powershell -ExecutionPolicy Bypass -File `"$REPO\scripts\bootstrap-other-pc.ps1`""
     exit 1
   }
 }
 
-Write-Host 'ASTRANOV COLLECTIVE INTELLIGENCE' -ForegroundColor Cyan
-Write-Host "Session $COLLECTIVE_ID · $WORKSPACE" -ForegroundColor DarkGray
-$grokb = (Get-Command grok-native -CommandType Application -ErrorAction SilentlyContinue).Source
-if (-not $grokb) { $grokb = (Get-Command grok -CommandType Application -ErrorAction SilentlyContinue).Source }
+$grokb = Get-GrokExe
 if (-not $grokb) { Write-Error 'grok not found in PATH'; exit 1 }
-& $grokb --cwd $WORKSPACE --resume $COLLECTIVE_ID @args
+
+Write-Host 'ASTRANOV COLLECTIVE INTELLIGENCE' -ForegroundColor Cyan
+Write-Host "Session $COLLECTIVE_ID"
+Write-Host "Workspace $WORKSPACE" -ForegroundColor DarkGray
+& $grokb --resume $COLLECTIVE_ID @args
