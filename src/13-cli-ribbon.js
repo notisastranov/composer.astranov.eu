@@ -22,7 +22,6 @@ const CliRibbon = {
   init() {
     const bar = document.getElementById('super-cli-bar');
     const header = document.getElementById('globe-deck-header');
-    const handle = document.getElementById('globe-deck-handle');
     const fab = document.getElementById('super-add-fab');
 
     if (header) header.style.display = 'none';
@@ -37,16 +36,7 @@ const CliRibbon = {
     }
     this._el = status;
 
-    if (handle && fab && handle.parentElement !== bar) {
-      bar.appendChild(handle);
-    }
-    if (handle && !handle._ribbonBound) {
-      handle._ribbonBound = true;
-      handle.onclick = e => {
-        e.stopPropagation();
-        GlobeDeck?.toggle?.();
-      };
-    }
+    GlobeDeck?.bindHandle?.();
 
     this._active = 'CLI';
     this.render();
@@ -59,6 +49,7 @@ const CliRibbon = {
     s = s.replace(/^Astranov Command Line\b/i, 'CLI');
     s = s.replace(/^Collective Coders\s*—\s*talk here$/i, 'Coders');
     s = s.replace(/^Coders online\s*—.*$/i, 'Coders');
+    s = s.replace(/warming up.*$/i, '').trim();
     const low = s.toLowerCase();
     for (const [key, label] of Object.entries(this.TASK_LABEL)) {
       if (low === key || low.startsWith(key + ' ') || low.includes(key)) return label;
@@ -79,6 +70,7 @@ const CliRibbon = {
     if (kind) this._kind = kind;
     else if (/error|fail|denied/i.test(s)) this._kind = 'err';
     else if (/⏸|held|pause/i.test(s)) this._kind = 'hold';
+    else if (/ready|located|on globe/i.test(s)) this._kind = 'ready';
     else if (s) this._kind = 'info';
     else this._kind = 'idle';
     this.render();
@@ -120,10 +112,14 @@ const CliRibbon = {
     this._el.className = 'cli-ribbon-status'
       + (GlobeDeck?.thinking ? ' thinking' : '')
       + (this._kind === 'err' ? ' alert' : '')
-      + (this._kind === 'hold' ? ' hold' : '');
+      + (this._kind === 'hold' ? ' hold' : '')
+      + (this._kind === 'ready' ? ' ready' : '');
 
-    const handle = document.getElementById('globe-deck-handle');
-    if (handle) handle.textContent = GlobeDeck?.expanded ? '▁' : '▔';
+    const handle = document.getElementById('cli-deck-handle');
+    if (handle) {
+      handle.textContent = GlobeDeck?.expanded ? '▁' : '▔';
+      handle.setAttribute('aria-expanded', GlobeDeck?.expanded ? 'true' : 'false');
+    }
 
     const title = document.getElementById('globe-deck-title');
     const preview = document.getElementById('globe-deck-preview');

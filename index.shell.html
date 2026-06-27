@@ -144,7 +144,8 @@
   #cli-ribbon-status.hold { color:var(--ax-yellow-bright); text-shadow:0 0 8px var(--ax-yellow-glow); }
   #cli-ribbon-status.ready { color:var(--ax-green-bright); text-shadow:0 0 8px var(--ax-green-glow); }
   @keyframes cli-think-glow { 0%,100%{ opacity:0.85; } 50%{ opacity:1; text-shadow:0 0 12px var(--ax-blue-glow); } }
-  #super-cli-bar #globe-deck-handle { background:transparent; border:none; color:#8aa; cursor:pointer; font-size:15px; padding:2px 6px; width:auto; height:auto; border-radius:8px; flex-shrink:0; }
+  #super-cli-bar #cli-deck-handle { background:transparent; border:none; color:var(--ax-blue-bright); cursor:pointer; font-size:15px; padding:4px 8px; min-width:34px; min-height:34px; width:auto; height:auto; border-radius:8px; flex-shrink:0; touch-action:manipulation; -webkit-tap-highlight-color:transparent; text-shadow:0 0 6px var(--ax-blue-glow); }
+  #super-cli-bar #cli-deck-handle:active { transform:scale(0.94); }
   #super-cli-bar button:not(#aci-login):not(#super-add-fab):not(.app-shortcut-btn) { display:none !important; }
   #app-shortcut-row { display:flex; gap:4px; align-items:center; flex:1; min-width:0; overflow-x:auto; overflow-y:hidden; padding:0 2px; scrollbar-width:none; -webkit-overflow-scrolling:touch; }
   #app-shortcut-row::-webkit-scrollbar { display:none; }
@@ -176,7 +177,7 @@
   #globe-deck-title { flex:0 1 auto; max-width:42%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-weight:600; }
   #globe-deck-preview { flex:1; font-size:10px; color:var(--ax-blue-bright); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; text-align:right; opacity:0.9; }
   #globe-deck:not(.has-preview):not(.expanded) #globe-deck-preview { display:none; }
-  #globe-deck-handle { background:transparent; border:none; color:#8aa; cursor:pointer; font-size:16px; padding:2px 6px; flex-shrink:0; }
+
   #globe-deck-body { display:none; flex-direction:column; flex:1; min-height:0; overflow:hidden; }
   #globe-deck.expanded #globe-deck-body { display:flex; }
   #globe-deck-log { flex:1; overflow-y:auto; padding:8px 10px; min-height:56px; max-height:28vh; color:var(--an-text); -webkit-overflow-scrolling:touch; }
@@ -417,14 +418,13 @@
       <div id="globe-deck-header">
         <span id="globe-deck-title">Astranov Command Line</span>
         <span id="globe-deck-preview"></span>
-        <button id="globe-deck-handle" type="button" title="Tap or swipe to expand/collapse">▔</button>
       </div>
       <div id="super-cli-bar">
         <button id="aci-login" title="Sign in with Google" type="button">G</button>
         <div id="app-shortcut-row" role="toolbar" aria-label="Open applications"></div>
         <span id="cli-ribbon-status" aria-live="polite"></span>
         <button id="super-add-fab" type="button" title="Super Add — post · vendor · site">+</button>
-        <button id="globe-deck-handle" type="button" title="Expand/collapse CLI">▔</button>
+        <button id="cli-deck-handle" type="button" title="Tap to expand/collapse CLI" aria-expanded="false">▔</button>
         <button id="aci-cli-toggle" title="Expand/collapse Astranov Command Line" type="button">💻</button>
         <button id="aci-stop" title="Stop" type="button">🛑</button>
         <button id="aci-hold" title="Hold session — pause mic &amp; tasks for noisy places" type="button" aria-pressed="false">⏸</button>

@@ -144,7 +144,8 @@
   #cli-ribbon-status.hold { color:var(--ax-yellow-bright); text-shadow:0 0 8px var(--ax-yellow-glow); }
   #cli-ribbon-status.ready { color:var(--ax-green-bright); text-shadow:0 0 8px var(--ax-green-glow); }
   @keyframes cli-think-glow { 0%,100%{ opacity:0.85; } 50%{ opacity:1; text-shadow:0 0 12px var(--ax-blue-glow); } }
-  #super-cli-bar #globe-deck-handle { background:transparent; border:none; color:#8aa; cursor:pointer; font-size:15px; padding:2px 6px; width:auto; height:auto; border-radius:8px; flex-shrink:0; }
+  #super-cli-bar #cli-deck-handle { background:transparent; border:none; color:var(--ax-blue-bright); cursor:pointer; font-size:15px; padding:4px 8px; min-width:34px; min-height:34px; width:auto; height:auto; border-radius:8px; flex-shrink:0; touch-action:manipulation; -webkit-tap-highlight-color:transparent; text-shadow:0 0 6px var(--ax-blue-glow); }
+  #super-cli-bar #cli-deck-handle:active { transform:scale(0.94); }
   #super-cli-bar button:not(#aci-login):not(#super-add-fab):not(.app-shortcut-btn) { display:none !important; }
   #app-shortcut-row { display:flex; gap:4px; align-items:center; flex:1; min-width:0; overflow-x:auto; overflow-y:hidden; padding:0 2px; scrollbar-width:none; -webkit-overflow-scrolling:touch; }
   #app-shortcut-row::-webkit-scrollbar { display:none; }
@@ -176,7 +177,7 @@
   #globe-deck-title { flex:0 1 auto; max-width:42%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-weight:600; }
   #globe-deck-preview { flex:1; font-size:10px; color:var(--ax-blue-bright); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; text-align:right; opacity:0.9; }
   #globe-deck:not(.has-preview):not(.expanded) #globe-deck-preview { display:none; }
-  #globe-deck-handle { background:transparent; border:none; color:#8aa; cursor:pointer; font-size:16px; padding:2px 6px; flex-shrink:0; }
+
   #globe-deck-body { display:none; flex-direction:column; flex:1; min-height:0; overflow:hidden; }
   #globe-deck.expanded #globe-deck-body { display:flex; }
   #globe-deck-log { flex:1; overflow-y:auto; padding:8px 10px; min-height:56px; max-height:28vh; color:var(--an-text); -webkit-overflow-scrolling:touch; }
@@ -417,14 +418,13 @@
       <div id="globe-deck-header">
         <span id="globe-deck-title">Astranov Command Line</span>
         <span id="globe-deck-preview"></span>
-        <button id="globe-deck-handle" type="button" title="Tap or swipe to expand/collapse">▔</button>
       </div>
       <div id="super-cli-bar">
         <button id="aci-login" title="Sign in with Google" type="button">G</button>
         <div id="app-shortcut-row" role="toolbar" aria-label="Open applications"></div>
         <span id="cli-ribbon-status" aria-live="polite"></span>
         <button id="super-add-fab" type="button" title="Super Add — post · vendor · site">+</button>
-        <button id="globe-deck-handle" type="button" title="Expand/collapse CLI">▔</button>
+        <button id="cli-deck-handle" type="button" title="Tap to expand/collapse CLI" aria-expanded="false">▔</button>
         <button id="aci-cli-toggle" title="Expand/collapse Astranov Command Line" type="button">💻</button>
         <button id="aci-stop" title="Stop" type="button">🛑</button>
         <button id="aci-hold" title="Hold session — pause mic &amp; tasks for noisy places" type="button" aria-pressed="false">⏸</button>
@@ -1694,6 +1694,7 @@ const GlobeDeck = {
   init() {
     CliRibbon?.init?.();
     AppShortcuts?.init?.();
+    this.bindHandle();
     this.bindDeckGestures();
     ['sat-radio', 'node-batch', 'vendor-menu', 'globe-youtube', 'globe-super-add', 'globe-site-browser'].forEach(id => {
       const el = document.getElementById(id);
@@ -1701,6 +1702,24 @@ const GlobeDeck = {
       if (el && stage && el.parentElement !== stage) stage.appendChild(el);
     });
     CliRibbon?.setActive?.('CLI');
+  },
+
+  bindHandle() {
+    const toggle = e => {
+      e.preventDefault();
+      e.stopPropagation();
+      this.toggle();
+    };
+    document.querySelectorAll('#cli-deck-handle, #globe-deck-handle').forEach(handle => {
+      if (handle._deckBound) return;
+      handle._deckBound = true;
+      handle.addEventListener('click', toggle);
+      handle.addEventListener('touchend', e => {
+        if (e.cancelable) e.preventDefault();
+        e.stopPropagation();
+        toggle(e);
+      }, { passive: false });
+    });
   },
 
   bindDeckGestures() {
@@ -1997,7 +2016,6 @@ const CliRibbon = {
   init() {
     const bar = document.getElementById('super-cli-bar');
     const header = document.getElementById('globe-deck-header');
-    const handle = document.getElementById('globe-deck-handle');
     const fab = document.getElementById('super-add-fab');
 
     if (header) header.style.display = 'none';
@@ -2012,16 +2030,7 @@ const CliRibbon = {
     }
     this._el = status;
 
-    if (handle && fab && handle.parentElement !== bar) {
-      bar.appendChild(handle);
-    }
-    if (handle && !handle._ribbonBound) {
-      handle._ribbonBound = true;
-      handle.onclick = e => {
-        e.stopPropagation();
-        GlobeDeck?.toggle?.();
-      };
-    }
+    GlobeDeck?.bindHandle?.();
 
     this._active = 'CLI';
     this.render();
@@ -2034,6 +2043,7 @@ const CliRibbon = {
     s = s.replace(/^Astranov Command Line\b/i, 'CLI');
     s = s.replace(/^Collective Coders\s*—\s*talk here$/i, 'Coders');
     s = s.replace(/^Coders online\s*—.*$/i, 'Coders');
+    s = s.replace(/warming up.*$/i, '').trim();
     const low = s.toLowerCase();
     for (const [key, label] of Object.entries(this.TASK_LABEL)) {
       if (low === key || low.startsWith(key + ' ') || low.includes(key)) return label;
@@ -2054,6 +2064,7 @@ const CliRibbon = {
     if (kind) this._kind = kind;
     else if (/error|fail|denied/i.test(s)) this._kind = 'err';
     else if (/⏸|held|pause/i.test(s)) this._kind = 'hold';
+    else if (/ready|located|on globe/i.test(s)) this._kind = 'ready';
     else if (s) this._kind = 'info';
     else this._kind = 'idle';
     this.render();
@@ -2095,10 +2106,14 @@ const CliRibbon = {
     this._el.className = 'cli-ribbon-status'
       + (GlobeDeck?.thinking ? ' thinking' : '')
       + (this._kind === 'err' ? ' alert' : '')
-      + (this._kind === 'hold' ? ' hold' : '');
+      + (this._kind === 'hold' ? ' hold' : '')
+      + (this._kind === 'ready' ? ' ready' : '');
 
-    const handle = document.getElementById('globe-deck-handle');
-    if (handle) handle.textContent = GlobeDeck?.expanded ? '▁' : '▔';
+    const handle = document.getElementById('cli-deck-handle');
+    if (handle) {
+      handle.textContent = GlobeDeck?.expanded ? '▁' : '▔';
+      handle.setAttribute('aria-expanded', GlobeDeck?.expanded ? 'true' : 'false');
+    }
 
     const title = document.getElementById('globe-deck-title');
     const preview = document.getElementById('globe-deck-preview');
@@ -2938,6 +2953,15 @@ Object.assign(SuperCli, {
     const rest = parts.slice(1).join(' ');
 
     try {
+      if (AciCoders?.isLocalGlobeCmd?.(raw)) {
+        const r = AciCoders.runLocalGlobeCmd(raw);
+        GlobeDeck?.finishCliIfOneShot('locate');
+        return { handled: true, ...r };
+      }
+      if (cmd === 'locate' || cmd === 'gps' || cmd === 'me' || (cmd === 'zoom' && /^to\s+me$/i.test(rest))) {
+        await SuperCli.run('locate');
+        return { handled: true };
+      }
       if (cmd === 'help' || cmd === '?') {
         this.printHelp();
         return { handled: true };
@@ -3662,11 +3686,8 @@ const AciCoders = {
   },
 
   updateHud() {
-    const bits = [this._listening ? 'listening' : 'online'];
-    if (this._activityCount > 0) bits.push('evolving');
-    if (this.isPowerUser()) bits.push('owner');
     CliRibbon?.setActive?.('Coders');
-    CliRibbon?.setNotice?.(bits.join(' · '));
+    CliRibbon?.render?.();
   },
 
   observeActivity(source, detail, props) {
@@ -4038,12 +4059,15 @@ const AciCoders = {
     }
 
     const reply = text.slice(0, 900);
-    if (reply) {
+    if (reply && !this.isFailedReply(reply)) {
       const prefix = r.explicit_order || r.order_executed ? 'ORDER: ' : '';
       const kind = r.error ? 'err' : 'reply';
       AciCli?.print(prefix + reply, kind);
       ACIControl?.reply(prefix + reply.slice(0, 260));
-      CliRibbon?.setNotice?.('reply');
+    } else if (this.isFailedReply(reply)) {
+      const local = this.localReply(userMsg);
+      AciCli?.print(local, 'ok');
+      ACIControl?.reply(local.slice(0, 260));
     }
 
     const composerQueued = r.composer_queued || (r.pending && r.summon_id);
@@ -4075,7 +4099,30 @@ const AciCoders = {
   },
 
   isFailedReply(text) {
-    return /gathering itself|try again (in a moment|shortly)|no model responded/i.test(String(text || ''));
+    return /gathering itself|warming up|try again in a few seconds|try again (in a moment|shortly)|no model responded/i.test(String(text || ''));
+  },
+
+  isLocalGlobeCmd(m) {
+    const s = String(m || '').trim();
+    return /^locate\s*(me|button)?$/i.test(s)
+      || /^zoom\s+to\s+me$/i.test(s)
+      || /^where\s+am\s+i\??$/i.test(s)
+      || /^find\s+me$/i.test(s)
+      || /^🎯|📍$/.test(s);
+  },
+
+  runLocalGlobeCmd(m) {
+    if (!this.isLocalGlobeCmd(m)) return null;
+    GlobeDeck?.setThinking(false);
+    locateMe?.();
+    const pos = window._lastPos;
+    const hint = pos
+      ? 'On globe · ' + pos.lat.toFixed(2) + ', ' + pos.lng.toFixed(2) + ' — zoom in or say city view'
+      : 'Locating you on the globe…';
+    AciCli?.print(hint, 'ok');
+    ACIControl?.reply(hint);
+    CliRibbon?.setNotice?.('located', 'ready');
+    return { ok: true, located: true, text: hint };
   },
 
   localReply(m) {
@@ -4123,6 +4170,12 @@ const AciCoders = {
     const m = String(message || '').trim();
     if (m.length < 1) return this.enterSession({ fromVoice: !!opts.fromVoice });
 
+    const localGlobe = this.runLocalGlobeCmd(m);
+    if (localGlobe) {
+      GlobeDeck?.setThinking(false);
+      return localGlobe;
+    }
+
     await this.enterSession({
       focus: false,
       fromVoice: !!opts.fromVoice || !!window._handsFreeVoice || !!voiceSessionActive,
@@ -4136,16 +4189,11 @@ const AciCoders = {
 
     this._cliBusy = true;
     try {
-      GlobeDeck?.setThinking(true, fast ? 'Coders…' : 'Coders…');
+      GlobeDeck?.setThinking(true, 'Coders…');
       if (/^city\s*(view|level)?$/i.test(m.trim())) {
         await enterCityView?.();
         GlobeDeck?.setThinking(false);
         return { ok: true, city: true };
-      }
-      if (/^locate\s*(me|button)?$/i.test(m.trim()) || /^🎯|📍$/.test(m.trim())) {
-        locateMe();
-        GlobeDeck?.setThinking(false);
-        return { ok: true, located: true };
       }
 
       if (Auth?.user && this.wantsComposer(m) && build) {
@@ -4177,7 +4225,8 @@ const AciCoders = {
       }, { timeoutMs: fast ? 28000 : 55000 });
 
       let text = String(r.text || r.response || '').trim();
-      if (r.error || this.isFailedReply(text) || !text) {
+      if (this.isFailedReply(text)) text = '';
+      if (r.error || !text) {
         const fb = await AciCli.api({
           mode: 'coders',
           task: m,

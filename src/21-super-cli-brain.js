@@ -392,6 +392,15 @@ Object.assign(SuperCli, {
     const rest = parts.slice(1).join(' ');
 
     try {
+      if (AciCoders?.isLocalGlobeCmd?.(raw)) {
+        const r = AciCoders.runLocalGlobeCmd(raw);
+        GlobeDeck?.finishCliIfOneShot('locate');
+        return { handled: true, ...r };
+      }
+      if (cmd === 'locate' || cmd === 'gps' || cmd === 'me' || (cmd === 'zoom' && /^to\s+me$/i.test(rest))) {
+        await SuperCli.run('locate');
+        return { handled: true };
+      }
       if (cmd === 'help' || cmd === '?') {
         this.printHelp();
         return { handled: true };

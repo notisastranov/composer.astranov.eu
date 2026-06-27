@@ -15,6 +15,7 @@ const GlobeDeck = {
   init() {
     CliRibbon?.init?.();
     AppShortcuts?.init?.();
+    this.bindHandle();
     this.bindDeckGestures();
     ['sat-radio', 'node-batch', 'vendor-menu', 'globe-youtube', 'globe-super-add', 'globe-site-browser'].forEach(id => {
       const el = document.getElementById(id);
@@ -22,6 +23,24 @@ const GlobeDeck = {
       if (el && stage && el.parentElement !== stage) stage.appendChild(el);
     });
     CliRibbon?.setActive?.('CLI');
+  },
+
+  bindHandle() {
+    const toggle = e => {
+      e.preventDefault();
+      e.stopPropagation();
+      this.toggle();
+    };
+    document.querySelectorAll('#cli-deck-handle, #globe-deck-handle').forEach(handle => {
+      if (handle._deckBound) return;
+      handle._deckBound = true;
+      handle.addEventListener('click', toggle);
+      handle.addEventListener('touchend', e => {
+        if (e.cancelable) e.preventDefault();
+        e.stopPropagation();
+        toggle(e);
+      }, { passive: false });
+    });
   },
 
   bindDeckGestures() {

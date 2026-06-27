@@ -69,11 +69,8 @@ const AciCoders = {
   },
 
   updateHud() {
-    const bits = [this._listening ? 'listening' : 'online'];
-    if (this._activityCount > 0) bits.push('evolving');
-    if (this.isPowerUser()) bits.push('owner');
     CliRibbon?.setActive?.('Coders');
-    CliRibbon?.setNotice?.(bits.join(' · '));
+    CliRibbon?.render?.();
   },
 
   observeActivity(source, detail, props) {
@@ -445,12 +442,15 @@ const AciCoders = {
     }
 
     const reply = text.slice(0, 900);
-    if (reply) {
+    if (reply && !this.isFailedReply(reply)) {
       const prefix = r.explicit_order || r.order_executed ? 'ORDER: ' : '';
       const kind = r.error ? 'err' : 'reply';
       AciCli?.print(prefix + reply, kind);
       ACIControl?.reply(prefix + reply.slice(0, 260));
-      CliRibbon?.setNotice?.('reply');
+    } else if (this.isFailedReply(reply)) {
+      const local = this.localReply(userMsg);
+      AciCli?.print(local, 'ok');
+      ACIControl?.reply(local.slice(0, 260));
     }
 
     const composerQueued = r.composer_queued || (r.pending && r.summon_id);
@@ -482,7 +482,30 @@ const AciCoders = {
   },
 
   isFailedReply(text) {
-    return /gathering itself|try again (in a moment|shortly)|no model responded/i.test(String(text || ''));
+    return /gathering itself|warming up|try again in a few seconds|try again (in a moment|shortly)|no model responded/i.test(String(text || ''));
+  },
+
+  isLocalGlobeCmd(m) {
+    const s = String(m || '').trim();
+    return /^locate\s*(me|button)?$/i.test(s)
+      || /^zoom\s+to\s+me$/i.test(s)
+      || /^where\s+am\s+i\??$/i.test(s)
+      || /^find\s+me$/i.test(s)
+      || /^🎯|📍$/.test(s);
+  },
+
+  runLocalGlobeCmd(m) {
+    if (!this.isLocalGlobeCmd(m)) return null;
+    GlobeDeck?.setThinking(false);
+    locateMe?.();
+    const pos = window._lastPos;
+    const hint = pos
+      ? 'On globe · ' + pos.lat.toFixed(2) + ', ' + pos.lng.toFixed(2) + ' — zoom in or say city view'
+      : 'Locating you on the globe…';
+    AciCli?.print(hint, 'ok');
+    ACIControl?.reply(hint);
+    CliRibbon?.setNotice?.('located', 'ready');
+    return { ok: true, located: true, text: hint };
   },
 
   localReply(m) {
@@ -530,6 +553,12 @@ const AciCoders = {
     const m = String(message || '').trim();
     if (m.length < 1) return this.enterSession({ fromVoice: !!opts.fromVoice });
 
+    const localGlobe = this.runLocalGlobeCmd(m);
+    if (localGlobe) {
+      GlobeDeck?.setThinking(false);
+      return localGlobe;
+    }
+
     await this.enterSession({
       focus: false,
       fromVoice: !!opts.fromVoice || !!window._handsFreeVoice || !!voiceSessionActive,
@@ -543,16 +572,11 @@ const AciCoders = {
 
     this._cliBusy = true;
     try {
-      GlobeDeck?.setThinking(true, fast ? 'Coders…' : 'Coders…');
+      GlobeDeck?.setThinking(true, 'Coders…');
       if (/^city\s*(view|level)?$/i.test(m.trim())) {
         await enterCityView?.();
         GlobeDeck?.setThinking(false);
         return { ok: true, city: true };
-      }
-      if (/^locate\s*(me|button)?$/i.test(m.trim()) || /^🎯|📍$/.test(m.trim())) {
-        locateMe();
-        GlobeDeck?.setThinking(false);
-        return { ok: true, located: true };
       }
 
       if (Auth?.user && this.wantsComposer(m) && build) {
@@ -584,7 +608,8 @@ const AciCoders = {
       }, { timeoutMs: fast ? 28000 : 55000 });
 
       let text = String(r.text || r.response || '').trim();
-      if (r.error || this.isFailedReply(text) || !text) {
+      if (this.isFailedReply(text)) text = '';
+      if (r.error || !text) {
         const fb = await AciCli.api({
           mode: 'coders',
           task: m,
