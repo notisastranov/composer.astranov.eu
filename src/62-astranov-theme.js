@@ -44,11 +44,11 @@ const AstranovTheme = {
   apply() {
     document.documentElement.dataset.theme = this.mode;
     const meta = document.querySelector('meta[name="theme-color"]');
-    if (meta) meta.content = this.mode === 'bright' ? '#c8e4ff' : '#00b4ff';
+    if (meta) meta.content = this.mode === 'bright' ? '#1a6fd4' : '#0a1020';
     if (scene?.background) {
-      scene.background = new THREE.Color(this.mode === 'bright' ? 0xc8dff0 : 0x000000);
+      scene.background = new THREE.Color(this.mode === 'bright' ? 0x040810 : 0x000000);
     }
-    if (renderer) renderer.setClearColor(this.mode === 'bright' ? 0xc8dff0 : 0x000000, 1);
+    if (renderer) renderer.setClearColor(this.mode === 'bright' ? 0x040810 : 0x000000, 1);
     EarthRealism?.onThemeChange?.();
     this._maps.forEach(m => m.onThemeChange?.());
     this._syncBtn();

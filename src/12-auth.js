@@ -277,7 +277,7 @@ const Auth = {
     const chip = document.getElementById('user-chip');
     if (this.isOwner && chip) {
       chip.textContent = 'ASTRANOV · OWNER';
-      chip.style.color = '#8f8';
+      chip.style.color = '#00dd77';
     }
     if (this.isOwner) CliRibbon?.setActive?.('owner');
     const prompt = document.getElementById('aci-cli-prompt');

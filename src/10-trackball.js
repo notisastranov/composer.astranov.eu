@@ -335,7 +335,7 @@ function showGestureHint() {
   const el = document.createElement('div');
   el.id = 'gesture-hint';
   el.textContent = 'Drag to spin · Scroll/pinch steps zoom tiers · Double-tap zoom in';
-  el.style.cssText = 'position:fixed;bottom:72px;left:50%;transform:translateX(-50%);padding:8px 14px;background:rgba(0,12,24,0.82);border:1px solid rgba(0,180,255,0.35);border-radius:20px;font:12px system-ui;color:#9fd;z-index:44;pointer-events:none;opacity:1;transition:opacity 1.2s';
+  el.style.cssText = 'position:fixed;bottom:72px;left:50%;transform:translateX(-50%);padding:8px 14px;background:rgba(0,4,12,0.88);border:1px solid rgba(26,111,212,0.45);border-radius:20px;font:12px system-ui;color:#3d9eff;text-shadow:0 0 8px rgba(26,111,212,0.45);z-index:44;pointer-events:none;opacity:1;transition:opacity 1.2s';
   document.body.appendChild(el);
   sessionStorage.setItem('astranov-gesture-hint', '1');
   setTimeout(() => { el.style.opacity = '0'; }, 3200);

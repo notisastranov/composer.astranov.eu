@@ -238,7 +238,7 @@ const AIGraphics = {
   pulseBatchMesh(peerCount) {
     if (!this.batchRing) return;
     this.batchRing.material.opacity = 0.45 + Math.min(peerCount, 8) * 0.04;
-    if (this.batchNodes) this.batchNodes.material.color.setHex(peerCount > 2 ? 0xc8a8ff : 0x00ddff);
+    if (this.batchNodes) this.batchNodes.material.color.setHex(peerCount > 2 ? 0x3d9eff : 0x1a6fd4);
     try {
       this.spawnEffect(new THREE.Vector3(0.5, 0.4, 1.05), 0xaa88ff, 18, 35);
     } catch { /* */ }

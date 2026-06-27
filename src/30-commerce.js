@@ -230,7 +230,7 @@ const Commerce = {
         const miss = m.wanted - m.matched;
         const detail = m.picks.map(p => p.item.name + ' ' + p.price + ' AVC').join(' · ');
         row.innerHTML = '<div class="vm-match-head"><span>' + vendorIcon(m.vendor) + ' ' + m.vendor.name + '</span><strong>' + m.total.toFixed(1) + ' AVC</strong></div>'
-          + '<div class="vm-match-sub">' + m.km.toFixed(1) + ' km · ' + m.matched + '/' + m.wanted + ' είδη' + (miss ? ' · <span style="color:#f96">-' + miss + '</span>' : '') + '</div>'
+          + '<div class="vm-match-sub">' + m.km.toFixed(1) + ' km · ' + m.matched + '/' + m.wanted + ' είδη' + (miss ? ' · <span style="color:#ffd633">-' + miss + '</span>' : '') + '</div>'
           + '<div class="vm-match-items">' + detail + '</div>';
         row.onclick = () => {
           this._suggestion = m;
@@ -250,7 +250,7 @@ const Commerce = {
           const km = this.haversineKm(this.userLatLng().lat, this.userLatLng().lng, d.field_lat, d.field_lng).toFixed(1);
           return '<span class="vm-tag driver">' + driverIcon(d) + ' ' + (d.display_name || 'Driver') + ' · ' + km + ' km</span>';
         }).join('')
-        : '<div class="vm-drivers-title" style="color:#f96">Δεν βρέθηκαν ενεργοί οδηγοί — θα αναζητηθεί μετά την παραγγελία</div>';
+        : '<div class="vm-drivers-title" style="color:#ffd633">Δεν βρέθηκαν ενεργοί οδηγοί — θα αναζητηθεί μετά την παραγγελία</div>';
     }
     if (balBox) {
       const b = balance != null ? balance : 0;
@@ -258,7 +258,7 @@ const Commerce = {
       const ok = b >= need;
       balBox.innerHTML = '<div>Υπόλοιπο: <strong>' + b.toFixed(1) + ' AVC</strong>'
         + (need ? ' · Παραγγελία: <strong>' + need.toFixed(1) + ' AVC</strong>' : '')
-        + (ok ? '' : ' · <span style="color:#f96">ανεπαρκές — recharge στο CLI</span>') + '</div>';
+        + (ok ? '' : ' · <span style="color:#ff3344">ανεπαρκές — recharge στο CLI</span>') + '</div>';
     }
     if (confirmBtn && this._suggestion) {
       confirmBtn.style.display = 'block';
@@ -379,7 +379,7 @@ const Commerce = {
       const hasMenu = this.hasMenu(v);
       const row = document.createElement('div');
       row.className = 'vm-vendor';
-      row.innerHTML = '<span style="font-size:22px">' + vendorIcon(v) + '</span><div><div style="color:#fda;font-weight:600">' + v.name + '</div><div style="color:#9ab;font-size:10px">' + (v.category || 'shop') + ' · ' + km + ' km' + (hasMenu ? '' : ' · <span style="color:#f96">χωρίς μενού</span>') + '</div></div>';
+      row.innerHTML = '<span style="font-size:22px">' + vendorIcon(v) + '</span><div><div style="color:#3d9eff;font-weight:600">' + v.name + '</div><div style="color:#9ab;font-size:10px">' + (v.category || 'shop') + ' · ' + km + ' km' + (hasMenu ? '' : ' · <span style="color:#ffd633">χωρίς μενού</span>') + '</div></div>';
       row.onclick = () => this.openVendor(v);
       list.appendChild(row);
     });

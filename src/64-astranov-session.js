@@ -217,7 +217,7 @@ const AstranovSession = {
         const chip = document.getElementById('user-chip');
         if (chip) {
           chip.textContent = 'ASTRANOV · OWNER';
-          chip.style.color = '#8f8';
+          chip.style.color = '#00dd77';
         }
       }
     }

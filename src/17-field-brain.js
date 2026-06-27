@@ -42,7 +42,7 @@ const FieldBrain = {
     if (!chip || !Auth?.user) return;
     if (AstranovSession?.isAstranov?.() || Auth.isOwner) {
       chip.textContent = 'ASTRANOV · OWNER';
-      chip.style.color = '#8f8';
+      chip.style.color = '#00dd77';
       chip.title = AstranovSession?.SESSION_NAME || 'ASTRANOV COLLECTIVE INTELLIGENCE';
       return;
     }
