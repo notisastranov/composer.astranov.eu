@@ -1,10 +1,9 @@
-// === ASTRANOV SESSION — one user (ASTRANOV), one session, all devices ===
+// === ASTRANOV SESSION — one user, one cloud session, no local copies ===
 const COLLECTIVE_SESSION_NAME = 'ASTRANOV COLLECTIVE INTELLIGENCE';
 const COLLECTIVE_BATCH_SHORT_ID = 'ACI';
 
 const AstranovSession = {
-  DEVICE_KEY: 'astranov_device_id',
-  LOCAL_KEY: 'astranov_globe_session_v1',
+  CLOUD_ONLY: true,
   SESSION_NAME: COLLECTIVE_SESSION_NAME,
   BATCH_SHORT_ID: COLLECTIVE_BATCH_SHORT_ID,
   _deviceId: null,
@@ -13,7 +12,7 @@ const AstranovSession = {
   _lastRemote: null,
 
   init() {
-    this._deviceId = this._loadDeviceId();
+    this._deviceId = this._deriveDeviceId();
     this._applyIdentity();
     if (Auth?.client) {
       Auth.client.auth.onAuthStateChange(() => this.onAuth());
@@ -32,25 +31,23 @@ const AstranovSession = {
 
   async guardCollective() {
     if (!Auth?.user || !this.isAstranov()) return;
-    this.purgeLocalForeignState();
+    this.purgeAllLocalState();
     await this.unifyCollective();
   },
 
-  _loadDeviceId() {
-    try {
-      let id = localStorage.getItem(this.DEVICE_KEY);
-      if (!id) {
-        id = 'dev-' + Math.random().toString(36).slice(2, 10) + Date.now().toString(36).slice(-4);
-        localStorage.setItem(this.DEVICE_KEY, id);
-      }
-      return id;
-    } catch {
-      return 'dev-anon';
+  _deriveDeviceId() {
+    if (this._lastRemote?.deviceId) return this._lastRemote.deviceId;
+    if (Auth?.user?.id) {
+      const ua = (navigator.userAgent || 'web').slice(0, 20);
+      let h = 0;
+      for (let i = 0; i < ua.length; i++) h = ((h << 5) - h + ua.charCodeAt(i)) | 0;
+      return 'dev-' + Auth.user.id.slice(0, 8) + '-' + Math.abs(h).toString(36).slice(0, 6);
     }
+    return 'dev-guest-' + Math.random().toString(36).slice(2, 8);
   },
 
   deviceId() {
-    return this._deviceId || this._loadDeviceId();
+    return this._deviceId || this._deriveDeviceId();
   },
 
   isAstranov() {
@@ -95,16 +92,14 @@ const AstranovSession = {
     };
   },
 
-  purgeLocalForeignState() {
-    if (!Auth?.user) return;
+  purgeAllLocalState() {
     try {
       const drop = [];
       for (let i = 0; i < localStorage.length; i++) {
         const k = localStorage.key(i);
         if (!k) continue;
-        if (k.startsWith(this.LOCAL_KEY + '_guest')) drop.push(k);
-        if (k.startsWith('astranov_session-hold-v1_guest')) drop.push(k);
-        if (k === 'astranov_node_id') drop.push(k);
+        if (k.startsWith('astranov_')) drop.push(k);
+        if (k.startsWith('aci-')) drop.push(k);
       }
       drop.forEach(k => localStorage.removeItem(k));
     } catch (_) {}
@@ -112,13 +107,13 @@ const AstranovSession = {
 
   async unifyCollective() {
     this._applyIdentity();
-    this.purgeLocalForeignState();
+    this.purgeAllLocalState();
     SessionHold?.clearForeignHold?.();
     if (AstranovNode?.api) {
       try {
         const r = await AstranovNode.api({ action: 'session_purge' });
         if (r.ok && r.closed > 0) {
-          AciCli?.print?.('◎ Closed ' + r.closed + ' old session(s) — one collective only', 'dim');
+          AciCli?.print?.('◎ Closed ' + r.closed + ' old session(s) — cloud collective only', 'dim');
         }
       } catch (_) {}
     }
@@ -131,23 +126,9 @@ const AstranovSession = {
     if (chip && this.isAstranov()) chip.textContent = 'ASTRANOV · OWNER';
   },
 
-  nodeStorageKey() {
-    const uid = Auth?.user?.id || 'guest';
-    return 'astranov_node_' + uid.slice(0, 8) + '_' + this.deviceId();
-  },
-
   getDeviceNodeId() {
-    try {
-      const key = this.nodeStorageKey();
-      let id = localStorage.getItem(key);
-      if (!id && Auth?.user?.id) {
-        id = 'node-' + Auth.user.id.slice(0, 8) + '-' + this.deviceId().slice(0, 10);
-        localStorage.setItem(key, id);
-      }
-      return id;
-    } catch {
-      return null;
-    }
+    if (!Auth?.user?.id) return null;
+    return 'node-' + Auth.user.id.slice(0, 8) + '-' + this.deviceId().slice(0, 10);
   },
 
   _applyIdentity() {
@@ -170,6 +151,7 @@ const AstranovSession = {
       userId: Auth?.user?.id || null,
       deviceId: this.deviceId(),
       sessionName: this.SESSION_NAME,
+      cloudOnly: true,
       updatedAt: Date.now(),
       lastPos: window._lastPos || null,
       batchId: AstranovNode?.batchId || null,
@@ -193,6 +175,7 @@ const AstranovSession = {
     session.sessionName = this.SESSION_NAME;
     session.batchLabel = this.SESSION_NAME;
     this._lastRemote = session;
+    if (session.deviceId) this._deviceId = session.deviceId;
     if (session.lastPos?.lat != null) {
       window._lastPos = session.lastPos;
       placeMe?.(session.lastPos.lat, session.lastPos.lng, { quiet: true, markerOnly: true });
@@ -217,6 +200,8 @@ const AstranovSession = {
   },
 
   async onAuth() {
+    this.purgeAllLocalState();
+    this._deviceId = this._deriveDeviceId();
     this._applyIdentity();
     if (Auth?.user) {
       if (this.isAstranov()) {
@@ -235,25 +220,11 @@ const AstranovSession = {
           chip.style.color = '#8f8';
         }
       }
-    } else {
-      this._applyLocal();
     }
     if (window._lastPos && GlobeEntity?.syncMe) {
       GlobeEntity.syncMe(_lastPos.lat, _lastPos.lng, me?.name || 'You');
     }
     showOtherUsers?.();
-  },
-
-  _localKey() {
-    const uid = Auth?.user?.id || 'guest-' + this.deviceId();
-    return this.LOCAL_KEY + '_' + uid;
-  },
-
-  _applyLocal() {
-    try {
-      const raw = localStorage.getItem(this._localKey());
-      if (raw) this.applyRemote(JSON.parse(raw));
-    } catch (_) {}
   },
 
   async pull() {
@@ -262,22 +233,17 @@ const AstranovSession = {
     this._lastPull = Date.now();
     try {
       const r = await AstranovNode.api({ action: 'session_get' });
-      if (r.ok && r.session) {
-        this.applyRemote(r.session);
-        try { localStorage.setItem(this._localKey(), JSON.stringify(r.session)); } catch (_) {}
-      }
+      if (r.ok && r.session) this.applyRemote(r.session);
     } catch (e) {
       console.warn('[AstranovSession] pull failed', e.message || e);
     }
   },
 
   async push(force) {
-    const snap = this.capture();
-    try { localStorage.setItem(this._localKey(), JSON.stringify(snap)); } catch (_) {}
     if (!Auth?.user || !AstranovNode?.api) return;
     if (!force && document.hidden) return;
     try {
-      await AstranovNode.api({ action: 'session_save', session: snap });
+      await AstranovNode.api({ action: 'session_save', session: this.capture() });
     } catch (_) {}
   },
 };

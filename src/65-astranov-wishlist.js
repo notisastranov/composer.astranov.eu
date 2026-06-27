@@ -23,8 +23,8 @@ const AstranovWishlist = {
   ],
 
   init() {
-    this._loadLocal();
-    if (!this.items.length) this._seed();
+    if (!AstranovSession?.CLOUD_ONLY) this._loadLocal();
+    if (!this.items.length && !Auth?.user) this._seed();
     window.addEventListener('astranov-session-pulled', () => this._onRemote());
   },
 
@@ -41,6 +41,10 @@ const AstranovWishlist = {
   },
 
   _saveLocal() {
+    if (AstranovSession?.CLOUD_ONLY && Auth?.user) {
+      AstranovSession?.push?.();
+      return;
+    }
     try { localStorage.setItem(this._key(), JSON.stringify(this.items.slice(0, this.MAX))); } catch (_) {}
   },
 

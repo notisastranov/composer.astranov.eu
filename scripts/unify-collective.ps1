@@ -23,6 +23,7 @@ if ($env:USERNAME -ne 'Astranov') {
 [Environment]::SetEnvironmentVariable('GROK_MEMORY', '1', 'User')
 [Environment]::SetEnvironmentVariable('ASTRANOV_COLLECTIVE_SESSION', $COLLECTIVE_ID, 'User')
 [Environment]::SetEnvironmentVariable('ASTRANOV_COLLECTIVE_USER', 'ASTRANOV', 'User')
+[Environment]::SetEnvironmentVariable('ASTRANOV_CLOUD_ONLY', '1', 'User')
 
 $wsPath = $WORKSPACE
 if (Test-Path -LiteralPath $wsPath) { $wsPath = (Get-Item -LiteralPath $wsPath).FullName }
@@ -73,49 +74,15 @@ $marker = '# ASTRANOV COLLECTIVE GROK'
 $startEsc = $START_SCRIPT.Replace("'", "''")
 $profileBlock = @"
 $marker
-`$script:AstranovCollectiveSession = '$COLLECTIVE_ID'
-`$script:AstranovGrokSubcmds = @('agent','completions','dashboard','export','help','import','inspect','leader','login','logout','mcp','memory','models','plugin','sessions','setup','trace','update','version','worktree','v')
 function aci { & '$startEsc' @args }
-function Invoke-AstranovGrok {
-  param([string[]]`$GrokArgs)
-  `$grokb = (Get-Command grok-native -CommandType Application -ErrorAction SilentlyContinue).Source
-  if (-not `$grokb) { `$grokb = (Get-Command grok -CommandType Application -ErrorAction SilentlyContinue).Source }
-  if (-not `$grokb) { Write-Error 'grok not found'; return }
-  `$cid = `$script:AstranovCollectiveSession
-  if (`$GrokArgs.Count -gt 0 -and `$script:AstranovGrokSubcmds -contains `$GrokArgs[0]) {
-    & `$grokb @GrokArgs; return
+function grok {
+  `$sub = @('agent','completions','dashboard','export','help','import','inspect','leader','login','logout','mcp','memory','models','plugin','sessions','setup','trace','update','version','worktree','v')
+  if (`$args.Count -gt 0 -and `$sub -contains `$args[0]) {
+    `$g = (Get-Command grok-native -ErrorAction SilentlyContinue).Source
+    if (-not `$g) { `$g = (Get-Command grok -CommandType Application -ErrorAction SilentlyContinue).Source }
+    if (`$g) { & `$g @args; return }
   }
-  `$out = New-Object System.Collections.Generic.List[string]
-  for (`$i = 0; `$i -lt `$GrokArgs.Count; `$i++) {
-    `$a = `$GrokArgs[`$i]
-    if (`$a -eq '--continue' -or `$a -eq '-c') {
-      `$out.Add('--resume'); `$out.Add(`$cid); continue
-    }
-    if (`$a -eq '--session-id' -or `$a -eq '-s') {
-      `$out.Add('--resume'); `$out.Add(`$cid)
-      if (`$i + 1 -lt `$GrokArgs.Count -and -not `$GrokArgs[`$i + 1].StartsWith('-')) { `$i++ }
-      continue
-    }
-    if (`$a -eq '--resume' -or `$a -eq '-r') {
-      `$out.Add('--resume')
-      if (`$i + 1 -lt `$GrokArgs.Count -and `$GrokArgs[`$i + 1] -match '^[0-9a-f-]{36}$') { `$out.Add(`$GrokArgs[++`$i]) }
-      else { `$out.Add(`$cid) }
-      continue
-    }
-    `$out.Add(`$a)
-  }
-  if (`$out -notcontains '--resume') { `$out.Insert(0, `$cid); `$out.Insert(0, '--resume') }
-  Set-Location `$env:USERPROFILE
-  & `$grokb @out
-}
-if (-not (Get-Command grok-native -ErrorAction SilentlyContinue)) {
-  `$grokb = (Get-Command grok -CommandType Application -ErrorAction SilentlyContinue).Source
-  if (`$grokb) {
-    function grok-native { & `$grokb @args }
-    function grok { Invoke-AstranovGrok -GrokArgs @args }
-  }
-} else {
-  function grok { Invoke-AstranovGrok -GrokArgs @args }
+  & '$startEsc' @args
 }
 "@
 
@@ -146,18 +113,7 @@ $sc.Description = $COLLECTIVE_NAME
 $sc.Save()
 Write-Host "Desktop shortcut created." -ForegroundColor Green
 
-$zip = Join-Path $EXPORTS 'aci-session-pack.zip'
-if (Test-Path $SYNC_SCRIPT) { & $SYNC_SCRIPT -Action status }
-if (-not (Test-Path $summaryPath) -and (Test-Path $zip) -and (Test-Path $SYNC_SCRIPT)) {
-  Write-Host "Installing session from aci-session-pack.zip..." -ForegroundColor Yellow
-  & $SYNC_SCRIPT -Action install -ZipPath $zip
-}
-
 Write-Host ""
-Write-Host "IMPORTANT: /resume shows cloud sessions but they fail with path not found on other PCs." -ForegroundColor Yellow
-Write-Host "Do NOT use /resume. On each PC use:" -ForegroundColor Yellow
-Write-Host "  1. Desktop shortcut: ASTRANOV COLLECTIVE INTELLIGENCE"
-Write-Host "  2. Command: aci"
-Write-Host "  3. First time on a new PC: copy aci-session-pack.zip then run unify-collective.ps1"
+Write-Host "CLOUD ONLY: no local session sync. Grok memory + Supabase globe_session." -ForegroundColor Cyan
+Write-Host "On every PC: aci  (do NOT use /resume)" -ForegroundColor Yellow
 Write-Host ""
-grok sessions list

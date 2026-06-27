@@ -85,10 +85,7 @@ const AstranovNode = {
     this.shortId = r.short_id;
     this.nodeId = r.node_id;
     this.peerCount = r.peers || 1;
-    try {
-      const key = AstranovSession?.nodeStorageKey?.() || 'astranov_node_id';
-      localStorage.setItem(key, this.nodeId);
-    } catch { /* */ }
+
     await this.joinBatchChannel(r.channel || ('astranov-batch-' + r.short_id));
     this.startHeartbeat();
     const label = AstranovSession?.sessionLabel?.() || 'ASTRANOV COLLECTIVE INTELLIGENCE';
@@ -106,7 +103,7 @@ const AstranovNode = {
 
   init() {
     try {
-      this.nodeId = AstranovSession?.getDeviceNodeId?.() || localStorage.getItem('astranov_node_id');
+      this.nodeId = AstranovSession?.getDeviceNodeId?.() || null;
     } catch { /* */ }
     window.addEventListener('beforeinstallprompt', (e) => {
       e.preventDefault();
