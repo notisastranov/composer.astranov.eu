@@ -243,7 +243,8 @@
   #cli-hub-panel .ch-empty { color:var(--an-muted); padding:12px 4px; }
   #aci-cli-prompt { color:var(--ax-blue-bright); flex-shrink:0; font-size:11px; display:none; text-shadow:0 0 6px var(--ax-blue-glow); }
   #globe-deck.expanded #aci-cli-prompt { display:inline; }
-  #aci-cli-in { flex:1; background:rgba(0,8,20,0.65); border:1px solid var(--ax-blue-border); border-radius:10px; color:var(--an-text); font:inherit; outline:none; min-width:0; padding:8px 10px; font-size:13px; line-height:1.45; min-height:20px; max-height:22vh; resize:none; overflow-y:auto; white-space:pre-wrap; word-break:break-word; }
+  #aci-cli-form { flex:1; min-width:0; display:flex; }
+  #aci-cli-in { flex:1; width:100%; background:rgba(0,8,20,0.65); border:1px solid var(--ax-blue-border); border-radius:10px; color:var(--an-text); font:inherit; outline:none; min-width:0; padding:8px 10px; font-size:13px; line-height:1.45; min-height:20px; max-height:22vh; resize:none; overflow-y:auto; white-space:pre-wrap; word-break:break-word; }
   #aci-cli-in:focus { border-color:var(--ax-blue-bright); box-shadow:0 0 0 2px var(--ax-blue-glow); }
   #aci-cli-in::placeholder { color:var(--an-muted); opacity:0.85; }
   #aci-cli-in.voice-live { border-color:var(--ax-blue-bright); color:var(--ax-blue-bright); box-shadow:0 0 10px var(--ax-blue-glow); }
@@ -646,9 +647,11 @@
       </div>
       <div id="globe-deck-input-row">
         <span id="aci-cli-prompt">›</span>
-        <textarea id="aci-cli-in" rows="1" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="Talk to Coders — type or tap 🎧 · Enter to send"></textarea>
+        <form id="aci-cli-form" action="#" autocomplete="off">
+          <textarea id="aci-cli-in" name="cli" rows="1" autocomplete="off" autocapitalize="off" spellcheck="false" enterkeyhint="send" inputmode="text" placeholder="Talk to Coders — type or tap 🎧 · Enter or keyboard Send to run"></textarea>
+        </form>
         <button id="aci-handsfree" class="deck-input-btn" type="button" title="AI hands-free — listen &amp; speak">🎧</button>
-        <button id="globe-deck-send" class="deck-input-btn" type="button" title="Send">➡</button>
+        <button id="globe-deck-send" class="deck-input-btn" type="submit" form="aci-cli-form" title="Send command">➡</button>
       </div>
     </div>
     <input id="aci-input" placeholder="" style="display:none" />

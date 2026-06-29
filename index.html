@@ -243,7 +243,8 @@
   #cli-hub-panel .ch-empty { color:var(--an-muted); padding:12px 4px; }
   #aci-cli-prompt { color:var(--ax-blue-bright); flex-shrink:0; font-size:11px; display:none; text-shadow:0 0 6px var(--ax-blue-glow); }
   #globe-deck.expanded #aci-cli-prompt { display:inline; }
-  #aci-cli-in { flex:1; background:rgba(0,8,20,0.65); border:1px solid var(--ax-blue-border); border-radius:10px; color:var(--an-text); font:inherit; outline:none; min-width:0; padding:8px 10px; font-size:13px; line-height:1.45; min-height:20px; max-height:22vh; resize:none; overflow-y:auto; white-space:pre-wrap; word-break:break-word; }
+  #aci-cli-form { flex:1; min-width:0; display:flex; }
+  #aci-cli-in { flex:1; width:100%; background:rgba(0,8,20,0.65); border:1px solid var(--ax-blue-border); border-radius:10px; color:var(--an-text); font:inherit; outline:none; min-width:0; padding:8px 10px; font-size:13px; line-height:1.45; min-height:20px; max-height:22vh; resize:none; overflow-y:auto; white-space:pre-wrap; word-break:break-word; }
   #aci-cli-in:focus { border-color:var(--ax-blue-bright); box-shadow:0 0 0 2px var(--ax-blue-glow); }
   #aci-cli-in::placeholder { color:var(--an-muted); opacity:0.85; }
   #aci-cli-in.voice-live { border-color:var(--ax-blue-bright); color:var(--ax-blue-bright); box-shadow:0 0 10px var(--ax-blue-glow); }
@@ -646,9 +647,11 @@
       </div>
       <div id="globe-deck-input-row">
         <span id="aci-cli-prompt">›</span>
-        <textarea id="aci-cli-in" rows="1" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="Talk to Coders — type or tap 🎧 · Enter to send"></textarea>
+        <form id="aci-cli-form" action="#" autocomplete="off">
+          <textarea id="aci-cli-in" name="cli" rows="1" autocomplete="off" autocapitalize="off" spellcheck="false" enterkeyhint="send" inputmode="text" placeholder="Talk to Coders — type or tap 🎧 · Enter or keyboard Send to run"></textarea>
+        </form>
         <button id="aci-handsfree" class="deck-input-btn" type="button" title="AI hands-free — listen &amp; speak">🎧</button>
-        <button id="globe-deck-send" class="deck-input-btn" type="button" title="Send">➡</button>
+        <button id="globe-deck-send" class="deck-input-btn" type="submit" form="aci-cli-form" title="Send command">➡</button>
       </div>
     </div>
     <input id="aci-input" placeholder="" style="display:none" />
@@ -2216,7 +2219,7 @@ const GlobeDeck = {
     this._gesturesBound = true;
     let sy = 0, st = 0, sx = 0, moved = false;
     const scrollable = t => t?.closest?.('#globe-deck-log, #globe-deck-stage, #globe-deck-input-row');
-    const interactive = t => t?.closest?.('button, input, textarea, a, #super-cli-bar button, #globe-deck-input-row button, #globe-deck-input-row textarea, #cli-deck-handle');
+    const interactive = t => t?.closest?.('button, input, textarea, form, a, #super-cli-bar button, #globe-deck-input-row button, #globe-deck-input-row textarea, #aci-cli-form, #cli-deck-handle');
 
     deck.addEventListener('touchstart', e => {
       if (e.touches.length !== 1 || interactive(e.target)) return;
@@ -2998,16 +3001,9 @@ const SuperCli = {
     if (send && !send._superBound) {
       send._superBound = true;
       send.onclick = e => {
-        e.preventDefault(); e.stopPropagation();
-        const input = document.getElementById('aci-cli-in');
-        const line = (input?.value || '').trim();
-        if (!line) {
-          AciCoders?.enterSession?.({ focus: true, ping: false });
-          return;
-        }
-        GlobeDeck?.expand?.(ACL_TITLE);
-        GlobeDeck?.clearCompose?.();
-        if (AciCli) AciCli.run(line);
+        e.preventDefault();
+        e.stopPropagation();
+        AciCli?.submitFromInput?.({ emptyFocus: true });
       };
     }
   },
@@ -4541,11 +4537,24 @@ const AciCli = {
 
   init() {
     const input = document.getElementById('aci-cli-in');
+    const form = document.getElementById('aci-cli-form');
     const toggle = document.getElementById('aci-cli-toggle');
     if (toggle) toggle.onclick = () => this.toggle();
     SuperCli?.bindInputBar?.();
+    if (form && !form._cliBound) {
+      form._cliBound = true;
+      form.addEventListener('submit', e => {
+        e.preventDefault();
+        this.submitFromInput({ emptyFocus: true });
+      });
+    }
     if (input) {
       input.addEventListener('keydown', e => this.onKey(e));
+      if (!input._enterSendBound) {
+        input._enterSendBound = true;
+        input.addEventListener('keyup', e => this.onEnterKeyUp(e));
+        input.addEventListener('beforeinput', e => this.onBeforeInput(e));
+      }
       input.addEventListener('input', () => {
         this.buffer = input.value;
         input.style.height = 'auto';
@@ -4697,15 +4706,55 @@ const AciCli = {
     return j;
   },
 
+  isEnterSend(e) {
+    const enter = e.key === 'Enter' || e.keyCode === 13 || e.which === 13;
+    return enter && !e.shiftKey && !e.altKey && !e.ctrlKey && !e.metaKey && !e.isComposing;
+  },
+
+  stripTrailingBreak(value) {
+    return String(value || '').replace(/\n+$/, '');
+  },
+
+  submitFromInput(opts = {}) {
+    const input = document.getElementById('aci-cli-in');
+    const line = this.stripTrailingBreak(input?.value).trim();
+    const now = Date.now();
+    if (line && line === this._lastSentLine && now - (this._lastSendAt || 0) < 400) return false;
+    if (!line) {
+      if (opts.emptyFocus) AciCoders?.enterSession?.({ focus: true, ping: false });
+      return false;
+    }
+    this._lastSentLine = line;
+    this._lastSendAt = now;
+    GlobeDeck?.expand?.('Coders');
+    GlobeDeck?.clearCompose?.();
+    this.run(line);
+    return true;
+  },
+
+  onBeforeInput(e) {
+    if (e.inputType !== 'insertLineBreak' || e.getModifierState?.('Shift')) return;
+    e.preventDefault();
+    this.submitFromInput();
+  },
+
+  onEnterKeyUp(e) {
+    if (!this.isEnterSend(e)) return;
+    if (Date.now() - (this._lastSendAt || 0) < 120) return;
+    const input = document.getElementById('aci-cli-in');
+    if (!input) return;
+    if (input.value.endsWith('\n')) input.value = this.stripTrailingBreak(input.value);
+    this.submitFromInput();
+  },
+
   onKey(e) {
     const input = document.getElementById('aci-cli-in');
-    if (e.key === 'Enter' && !e.shiftKey) {
+    if (this.isEnterSend(e)) {
       e.preventDefault();
-      const line = (input?.value || '').trim();
-      if (!line) return;
-      GlobeDeck?.clearCompose?.();
-      this.run(line);
-    } else if (e.key === 'ArrowUp') {
+      this.submitFromInput();
+      return;
+    }
+    if (e.key === 'ArrowUp') {
       e.preventDefault();
       if (this.history.length) {
         this.histIdx = Math.max(0, this.histIdx < 0 ? this.history.length - 1 : this.histIdx - 1);

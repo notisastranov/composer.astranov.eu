@@ -17,11 +17,24 @@ const AciCli = {
 
   init() {
     const input = document.getElementById('aci-cli-in');
+    const form = document.getElementById('aci-cli-form');
     const toggle = document.getElementById('aci-cli-toggle');
     if (toggle) toggle.onclick = () => this.toggle();
     SuperCli?.bindInputBar?.();
+    if (form && !form._cliBound) {
+      form._cliBound = true;
+      form.addEventListener('submit', e => {
+        e.preventDefault();
+        this.submitFromInput({ emptyFocus: true });
+      });
+    }
     if (input) {
       input.addEventListener('keydown', e => this.onKey(e));
+      if (!input._enterSendBound) {
+        input._enterSendBound = true;
+        input.addEventListener('keyup', e => this.onEnterKeyUp(e));
+        input.addEventListener('beforeinput', e => this.onBeforeInput(e));
+      }
       input.addEventListener('input', () => {
         this.buffer = input.value;
         input.style.height = 'auto';
@@ -173,15 +186,55 @@ const AciCli = {
     return j;
   },
 
+  isEnterSend(e) {
+    const enter = e.key === 'Enter' || e.keyCode === 13 || e.which === 13;
+    return enter && !e.shiftKey && !e.altKey && !e.ctrlKey && !e.metaKey && !e.isComposing;
+  },
+
+  stripTrailingBreak(value) {
+    return String(value || '').replace(/\n+$/, '');
+  },
+
+  submitFromInput(opts = {}) {
+    const input = document.getElementById('aci-cli-in');
+    const line = this.stripTrailingBreak(input?.value).trim();
+    const now = Date.now();
+    if (line && line === this._lastSentLine && now - (this._lastSendAt || 0) < 400) return false;
+    if (!line) {
+      if (opts.emptyFocus) AciCoders?.enterSession?.({ focus: true, ping: false });
+      return false;
+    }
+    this._lastSentLine = line;
+    this._lastSendAt = now;
+    GlobeDeck?.expand?.('Coders');
+    GlobeDeck?.clearCompose?.();
+    this.run(line);
+    return true;
+  },
+
+  onBeforeInput(e) {
+    if (e.inputType !== 'insertLineBreak' || e.getModifierState?.('Shift')) return;
+    e.preventDefault();
+    this.submitFromInput();
+  },
+
+  onEnterKeyUp(e) {
+    if (!this.isEnterSend(e)) return;
+    if (Date.now() - (this._lastSendAt || 0) < 120) return;
+    const input = document.getElementById('aci-cli-in');
+    if (!input) return;
+    if (input.value.endsWith('\n')) input.value = this.stripTrailingBreak(input.value);
+    this.submitFromInput();
+  },
+
   onKey(e) {
     const input = document.getElementById('aci-cli-in');
-    if (e.key === 'Enter' && !e.shiftKey) {
+    if (this.isEnterSend(e)) {
       e.preventDefault();
-      const line = (input?.value || '').trim();
-      if (!line) return;
-      GlobeDeck?.clearCompose?.();
-      this.run(line);
-    } else if (e.key === 'ArrowUp') {
+      this.submitFromInput();
+      return;
+    }
+    if (e.key === 'ArrowUp') {
       e.preventDefault();
       if (this.history.length) {
         this.histIdx = Math.max(0, this.histIdx < 0 ? this.history.length - 1 : this.histIdx - 1);

@@ -71,16 +71,9 @@ const SuperCli = {
     if (send && !send._superBound) {
       send._superBound = true;
       send.onclick = e => {
-        e.preventDefault(); e.stopPropagation();
-        const input = document.getElementById('aci-cli-in');
-        const line = (input?.value || '').trim();
-        if (!line) {
-          AciCoders?.enterSession?.({ focus: true, ping: false });
-          return;
-        }
-        GlobeDeck?.expand?.(ACL_TITLE);
-        GlobeDeck?.clearCompose?.();
-        if (AciCli) AciCli.run(line);
+        e.preventDefault();
+        e.stopPropagation();
+        AciCli?.submitFromInput?.({ emptyFocus: true });
       };
     }
   },

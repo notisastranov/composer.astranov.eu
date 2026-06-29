@@ -113,7 +113,7 @@ const GlobeDeck = {
     this._gesturesBound = true;
     let sy = 0, st = 0, sx = 0, moved = false;
     const scrollable = t => t?.closest?.('#globe-deck-log, #globe-deck-stage, #globe-deck-input-row');
-    const interactive = t => t?.closest?.('button, input, textarea, a, #super-cli-bar button, #globe-deck-input-row button, #globe-deck-input-row textarea, #cli-deck-handle');
+    const interactive = t => t?.closest?.('button, input, textarea, form, a, #super-cli-bar button, #globe-deck-input-row button, #globe-deck-input-row textarea, #aci-cli-form, #cli-deck-handle');
 
     deck.addEventListener('touchstart', e => {
       if (e.touches.length !== 1 || interactive(e.target)) return;
