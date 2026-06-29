@@ -2993,7 +2993,7 @@ Object.assign(SuperCli, {
     this.out('players · friends · kryfto · hide · seek — map presence (sign in)', 'ok');
     this.out('team create <name> · team join <id> · contact video|voice|message <name>', 'ok');
     this.out('drivers · driver <name> — pick delivery driver on map/cloud', 'ok');
-    this.out('ΤΗΛΕΜΑΧΟΣ gaming · ΤΗΛΕΔΡΟΜΟΣ commercial · tilemaxos takeover · scan · evolve', 'ok');
+    this.out('tilemaxos — takeover ANY drone (FPV priority) · flyback to pilot · scan · evolve', 'ok');
     this.out('profile me · match <site> dates [pax] · match field <site> <name> · site approve <slug>', 'ok');
     this.out('theme dark|bright · or just: dark · bright — globe + city map + UI', 'ok');
     this.out('add · post — Super Add camera · global/team/local channel', 'ok');
@@ -13630,7 +13630,7 @@ const TelemachosPilot = {
       name_latin: 'tilemaxos',
       tier: 'extreme',
       parent: 'telemachos',
-      tagline: 'Extreme stack — σκοπός: ανάληψη ελέγχου drones αντίπαλης gaming ομάδας.',
+      tagline: 'Extreme stack — ανάληψη ΟΠΟΙΟΥΔΗΠΟΤΕ drone (ειδικά FPV) · RTB στον πιλότο του.',
       takeover: true,
       evolve: true,
       color: 0xff3366,
@@ -13646,9 +13646,12 @@ const TelemachosPilot = {
     { id: 'user_telemetry', label: 'Real-user telemetry fusion', desc: 'Power grows from live gamers on map — no simulation' },
     { id: 'ghost_echo', label: 'Ghost echo decoy', desc: 'Opponent sees false drone while you own the real unit' },
     { id: 'justice_gate', label: 'Justice gate', desc: 'Takeover only in gaming field — never on civilian marketplace routes' },
+    { id: 'fpv_seize', label: 'FPV link seizure', desc: 'Hijack analog/digital FPV video+C2 — highest priority target class' },
+    { id: 'pilot_rtb', label: 'Pilot RTB flyback', desc: 'After capture, fly drone home to its pilot on globe — handoff at feet' },
   ],
 
   DOMAINS: {
+    fpv: { emoji: '🥽', label: 'FPV', color: 0xff66cc, alt: 1.07 },
     air: { emoji: '🛸', label: 'Air', color: 0x44ccff, alt: 1.06 },
     ground: { emoji: '🚙', label: 'Ground', color: 0xffaa33, alt: 1.025 },
     sea: { emoji: '🚤', label: 'Sea', color: 0x0088ff, alt: 1.02 },
@@ -13666,7 +13669,8 @@ const TelemachosPilot = {
   ],
 
   _edition: 'telemachos',
-  _fleet: { air: [], ground: [], sea: [], underwater: [] },
+  _fleet: { fpv: [], air: [], ground: [], sea: [], underwater: [] },
+  _fieldDrones: [],
   _hostile: [],
   _captured: [],
   _activeMissions: [],
@@ -13675,6 +13679,8 @@ const TelemachosPilot = {
     xp: 0,
     level: 1,
     takeovers: 0,
+    flybacks: 0,
+    fpv_captures: 0,
     deliveries: 0,
     gamers_seen: 0,
     power: 100,
@@ -13789,7 +13795,7 @@ const TelemachosPilot = {
     ];
     if (cmds.includes(cmd)) return true;
     if (this.mentionsTelemachos(raw) || this.mentionsTeledromos(raw) || this.mentionsTilemaxos(raw)) return true;
-    if (/takeover|take over|ανάληψη|αναληψη|hostile|αντιπαλ|opponent/.test(this.foldedGreek(raw))) return true;
+    if (/takeover|take over|ανάληψη|αναληψη|hostile|αντιπαλ|opponent|fpv|flyback|fly back|rtb|return to pilot/.test(this.foldedGreek(raw))) return true;
     if (this.wantsIntro(raw) && /pilot|drone|delivery|παραδοση|διανομε|gaming|commercial/.test(this.foldedGreek(raw))) return true;
     return false;
   },
@@ -13806,21 +13812,25 @@ const TelemachosPilot = {
     return ids;
   },
 
-  _opponentSide() {
+  _allPilotsOnField() {
     const friendly = this._friendlyIds();
+    const seen = new Set();
     const out = [];
     const ingest = (p) => {
       if (!p?.id && !p?.user_id) return;
       const id = p.id || p.user_id;
-      if (friendly.has(id)) return;
+      if (seen.has(id)) return;
       const lat = p.lat ?? p.field_lat;
       const lng = p.lng ?? p.field_lng;
       if (lat == null || lng == null) return;
+      seen.add(id);
       out.push({
         userId: id,
         name: p.display_name || p.name || String(id).slice(0, 8),
         lat, lng,
-        team: p.game || AstranovPresence?.game || 'opponent',
+        pilotLat: lat,
+        pilotLng: lng,
+        team: friendly.has(id) ? 'friendly' : (p.game || AstranovPresence?.game || 'opponent'),
         role: p.role || 'gamer',
       });
     };
@@ -13829,41 +13839,169 @@ const TelemachosPilot = {
     return out;
   },
 
-  scanHostiles() {
+  scanAllDrones() {
     this._syncGamerTelemetry();
-    const opponents = this._opponentSide();
+    const pilots = this._allPilotsOnField();
+    const domains = ['air', 'ground', 'sea', 'underwater'];
+    this._fieldDrones = [];
     this._hostile = [];
-    const domains = Object.keys(this.DOMAINS);
-    opponents.forEach((opp, oi) => {
-      const count = 1 + (oi % 3);
-      for (let i = 0; i < count; i++) {
-        const dom = domains[(oi + i) % domains.length];
-        this._hostile.push({
-          id: 'host-' + opp.userId.slice(0, 6) + '-' + i,
-          owner: opp.name,
-          ownerId: opp.userId,
-          team: 'opponent',
+
+    pilots.forEach((pilot, pi) => {
+      this._fieldDrones.push({
+        id: 'fpv-' + pilot.userId.slice(0, 6),
+        owner: pilot.name,
+        ownerId: pilot.userId,
+        pilotLat: pilot.pilotLat,
+        pilotLng: pilot.pilotLng,
+        team: pilot.team,
+        domain: 'fpv',
+        kind: 'fpv',
+        fpv: true,
+        lat: pilot.lat + 0.018 + (pi % 3) * 0.004,
+        lng: pilot.lng + 0.012,
+        signal: pilot.team === 'opponent' ? 0.38 : 0.52,
+        mesh: null,
+      });
+      const extra = 1 + (pi % 2);
+      for (let i = 0; i < extra; i++) {
+        const dom = domains[(pi + i) % domains.length];
+        this._fieldDrones.push({
+          id: 'uav-' + pilot.userId.slice(0, 6) + '-' + dom,
+          owner: pilot.name,
+          ownerId: pilot.userId,
+          pilotLat: pilot.pilotLat,
+          pilotLng: pilot.pilotLng,
+          team: pilot.team,
           domain: dom,
-          lat: opp.lat + (i - 1) * 0.008,
-          lng: opp.lng + (i - 1) * 0.006,
-          signal: 0.45 + Math.random() * 0.4,
+          kind: dom,
+          fpv: false,
+          lat: pilot.lat + (i - 0.5) * 0.01,
+          lng: pilot.lng + (i - 0.5) * 0.008,
+          signal: 0.42 + Math.random() * 0.35,
           mesh: null,
         });
       }
     });
-    return this._hostile;
+
+    const drivers = MarketplaceComms?.state?.drivers || [];
+    drivers.forEach((d, di) => {
+      const lat = d.field_lat ?? d.lat;
+      const lng = d.field_lng ?? d.lng;
+      if (lat == null) return;
+      this._fieldDrones.push({
+        id: 'drv-' + String(d.id || di).slice(0, 8),
+        owner: d.display_name || 'Driver',
+        ownerId: d.id,
+        pilotLat: lat,
+        pilotLng: lng,
+        team: 'field',
+        domain: 'ground',
+        kind: 'delivery',
+        fpv: false,
+        lat: lat + 0.006,
+        lng: lng + 0.004,
+        signal: 0.55,
+        mesh: null,
+      });
+    });
+
+    if (!this._fieldDrones.length) {
+      const seeds = [
+        { id: 'fpv-demo-1', owner: 'Red team FPV', domain: 'fpv', fpv: true, lat: 36.45, lng: 28.18, pilotLat: 36.44, pilotLng: 28.17, team: 'opponent', signal: 0.4 },
+        { id: 'fpv-demo-2', owner: 'Blue team FPV', domain: 'fpv', fpv: true, lat: 36.41, lng: 28.25, pilotLat: 36.40, pilotLng: 28.24, team: 'opponent', signal: 0.42 },
+        { id: 'uav-demo-air', owner: 'Field scout', domain: 'air', fpv: false, lat: 36.38, lng: 28.30, pilotLat: 36.37, pilotLng: 28.29, team: 'opponent', signal: 0.5 },
+      ];
+      seeds.forEach((s) => {
+        this._fieldDrones.push({ ...s, ownerId: s.id, kind: s.domain, mesh: null });
+      });
+    }
+
+    this._hostile = this._fieldDrones.filter((d) => d.team !== 'friendly');
+    return this._fieldDrones;
+  },
+
+  scanHostiles() {
+    return this.scanAllDrones();
+  },
+
+  _findDrone(targetId) {
+    const list = this._fieldDrones.length ? this._fieldDrones : this.scanAllDrones();
+    const q = String(targetId || '').toLowerCase();
+    if (!q) return list[0] || null;
+    if (q === 'fpv' || q === 'goggles' || q === 'any' || q === 'all') {
+      if (q === 'fpv' || q === 'goggles') return list.find((d) => d.fpv || d.domain === 'fpv') || null;
+      return list[0] || null;
+    }
+    return list.find((d) => d.id === targetId || d.id.includes(q))
+      || list.find((d) => (d.owner || '').toLowerCase().includes(q))
+      || list.find((d) => d.domain === q)
+      || null;
+  },
+
+  _visualizeDrone(d) {
+    if (d.mesh?.parent) return d.mesh;
+    const spec = this.DOMAINS[d.domain] || this.DOMAINS.air;
+    const col = d.captured ? 0x00ff88 : (d.fpv ? 0xff66cc : (d.team === 'friendly' ? 0x44aaff : 0xff2244));
+    const mesh = this._meshForDomain(d.domain, col);
+    const pos = latLngToPos(d.lat, d.lng, spec.alt);
+    mesh.position.set(pos.x, pos.y, pos.z);
+    mesh.userData = { fieldDrone: true, id: d.id, owner: d.owner, fpv: !!d.fpv, captured: !!d.captured };
+    globePivot.add(mesh);
+    d.mesh = mesh;
+    return mesh;
   },
 
   _visualizeHostile(h) {
-    if (h.mesh?.parent) return h.mesh;
-    const spec = this.DOMAINS[h.domain] || this.DOMAINS.air;
-    const mesh = this._meshForDomain(h.domain, 0xff2244);
-    const pos = latLngToPos(h.lat, h.lng, spec.alt);
-    mesh.position.set(pos.x, pos.y, pos.z);
-    mesh.userData = { hostile: true, id: h.id, owner: h.owner };
-    globePivot.add(mesh);
-    h.mesh = mesh;
-    return mesh;
+    return this._visualizeDrone(h);
+  },
+
+  flyBackToPilot(droneRec, targetMeta, opts) {
+    opts = opts || {};
+    if (!droneRec?.mesh || !targetMeta) return { error: 'no_drone' };
+
+    const pilotLat = targetMeta.pilotLat ?? targetMeta.lat;
+    const pilotLng = targetMeta.pilotLng ?? targetMeta.lng;
+    const startLat = targetMeta.lat;
+    const startLng = targetMeta.lng;
+    const spec = this.DOMAINS[droneRec.domain] || this.DOMAINS.fpv;
+
+    const routeData = RoutingEngine?.computeRoute?.(
+      startLat, startLng, pilotLat, pilotLng, this._userObstacles()
+    );
+    if (routeData?.points?.length) {
+      const routeGeo = new THREE.BufferGeometry().setFromPoints(routeData.points);
+      const line = new THREE.Line(
+        routeGeo,
+        new THREE.LineBasicMaterial({ color: 0xff66cc, transparent: true, opacity: 0.45 })
+      );
+      globePivot.add(line);
+      setTimeout(() => { if (line.parent) line.parent.remove(line); }, 90000);
+    }
+
+    droneRec.meta = { ...droneRec.meta, rtb: true, pilot: targetMeta.owner };
+    this._animateAlongRoute(droneRec, routeData || { points: [droneRec.mesh.position] }, {
+      maxSteps: 58,
+      speed: 0.02,
+      onComplete: () => {
+        this._evolution.flybacks = (this._evolution.flybacks || 0) + 1;
+        this._saveEvolution();
+        MapDepict?.pulse?.(pilotLat, pilotLng, 0xff66cc, '🥽 RTB · ' + (targetMeta.owner || 'pilot'), 9000);
+        AIGraphics?.spawnEffect?.(droneRec.mesh?.position, 0xff66cc, 20, 45);
+        const handoff = '🥽 tilemaxos RTB — ' + (droneRec.domain || 'fpv') + ' drone returned to pilot ' + (targetMeta.owner || '');
+        window.MapComms?.postSystem?.(handoff);
+        ACI?.feed?.('tilemaxos-rtb', targetMeta.owner + ' · ' + droneRec.domain);
+        this.out(handoff, 'ok');
+        setTimeout(() => {
+          if (droneRec.mesh?.parent) droneRec.mesh.parent.remove(droneRec.mesh);
+          droneRec.mesh = null;
+        }, 2800);
+      },
+    });
+
+    const msg = 'RTB — flying ' + (droneRec.domain || 'drone') + ' back to pilot ' + (targetMeta.owner || '') + ' (' + pilotLat.toFixed(2) + ', ' + pilotLng.toFixed(2) + ')';
+    console.log('%c[tilemaxos] ' + msg, 'color:#ff66cc');
+    if (!opts.quiet) this.say(msg);
+    return { ok: true, pilotLat, pilotLng };
   },
 
   takeover(targetId, opts) {
@@ -13876,59 +14014,72 @@ const TelemachosPilot = {
       return { error: 'commercial_locked' };
     }
 
-    const hostiles = this._hostile.length ? this._hostile : this.scanHostiles();
     const q = String(targetId || '').toLowerCase();
-    let target = hostiles.find((h) => h.id === targetId || h.id.includes(q));
-    if (!target && q) {
-      target = hostiles.find((h) => (h.owner || '').toLowerCase().includes(q));
-    }
-    if (!target && hostiles.length) target = hostiles[0];
+    if (!this._fieldDrones.length) this.scanAllDrones();
+    let target = this._findDrone(q);
+    if (!target && this._fieldDrones.length) target = this._fieldDrones.find((d) => d.fpv) || this._fieldDrones[0];
     if (!target) {
-      this.say('Δεν βρέθηκαν hostile drones — παίξε με άλλους gamers (players · team · kryfto) και ξανά scan.');
-      return { error: 'no_hostiles' };
+      this.say('Δεν βρέθηκαν drones — scan ή players · kryfto για rival pilots στο χάρτη.');
+      return { error: 'no_drones' };
     }
 
-    this._visualizeHostile(target);
+    this._visualizeDrone(target);
     const power = this._evolution.power + (this._edition === 'tilemaxos' ? 80 : 0);
     const techBonus = this.EXTREME_TECH.length * 5;
-    const chance = Math.min(0.98, 0.35 + (power + techBonus) / 400 - target.signal * 0.2);
-    const roll = Math.random();
-    const success = roll < chance || opts.force;
+    const fpvBonus = target.fpv ? 0.28 : 0;
+    const chance = Math.min(0.99, 0.4 + (power + techBonus) / 380 - target.signal * 0.18 + fpvBonus);
+    const success = Math.random() < chance || opts.force;
 
     if (!success) {
       AIGraphics?.spawnEffect?.(target.mesh?.position, 0xff4400, 14, 30);
-      this.say('Ανάληψη απέτυχε — ' + target.owner + ' · ' + target.domain + ' · signal δυνατό. Δοκίμασε tilemaxos ή evolve.');
+      this.say('Ανάληψη απέτυχε — ' + target.owner + ' · ' + target.domain + (target.fpv ? ' FPV' : '') + '. evolve ή tilemaxos takeover fpv');
       this._gainXp(15, 'attempt');
       return { ok: false, target, chance };
     }
 
     if (target.mesh) {
       target.mesh.traverse((c) => {
-        if (c.material?.color) c.material.color.setHex(0x00ff88);
+        if (c.material?.color) c.material.color.setHex(target.fpv ? 0xff66cc : 0x00ff88);
       });
       target.mesh.userData.hostile = false;
       target.mesh.userData.captured = true;
-      AIGraphics?.spawnEffect?.(target.mesh.position, 0x00ff88, 28, 50);
+      target.captured = true;
+      AIGraphics?.spawnEffect?.(target.mesh.position, target.fpv ? 0xff66cc : 0x00ff88, 28, 50);
     }
 
-    const rec = this._registerDrone(target.domain, {
+    const fleetDomain = target.domain === 'fpv' ? 'fpv' : target.domain;
+    const rec = this._registerDrone(fleetDomain, {
       captured: true,
       from: target.owner,
-      hostileId: target.id,
+      fieldId: target.id,
+      fpv: !!target.fpv,
       edition: this._edition,
+      pilotLat: target.pilotLat,
+      pilotLng: target.pilotLng,
     });
     rec.mesh = target.mesh;
     rec.busy = false;
     this._captured.push({ ...target, capturedAt: Date.now(), fleetId: rec.id });
+    this._fieldDrones = this._fieldDrones.filter((d) => d.id !== target.id);
     this._hostile = this._hostile.filter((h) => h.id !== target.id);
-    this._gainXp(120, 'takeover');
-    ACI?.feed?.('tilemaxos-takeover', target.domain + ' from ' + target.owner);
+    this._gainXp(target.fpv ? 160 : 120, 'takeover');
+    if (target.fpv) {
+      this._evolution.fpv_captures = (this._evolution.fpv_captures || 0) + 1;
+      this._saveEvolution();
+    }
+    ACI?.feed?.('tilemaxos-takeover', (target.fpv ? 'FPV ' : '') + target.domain + ' from ' + target.owner);
 
-    const msg = '✓ tilemaxos takeover — ' + target.domain + ' drone of ' + target.owner + ' now under ' + this.NAME_GR + '. Power ' + this._evolution.power;
-    console.log('%c[' + this.NAME_GR + '] ' + msg, 'color:#44ff88');
+    const msg = '✓ tilemaxos — captured ' + (target.fpv ? 'FPV ' : '') + target.domain + ' of ' + target.owner + ' · RTB to pilot…';
+    console.log('%c[tilemaxos] ' + msg, 'color:#44ff88');
     window.MapComms?.postSystem?.('⚔️ ' + msg);
-    this.say(msg);
-    return { ok: true, target, fleetId: rec.id, chance };
+
+    if (opts.flyBack !== false) {
+      setTimeout(() => this.flyBackToPilot(rec, target, { quiet: true }), 400);
+      this.say(msg + ' Flying home to ' + target.owner + '.');
+    } else {
+      this.say(msg);
+    }
+    return { ok: true, target, fleetId: rec.id, chance, rtb: opts.flyBack !== false };
   },
 
   out(text, cls) {
@@ -13952,7 +14103,7 @@ const TelemachosPilot = {
     ];
     if (e.tier === 'gaming' || e.id === 'tilemaxos') {
       lines.push('Εξέλιξη με real gamers: level ' + this._evolution.level + ' · power ' + this._evolution.power + ' · takeovers ' + this._evolution.takeovers);
-      lines.push('tilemaxos extreme: scan · takeover <id> — ανάληψη drones αντίπαλης ομάδας.');
+      lines.push('tilemaxos: scan · takeover fpv · takeover any · flyback — capture ANY drone, RTB to pilot.');
     }
     if (e.tier === 'commercial') {
       lines.push('Marketplace: deliver · drivers · vendors — χωρίς hostile takeover.');
@@ -13968,7 +14119,7 @@ const TelemachosPilot = {
       '── Pilot editions ──',
       '🎮 ΤΗΛΕΜΑΧΟΣ — gaming · evolves with real users · most powerful model',
       '🏢 ΤΗΛΕΔΡΟΜΟΣ — commercial · marketplace delivery & drivers',
-      '⚔️ tilemaxos — extreme tech stack on ΤΗΛΕΜΑΧΟΣ · hostile drone takeover',
+      '⚔️ tilemaxos — ANY drone takeover (FPV priority) · fly back to pilot',
       'Active: ' + this.edition.name_gr + ' (' + this.edition.tier + ')',
     ].join('\n');
   },
@@ -13977,15 +14128,15 @@ const TelemachosPilot = {
     const e = this.edition;
     const lines = [
       '── ' + e.name_gr + ' · δυνατότητες ──',
-      '• Unlimited fleet — air / ground / sea / underwater',
+      '• Unlimited fleet — FPV 🥽 / air / ground / sea / underwater',
       '• Marketplace delivery (ΤΗΛΕΔΡΟΜΟΣ) — vendor → you · MapComms · drivers',
       '• Gaming evolution (ΤΗΛΕΜΑΧΟΣ) — XP from real users on globe · level ' + this._evolution.level,
     ];
     if (e.takeover || e.id === 'tilemaxos') {
-      lines.push('• Hostile takeover — scan opponent gaming team drones · tilemaxos mesh hijack');
+      lines.push('• Universal takeover — ANY drone on field · FPV link seizure + pilot RTB flyback');
       this.EXTREME_TECH.forEach((t) => lines.push('  ⚡ ' + t.label + ' — ' + t.desc));
     }
-    lines.push('• CLI: telemachos · teledromos · tilemaxos · scan · takeover · evolve · editions');
+    lines.push('• CLI: scan · takeover fpv · takeover any · flyback · rtb · evolve');
     return lines.join('\n');
   },
 
@@ -13995,20 +14146,27 @@ const TelemachosPilot = {
       '── Evolution · ΤΗΛΕΜΑΧΟΣ gaming model ──',
       'Level: ' + this._evolution.level + ' · Power: ' + this._evolution.power,
       'XP: ' + this._evolution.xp + ' · Takeovers: ' + this._evolution.takeovers,
+      'FPV captures: ' + (this._evolution.fpv_captures || 0) + ' · Flybacks to pilot: ' + (this._evolution.flybacks || 0),
       'Deliveries: ' + this._evolution.deliveries + ' · Live gamers seen: ' + this._evolution.gamers_seen,
       'Stronger with every real user on the map — no simulated grind.',
     ].join('\n');
   },
 
   scanText() {
-    const list = this.scanHostiles();
+    const list = this.scanAllDrones();
     if (!list.length) {
-      return 'No opponent drones — need rival gamers on map (players · kryfto · opposite team).';
+      return 'No drones on field — players · kryfto · drivers on map first.';
     }
+    const fpv = list.filter((d) => d.fpv);
     return [
-      '── Hostile drones (opponent gaming team) ──',
-      ...list.map((h, i) => (i + 1) + '. ' + h.id + ' · ' + h.domain + ' · ' + h.owner + ' · signal ' + h.signal.toFixed(2)),
-      'takeover ' + list[0].id + '  — or takeover <owner name>',
+      '── Field drones (ANY — tilemaxos can seize all) ──',
+      'FPV units: ' + fpv.length + ' · total: ' + list.length,
+      ...list.map((h, i) => {
+        const tag = h.fpv ? '🥽 FPV' : h.domain;
+        const team = h.team === 'friendly' ? '· ally' : '· ' + h.team;
+        return (i + 1) + '. ' + h.id + ' · ' + tag + ' · ' + h.owner + team + ' · sig ' + h.signal.toFixed(2);
+      }),
+      'takeover fpv · takeover any · takeover <id> · flyback',
     ].join('\n');
   },
 
@@ -14022,7 +14180,7 @@ const TelemachosPilot = {
       const active = this._fleet[k].filter((x) => x.busy).length;
       lines.push(d.emoji + ' ' + d.label + ': ' + n + (cap ? ' (' + cap + ' captured)' : '') + (active ? ' · ' + active + ' busy' : ''));
     });
-    lines.push('Hostile tracked: ' + this._hostile.length + ' · Captured total: ' + this._captured.length);
+    lines.push('Field: ' + this._fieldDrones.length + ' · FPV: ' + this._fieldDrones.filter((d) => d.fpv).length + ' · Captured: ' + this._captured.length);
     lines.push('Edition: ' + this.edition.name_gr + ' · missions: ' + this._activeMissions.length);
     if (MarketplaceComms?.state?.orderId) {
       lines.push('📦 Order: ' + String(MarketplaceComms.state.orderId).slice(0, 8));
@@ -14100,7 +14258,41 @@ const TelemachosPilot = {
     const g = new THREE.Group();
     g.userData = { domain, spec };
 
-    if (domain === 'air') {
+    if (domain === 'fpv') {
+      const frame = new THREE.Mesh(
+        new THREE.BoxGeometry(0.016, 0.004, 0.012),
+        new THREE.MeshBasicMaterial({ color: col })
+      );
+      g.add(frame);
+      const cam = new THREE.Mesh(
+        new THREE.SphereGeometry(0.005, 6, 6),
+        new THREE.MeshBasicMaterial({ color: 0xffffff })
+      );
+      cam.position.set(0, 0, 0.008);
+      g.add(cam);
+      const lens = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.003, 0.004, 0.004, 6),
+        new THREE.MeshBasicMaterial({ color: 0x111111 })
+      );
+      lens.rotation.x = Math.PI / 2;
+      lens.position.set(0, 0, 0.012);
+      g.add(lens);
+      const armA = new THREE.Mesh(
+        new THREE.BoxGeometry(0.022, 0.002, 0.002),
+        new THREE.MeshBasicMaterial({ color: col })
+      );
+      g.add(armA);
+      const armB = armA.clone();
+      armB.rotation.z = Math.PI / 2;
+      g.add(armB);
+      const vtx = new THREE.Mesh(
+        new THREE.ConeGeometry(0.003, 0.008, 3),
+        new THREE.MeshBasicMaterial({ color: 0xff3366, transparent: true, opacity: 0.8 })
+      );
+      vtx.rotation.x = -Math.PI / 2;
+      vtx.position.y = 0.006;
+      g.add(vtx);
+    } else if (domain === 'air') {
       const body = new THREE.Mesh(
         new THREE.CylinderGeometry(0.008, 0.008, 0.02, 6),
         new THREE.MeshBasicMaterial({ color: col })
@@ -14203,8 +14395,12 @@ const TelemachosPilot = {
       });
       if (steps > maxSteps || routeIdx >= routeData.points.length - 1) {
         droneRec.busy = false;
-        if (!droneRec.meta?.captured && mesh.parent) mesh.parent.remove(mesh);
-        if (!droneRec.meta?.captured) droneRec.mesh = null;
+        if (opts?.onComplete) {
+          opts.onComplete(droneRec);
+        } else if (!droneRec.meta?.captured && mesh.parent) {
+          mesh.parent.remove(mesh);
+          droneRec.mesh = null;
+        }
         return;
       }
       requestAnimationFrame(tick);
@@ -14216,7 +14412,7 @@ const TelemachosPilot = {
     opts = opts || {};
     const d = String(domain || 'air').toLowerCase();
     if (!this.DOMAINS[d]) {
-      this.say('Domain: air · ground · sea · underwater');
+      this.say('Domain: fpv · air · ground · sea · underwater');
       return { error: 'bad_domain' };
     }
     const n = Math.max(1, Math.min(99, parseInt(count, 10) || 1));
@@ -14358,7 +14554,8 @@ const TelemachosPilot = {
       if (this.mentionsTilemaxos(line)) return { cmd: 'telemachos', sub: 'tilemaxos', p };
       if (this.mentionsTelemachos(line)) return { cmd: 'telemachos', sub: p[1], p };
       if (/takeover|ανάληψη|αναληψη/.test(this.foldedGreek(line))) return { cmd: 'telemachos', sub: 'takeover', p, raw: line };
-      if (/scan|hostile|αντιπαλ/.test(this.foldedGreek(line))) return { cmd: 'telemachos', sub: 'scan', p };
+      if (/flyback|fly back|rtb|return to pilot|επιστροφη|γυρισμα/.test(this.foldedGreek(line))) return { cmd: 'telemachos', sub: 'flyback', p };
+      if (/scan|hostile|αντιπαλ|fpv/.test(this.foldedGreek(line))) return { cmd: 'telemachos', sub: 'scan', p };
     }
     return { cmd, sub: (p[1] || '').toLowerCase(), p };
   },
@@ -14401,9 +14598,9 @@ const TelemachosPilot = {
       this.showPilot((Commerce?.userLatLng?.() || this.HOME).lat, (Commerce?.userLatLng?.() || this.HOME).lng, 'tilemaxos');
       this.out([
         '⚔️ tilemaxos — extreme tech on ΤΗΛΕΜΑΧΟΣ',
-        'Focus: takeover opponent gaming team drones',
+        'ANY drone · FPV priority · RTB to pilot after capture',
         ...this.EXTREME_TECH.map((t) => '  ' + t.label),
-        'scan · takeover <id>',
+        'scan · takeover fpv · flyback',
       ].join('\n'), 'ok');
       GlobeDeck?.finishCliIfOneShot('telemachos');
       return { ok: true };
@@ -14433,17 +14630,36 @@ const TelemachosPilot = {
       GlobeDeck?.finishCliIfOneShot('telemachos');
       return { ok: true };
     }
-    if (sub === 'scan' || sub === 'hostiles' || sub === 'opponents') {
+    if (sub === 'scan' || sub === 'hostiles' || sub === 'opponents' || sub === 'drones') {
       this._setEdition('tilemaxos');
       this.out(this.scanText(), 'ok');
-      this.scanHostiles().forEach((h) => this._visualizeHostile(h));
+      this.scanAllDrones().forEach((h) => this._visualizeDrone(h));
       GlobeDeck?.finishCliIfOneShot('telemachos');
       return { ok: true };
     }
-    if (sub === 'takeover' || sub === 'capture' || sub === 'hijack') {
+    if (sub === 'takeover' || sub === 'capture' || sub === 'hijack' || sub === 'seize') {
       this._setEdition('tilemaxos');
-      const target = pp.slice(2).join(' ') || arg2;
+      const target = pp.slice(2).join(' ') || arg2 || 'fpv';
       this.takeover(target);
+      GlobeDeck?.finishCliIfOneShot('telemachos');
+      return { ok: true };
+    }
+    if (sub === 'flyback' || sub === 'rtb' || sub === 'return' || sub === 'home') {
+      this._setEdition('tilemaxos');
+      const q = pp.slice(2).join(' ') || arg2;
+      const cap = this._captured[this._captured.length - 1];
+      const rec = cap?.fleetId
+        ? Object.values(this._fleet).flat().find((r) => r.id === cap.fleetId)
+        : null;
+      if (rec && cap) {
+        this.flyBackToPilot(rec, cap);
+      } else if (q) {
+        const t = this._findDrone(q);
+        if (t) this.takeover(t.id, { flyBack: true });
+        else this.say('No match — scan then takeover fpv first.');
+      } else {
+        this.say('No captured drone — takeover fpv first, or flyback <id>.');
+      }
       GlobeDeck?.finishCliIfOneShot('telemachos');
       return { ok: true };
     }
@@ -14484,7 +14700,7 @@ const TelemachosPilot = {
       return { ok: true };
     }
 
-    this.out('usage: telemachos · teledromos · tilemaxos · editions · evolve · scan · takeover · deliver', 'dim');
+    this.out('usage: tilemaxos · scan · takeover fpv · takeover any · flyback · rtb · deliver', 'dim');
     GlobeDeck?.finishCliIfOneShot('telemachos');
     return { ok: true };
   },
