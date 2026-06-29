@@ -280,6 +280,7 @@ const AstranovPresence = {
       ? 'Κρυφτό — hidden from other players'
       : 'Visible — back on the map for collab';
     ACIControl?.reply(msg);
+    ContextTruth?.sync?.();
     if (Voice.maySpeak()) speak(msg.slice(0, 80), () => resumeListening?.());
     return window.hidden;
   },
@@ -340,6 +341,8 @@ const AstranovPresence = {
     GlobeDeck?.expand?.(SuperCli?.title || 'Astranov Command Line');
     GlobeDeck?.setTitle?.('ΚΡΥΦΤΟ');
     GlobeDeck?.setPreview?.('◎ ' + total + ' player(s) · say hide to vanish · players to seek');
+    GlobeDeck.activeTask = 'game';
+    ContextTruth?.sync?.();
     AciCli?.print('◎ GAME START · κρυφτό / hide and seek · ' + total + ' on map', 'ok');
     const msg = n > 0
       ? 'Κρυφτό ξεκίνησε! ' + total + ' παίκτες. Πες hide για να κρυφτείς · players για αναζήτηση'

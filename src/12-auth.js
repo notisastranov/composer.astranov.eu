@@ -8,6 +8,9 @@ const Auth = {
   OWNER_EMAIL: 'notisastranov@gmail.com',
   OAUTH_PROVIDERS: ['google', 'facebook', 'apple', 'twitter'],
   _siteOwners: new Map(),
+  _profileVisual: null,
+  _authDegraded: false,
+  _authBoot: true,
 
   init() {
     if (typeof supabase === 'undefined') {
@@ -17,19 +20,44 @@ const Auth = {
     this.client = supabase.createClient(SB_URL, SB_KEY, {
       auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true, storageKey: 'astranov_auth_v2' }
     });
-    this.client.auth.onAuthStateChange((_ev, session) => {
+    this.client.auth.onAuthStateChange((ev, session) => {
+      if (ev === 'TOKEN_REFRESHED' && session?.user) {
+        this.session = session;
+        this.user = session.user;
+        this._authDegraded = false;
+        this.applyUser();
+        return;
+      }
+      if (!session?.user && this.user && ev !== 'SIGNED_OUT') {
+        this._authDegraded = true;
+        this.applyUser();
+        this.ensureSession().then((s) => {
+          if (s?.user) {
+            this.session = s;
+            this.user = s.user;
+            this._authDegraded = false;
+            this.applyUser();
+            this.refreshAuthority();
+          }
+        });
+        return;
+      }
       this.session = session;
       this.user = session?.user || null;
+      this._authDegraded = false;
       this.applyUser();
       this.refreshAuthority();
       this.broadcastToShell();
+      if (this.user) this.loadProfileVisual();
     });
     this.client.auth.getSession().then(({ data }) => {
+      this._authBoot = false;
       this.session = data?.session || null;
       this.user = data?.session?.user || null;
       this.applyUser();
       this.refreshAuthority();
       this.broadcastToShell();
+      if (this.user) this.loadProfileVisual();
     });
     const btn = document.getElementById('aci-login');
     if (btn) btn.onclick = () => this.user ? this.signOut() : this.openLoginModal();
@@ -185,10 +213,30 @@ const Auth = {
     const exp = session.expires_at ? session.expires_at * 1000 : 0;
     if (exp && exp < Date.now() + 120000) {
       const { data: refreshed, error } = await this.client.auth.refreshSession();
-      if (!error && refreshed?.session) session = refreshed.session;
+      if (!error && refreshed?.session) {
+        session = refreshed.session;
+        this._authDegraded = false;
+      } else if (this.user) {
+        this._authDegraded = true;
+        this.applyUser();
+      }
     }
     this.session = session;
     return session;
+  },
+
+  async loadProfileVisual() {
+    if (!this.client || !this.user?.id) return;
+    try {
+      const { data } = await this.client.from('profiles')
+        .select('display_name, avatar_emoji')
+        .eq('id', this.user.id)
+        .maybeSingle();
+      if (data) {
+        this._profileVisual = data;
+        this.applyUser();
+      }
+    } catch (_) {}
   },
 
   async authHeaders() {
@@ -271,6 +319,8 @@ const Auth = {
     this.updateOwnerUI();
     if (window.FieldBrain) FieldBrain.onAuth();
     if (window.AciCli) AciCli.onAuthChange();
+    this.loadProfileVisual();
+    ContextTruth?.syncAuth?.();
   },
 
   updateOwnerUI() {
@@ -311,24 +361,39 @@ const Auth = {
         || this.isOwner || this.isArchitect
         || (this.user.email || '').toLowerCase() === this.OWNER_EMAIL.toLowerCase();
       const name = isOwner ? 'ASTRANOV' : (
-        this.user.user_metadata?.full_name
+        this._profileVisual?.display_name
+        || this.user.user_metadata?.full_name
         || this.user.user_metadata?.name
         || (this.user.email || '').split('@')[0]
         || 'User'
       );
-      const avatar = this.user.user_metadata?.avatar_url || this.user.user_metadata?.picture;
+      const avatar = this.user.user_metadata?.avatar_url
+        || this.user.user_metadata?.picture;
+      const emoji = this._profileVisual?.avatar_emoji;
       if (btn) {
-        btn.title = 'Sign out · ' + name;
+        btn.classList.remove('auth-out', 'auth-boot');
+        btn.classList.add(this._authDegraded ? 'auth-degraded' : 'auth-in');
+        btn.dataset.auth = this._authDegraded ? 'degraded' : 'in';
+        btn.title = (this._authDegraded ? 'Session refreshing · ' : 'Signed in · ') + name + ' — tap to sign out';
+        btn.style.backgroundSize = 'cover';
+        btn.style.backgroundPosition = 'center';
         if (avatar) {
           btn.style.backgroundImage = 'url(' + avatar + ')';
-          btn.style.backgroundSize = 'cover';
           btn.textContent = '';
+        } else if (emoji) {
+          btn.style.backgroundImage = '';
+          btn.textContent = emoji;
+          btn.style.fontSize = '18px';
         } else {
           btn.textContent = name.charAt(0).toUpperCase();
           btn.style.backgroundImage = '';
+          btn.style.fontSize = '13px';
         }
       }
-      if (chip && !this.isOwner) chip.textContent = name;
+      if (chip && !this.isOwner) {
+        chip.textContent = name + (this._authDegraded ? ' · ⟳' : ' · ●');
+        chip.style.color = this._authDegraded ? '#ffaa44' : '';
+      }
       AstranovSession?._applyIdentity?.();
       if (typeof me !== 'undefined' && me) {
         me.name = name;
@@ -341,14 +406,26 @@ const Auth = {
       AstranovPresence?.join?.();
       ACI?.feed('login', name);
       if (window.AciCli) AciCli.onAuthChange();
+      FieldBrain?.updateChip?.();
+      CliRibbon?.render?.();
+      ContextTruth?.syncAuth?.();
     } else {
       if (btn) {
+        btn.classList.remove('auth-in', 'auth-degraded');
+        btn.classList.add(this._authBoot ? 'auth-boot' : 'auth-out');
+        btn.dataset.auth = 'out';
         btn.title = 'Sign in — Google · email · phone';
         btn.textContent = 'G';
         btn.style.backgroundImage = '';
+        btn.style.fontSize = '13px';
       }
-      if (chip) chip.textContent = '';
+      if (chip) {
+        chip.textContent = '';
+        chip.style.color = '';
+      }
       if (window.AciCli) AciCli.onAuthChange();
+      CliRibbon?.render?.();
+      ContextTruth?.syncAuth?.();
     }
   }
 };

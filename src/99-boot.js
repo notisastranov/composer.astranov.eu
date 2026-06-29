@@ -62,6 +62,7 @@ GlobeDeck.init();
 SuperCli.init();
 SessionHold.init();
 CliHub.init();
+ContextTruth.init();
 AciCli.init();
 setTimeout(() => Auth.refreshAuthority(), 800);
 setTimeout(() => {

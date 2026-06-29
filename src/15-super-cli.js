@@ -20,6 +20,7 @@ const SuperCli = {
   },
 
   inferContext() {
+    if (ContextTruth?.infer) return ContextTruth.infer().ctx;
     if (DrivingView?.active) return 'drive';
     const task = GlobeDeck?.activeTask;
     if (task === 'commerce') return 'commerce';
@@ -27,6 +28,8 @@ const SuperCli = {
     if (task === 'radio') return 'radio';
     if (task === 'phone') return 'phone';
     if (task === 'add') return 'add';
+    if (task === 'coders') return 'coders';
+    if (task === 'chats') return 'chats';
     if (!Auth?.user) return 'guest';
     return 'idle';
   },
@@ -84,7 +87,7 @@ const SuperCli = {
 
   bindToolbar() {
     const actions = {
-      'aci-login': () => Auth?.user ? Auth.signOut() : Auth?.signInGoogle(),
+      'aci-login': () => Auth?.user ? Auth.signOut() : (Auth?.openLoginModal?.() || Auth?.signInGoogle?.()),
       'aci-cli-toggle': () => GlobeDeck?.toggle(),
       'aci-stop': () => userIntervene?.(),
       'aci-hold': () => SessionHold?.toggle?.(),

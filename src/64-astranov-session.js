@@ -94,10 +94,11 @@ const AstranovSession = {
 
   purgeAllLocalState() {
     try {
+      const keep = ContextTruth?.AUTH_KEEP || new Set(['astranov_auth_v2']);
       const drop = [];
       for (let i = 0; i < localStorage.length; i++) {
         const k = localStorage.key(i);
-        if (!k) continue;
+        if (!k || keep.has(k)) continue;
         if (k.startsWith('astranov_')) drop.push(k);
         if (k.startsWith('aci-')) drop.push(k);
       }
@@ -200,7 +201,7 @@ const AstranovSession = {
   },
 
   async onAuth() {
-    this.purgeAllLocalState();
+    if (this.isAstranov()) this.purgeAllLocalState();
     this._deviceId = this._deriveDeviceId();
     this._applyIdentity();
     if (Auth?.user) {

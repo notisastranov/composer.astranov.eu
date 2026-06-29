@@ -6,6 +6,7 @@ const MapComms = {
   members: new Map(),
   messages: [],
   dmUser: null,
+  compromised: null,
   rtChannel: null,
   callChannel: null,
   _viz: null,
@@ -93,10 +94,13 @@ const MapComms = {
       t: m.t || Date.now(),
       author_id: m.author_id,
     }));
+    this.compromised = null;
+    ContextTruth?.clearCompromised?.();
     await this._joinChannel(circleId);
     this._openCloud(this.teamName);
     this._rebuildViz();
     this._renderMessages();
+    ContextTruth?.sync?.();
     return circleId;
   },
 
@@ -218,6 +222,7 @@ const MapComms = {
     this._rebuildViz();
     this._renderMessages();
     AciCli?.print('◎ joined ' + this.teamName, 'ok');
+    ContextTruth?.sync?.();
   },
 
   async leaveTeam() {
@@ -230,9 +235,12 @@ const MapComms = {
     this.members.clear();
     this.messages = [];
     this.dmUser = null;
+    this.compromised = null;
+    ContextTruth?.clearCompromised?.();
     this._clearViz();
     this.closeCloud();
     this.hideDriverPicker();
+    ContextTruth?.sync?.();
   },
 
   async _joinChannel(teamId) {
@@ -276,10 +284,46 @@ const MapComms = {
 
   _onChat(msg) {
     if (!msg?.body) return;
+    this._checkIntrusion(msg);
     this.messages.push(msg);
     if (this.messages.length > 80) this.messages.shift();
     this._renderMessages();
     this._persistMessage(msg);
+  },
+
+  _checkIntrusion(msg) {
+    const uid = msg.author_id || msg.from || msg.user_id;
+    const selfId = Auth?.user?.id;
+    if (!uid || uid === selfId) return;
+    if (this.kind === 'dm' && this.dmUser?.id && uid !== this.dmUser.id) {
+      this.compromised = { id: uid, name: msg.author || msg.name || 'Intruder', at: Date.now() };
+      ContextTruth?.setCompromised?.(this.compromised);
+      this.postSystem('⚠ COMPROMISED — unexpected sender: ' + (msg.author || uid.slice(0, 8)));
+      return;
+    }
+    if (this.kind === 'team' && this.members?.size && !this.members.has(uid)) {
+      this.compromised = { id: uid, name: msg.author || msg.name || 'Intruder', at: Date.now() };
+      ContextTruth?.setCompromised?.(this.compromised);
+      this.postSystem('⚠ COMPROMISED — non-member on team cloud: ' + (msg.author || uid.slice(0, 8)));
+    }
+  },
+
+  _applyCloudTruth() {
+    const cloud = document.getElementById('map-comms-cloud');
+    if (!cloud) return;
+    const mode = this.compromised ? 'compromised' : (this.kind || 'team');
+    cloud.dataset.truth = mode;
+    if (this.compromised) {
+      cloud.classList.add('compromised');
+      this.BLUE = 0xff3344;
+      this.BLUE_GLOW = 0xff6688;
+    } else {
+      cloud.classList.remove('compromised');
+      this.BLUE = 0x1a6fd4;
+      this.BLUE_GLOW = 0x3d9eff;
+    }
+    this._rebuildViz();
+    ContextTruth?.sync?.();
   },
 
   async _persistMessage(msg) {
@@ -339,7 +383,9 @@ const MapComms = {
     document.getElementById('mc-title').textContent = title || 'Cloud chat';
     cloud.classList.add('open');
     cloud.dataset.kind = this.kind || 'team';
+    this._applyCloudTruth();
     this._renderMessages();
+    ContextTruth?.sync?.();
   },
 
   closeCloud() {

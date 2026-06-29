@@ -253,6 +253,7 @@ const GlobeDeck = {
     this.expand(title || this.stageTitle(panelId));
     AppShortcuts?.track?.(task || panelId, title || this.stageTitle(panelId));
     SuperCli?.setContext?.(SuperCli.inferContext?.());
+    ContextTruth?.sync?.();
     AppShortcuts?.render?.();
   },
 

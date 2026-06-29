@@ -117,7 +117,19 @@
   #aci-input, #aci-send { display:none !important; }
   #aci-handsfree, #aci-send, #aci-order, #aci-locate, #aci-vhf, #aci-call, #aci-stop, #aci-login { background:var(--ax-blue-bg); border:1px solid var(--ax-blue-border); color:var(--ax-blue-bright); border-radius:50%; width:38px; height:38px; cursor:pointer; font-size:14px; flex-shrink:0; }
   #aci-locate { font-size:16px; }
-  #aci-login { font-weight:700; font-size:13px; }
+  #aci-login { font-weight:700; font-size:13px; position:relative; overflow:visible; background-position:center; }
+  #aci-login.auth-in { border:2px solid var(--ax-green-border); box-shadow:0 0 12px var(--ax-green-glow); }
+  #aci-login.auth-in::after { content:''; position:absolute; right:-3px; bottom:-3px; width:11px; height:11px; border-radius:50%; background:#00dd77; border:2px solid #020810; box-shadow:0 0 6px #00dd77; pointer-events:none; }
+  #aci-login.auth-degraded { border:2px solid var(--ax-yellow-border); box-shadow:0 0 10px var(--ax-yellow-glow); }
+  #aci-login.auth-degraded::after { background:#ffaa44; box-shadow:0 0 6px #ffaa44; }
+  #aci-login.auth-out { opacity:0.9; }
+  #aci-login.auth-boot { opacity:0.65; animation:auth-pulse 1.2s ease-in-out infinite; }
+  @keyframes auth-pulse { 50% { opacity:0.45; } }
+  #super-cli-bar[data-truth="dm"] { border-bottom-color:var(--ax-green-border); }
+  #super-cli-bar[data-truth="compromised"], #super-cli-bar[data-mode="compromised"] { border-bottom-color:var(--ax-red-border); background:rgba(40,0,0,0.45); }
+  #super-cli-bar[data-truth="game"] { border-bottom-color:#7b5cff; }
+  #super-cli-bar[data-truth="telemachos"] { border-bottom-color:#ff8800; }
+  #globe-deck[data-truth="compromised"] { border-color:var(--ax-red-border); box-shadow:0 0 18px var(--ax-red-glow); }
   #aci-stop { background:var(--ax-red-bg); border-color:var(--ax-red-border); color:var(--ax-red-bright); box-shadow:0 0 8px var(--ax-red-glow); }
   #news-ticker { display:none; margin:8px 8px 0; padding:6px 12px; background:var(--ax-panel); border:1px solid var(--ax-blue-border); border-radius:14px; font:11px system-ui; color:var(--ax-blue-bright); white-space:nowrap; overflow:hidden; pointer-events:auto; }
   #zoom-label { position:fixed; top:10px; left:10px; z-index:40; font:11px system-ui; color:var(--an-muted); pointer-events:none; max-width:55vw; }
@@ -374,8 +386,18 @@
   #map-comms-beam .mc-beam-glow { stroke:var(--ax-blue-bright); stroke-width:6; opacity:0.28; }
   #map-comms-cloud { display:none; position:fixed; top:6%; left:50%; transform:translateX(-50%); z-index:119; width:min(300px,88vw); max-height:min(22vh,180px); pointer-events:auto; border-radius:18px 18px 22px 22px; background:radial-gradient(ellipse at 50% 0%,rgba(61,158,255,0.22),rgba(4,14,32,0.82) 55%,rgba(2,8,18,0.9)); border:1px solid var(--ax-blue-border); box-shadow:0 8px 28px rgba(0,0,0,0.45),0 0 20px var(--ax-blue-glow),inset 0 -12px 24px rgba(26,111,212,0.12); backdrop-filter:blur(10px); font:10px/1.4 system-ui; color:var(--an-text); }
   #map-comms-cloud.open { display:flex; flex-direction:column; }
+  #map-comms-cloud[data-truth="dm"] { border-color:var(--ax-green-border); box-shadow:0 8px 28px rgba(0,0,0,0.45),0 0 20px var(--ax-green-glow); }
+  #map-comms-cloud[data-truth="team"] { border-color:var(--ax-blue-border); }
+  #map-comms-cloud.compromised, #map-comms-cloud[data-truth="compromised"] { border-color:var(--ax-red-border); background:radial-gradient(ellipse at 50% 0%,rgba(255,60,60,0.35),rgba(32,4,8,0.9) 55%,rgba(18,2,6,0.95)); box-shadow:0 8px 28px rgba(0,0,0,0.5),0 0 24px var(--ax-red-glow); animation:cloud-alert 1.4s ease-in-out infinite; }
+  @keyframes cloud-alert { 50% { box-shadow:0 0 32px var(--ax-red-glow); } }
   #map-comms-cloud::before { content:''; position:absolute; left:12%; right:12%; top:-10px; height:18px; border-radius:50%; background:radial-gradient(ellipse,rgba(61,158,255,0.35),transparent 70%); pointer-events:none; }
-  #mc-head { display:flex; align-items:center; gap:6px; padding:8px 10px 4px; flex-shrink:0; }
+  #map-comms-cloud.compromised::before { background:radial-gradient(ellipse,rgba(255,80,80,0.45),transparent 70%); }
+  #mc-head { display:flex; align-items:center; gap:6px; padding:8px 10px 4px; flex-shrink:0; flex-wrap:wrap; }
+  #mc-badge { font-size:9px; font-weight:700; padding:2px 7px; border-radius:8px; flex-shrink:0; }
+  #mc-badge.mc-badge-dm { color:var(--ax-green-bright); border:1px solid var(--ax-green-border); background:var(--ax-green-bg); }
+  #mc-badge.mc-badge-team { color:var(--ax-blue-bright); border:1px solid var(--ax-blue-border); background:var(--ax-blue-bg); }
+  #mc-badge.mc-badge-alert { color:var(--ax-red-bright); border:1px solid var(--ax-red-border); background:var(--ax-red-bg); }
+  #mc-badge .mc-intruder { background:transparent; border:none; color:#ff8888; text-decoration:underline; cursor:pointer; font:inherit; font-weight:700; padding:0; }
   #mc-title { flex:1; font-weight:700; font-size:11px; color:var(--ax-blue-bright); text-shadow:0 0 8px var(--ax-blue-glow); }
   #mc-close { background:transparent; border:1px solid #555; color:#aaa; border-radius:8px; padding:2px 8px; cursor:pointer; font-size:10px; }
   #mc-log { flex:1; overflow-y:auto; padding:4px 10px 6px; min-height:48px; max-height:14vh; -webkit-overflow-scrolling:touch; }
@@ -1651,6 +1673,9 @@ const Auth = {
   OWNER_EMAIL: 'notisastranov@gmail.com',
   OAUTH_PROVIDERS: ['google', 'facebook', 'apple', 'twitter'],
   _siteOwners: new Map(),
+  _profileVisual: null,
+  _authDegraded: false,
+  _authBoot: true,
 
   init() {
     if (typeof supabase === 'undefined') {
@@ -1660,19 +1685,44 @@ const Auth = {
     this.client = supabase.createClient(SB_URL, SB_KEY, {
       auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true, storageKey: 'astranov_auth_v2' }
     });
-    this.client.auth.onAuthStateChange((_ev, session) => {
+    this.client.auth.onAuthStateChange((ev, session) => {
+      if (ev === 'TOKEN_REFRESHED' && session?.user) {
+        this.session = session;
+        this.user = session.user;
+        this._authDegraded = false;
+        this.applyUser();
+        return;
+      }
+      if (!session?.user && this.user && ev !== 'SIGNED_OUT') {
+        this._authDegraded = true;
+        this.applyUser();
+        this.ensureSession().then((s) => {
+          if (s?.user) {
+            this.session = s;
+            this.user = s.user;
+            this._authDegraded = false;
+            this.applyUser();
+            this.refreshAuthority();
+          }
+        });
+        return;
+      }
       this.session = session;
       this.user = session?.user || null;
+      this._authDegraded = false;
       this.applyUser();
       this.refreshAuthority();
       this.broadcastToShell();
+      if (this.user) this.loadProfileVisual();
     });
     this.client.auth.getSession().then(({ data }) => {
+      this._authBoot = false;
       this.session = data?.session || null;
       this.user = data?.session?.user || null;
       this.applyUser();
       this.refreshAuthority();
       this.broadcastToShell();
+      if (this.user) this.loadProfileVisual();
     });
     const btn = document.getElementById('aci-login');
     if (btn) btn.onclick = () => this.user ? this.signOut() : this.openLoginModal();
@@ -1828,10 +1878,30 @@ const Auth = {
     const exp = session.expires_at ? session.expires_at * 1000 : 0;
     if (exp && exp < Date.now() + 120000) {
       const { data: refreshed, error } = await this.client.auth.refreshSession();
-      if (!error && refreshed?.session) session = refreshed.session;
+      if (!error && refreshed?.session) {
+        session = refreshed.session;
+        this._authDegraded = false;
+      } else if (this.user) {
+        this._authDegraded = true;
+        this.applyUser();
+      }
     }
     this.session = session;
     return session;
+  },
+
+  async loadProfileVisual() {
+    if (!this.client || !this.user?.id) return;
+    try {
+      const { data } = await this.client.from('profiles')
+        .select('display_name, avatar_emoji, avatar_url')
+        .eq('id', this.user.id)
+        .maybeSingle();
+      if (data) {
+        this._profileVisual = data;
+        this.applyUser();
+      }
+    } catch (_) {}
   },
 
   async authHeaders() {
@@ -1914,6 +1984,8 @@ const Auth = {
     this.updateOwnerUI();
     if (window.FieldBrain) FieldBrain.onAuth();
     if (window.AciCli) AciCli.onAuthChange();
+    this.loadProfileVisual();
+    ContextTruth?.syncAuth?.();
   },
 
   updateOwnerUI() {
@@ -1954,24 +2026,40 @@ const Auth = {
         || this.isOwner || this.isArchitect
         || (this.user.email || '').toLowerCase() === this.OWNER_EMAIL.toLowerCase();
       const name = isOwner ? 'ASTRANOV' : (
-        this.user.user_metadata?.full_name
+        this._profileVisual?.display_name
+        || this.user.user_metadata?.full_name
         || this.user.user_metadata?.name
         || (this.user.email || '').split('@')[0]
         || 'User'
       );
-      const avatar = this.user.user_metadata?.avatar_url || this.user.user_metadata?.picture;
+      const avatar = this.user.user_metadata?.avatar_url
+        || this.user.user_metadata?.picture
+        || this._profileVisual?.avatar_url;
+      const emoji = this._profileVisual?.avatar_emoji;
       if (btn) {
-        btn.title = 'Sign out · ' + name;
+        btn.classList.remove('auth-out', 'auth-boot');
+        btn.classList.add(this._authDegraded ? 'auth-degraded' : 'auth-in');
+        btn.dataset.auth = this._authDegraded ? 'degraded' : 'in';
+        btn.title = (this._authDegraded ? 'Session refreshing · ' : 'Signed in · ') + name + ' — tap to sign out';
+        btn.style.backgroundSize = 'cover';
+        btn.style.backgroundPosition = 'center';
         if (avatar) {
           btn.style.backgroundImage = 'url(' + avatar + ')';
-          btn.style.backgroundSize = 'cover';
           btn.textContent = '';
+        } else if (emoji) {
+          btn.style.backgroundImage = '';
+          btn.textContent = emoji;
+          btn.style.fontSize = '18px';
         } else {
           btn.textContent = name.charAt(0).toUpperCase();
           btn.style.backgroundImage = '';
+          btn.style.fontSize = '13px';
         }
       }
-      if (chip && !this.isOwner) chip.textContent = name;
+      if (chip && !this.isOwner) {
+        chip.textContent = name + (this._authDegraded ? ' · ⟳' : ' · ●');
+        chip.style.color = this._authDegraded ? '#ffaa44' : '';
+      }
       AstranovSession?._applyIdentity?.();
       if (typeof me !== 'undefined' && me) {
         me.name = name;
@@ -1984,14 +2072,26 @@ const Auth = {
       AstranovPresence?.join?.();
       ACI?.feed('login', name);
       if (window.AciCli) AciCli.onAuthChange();
+      FieldBrain?.updateChip?.();
+      CliRibbon?.render?.();
+      ContextTruth?.syncAuth?.();
     } else {
       if (btn) {
+        btn.classList.remove('auth-in', 'auth-degraded');
+        btn.classList.add(this._authBoot ? 'auth-boot' : 'auth-out');
+        btn.dataset.auth = 'out';
         btn.title = 'Sign in — Google · email · phone';
         btn.textContent = 'G';
         btn.style.backgroundImage = '';
+        btn.style.fontSize = '13px';
       }
-      if (chip) chip.textContent = '';
+      if (chip) {
+        chip.textContent = '';
+        chip.style.color = '';
+      }
       if (window.AciCli) AciCli.onAuthChange();
+      CliRibbon?.render?.();
+      ContextTruth?.syncAuth?.();
     }
   }
 };
@@ -2252,6 +2352,7 @@ const GlobeDeck = {
     this.expand(title || this.stageTitle(panelId));
     AppShortcuts?.track?.(task || panelId, title || this.stageTitle(panelId));
     SuperCli?.setContext?.(SuperCli.inferContext?.());
+    ContextTruth?.sync?.();
     AppShortcuts?.render?.();
   },
 
@@ -2335,6 +2436,12 @@ const CliRibbon = {
     site: 'Site',
     cli: 'CLI',
     chats: 'Chats',
+    dm: 'DM',
+    team: 'Team',
+    game: 'ΚΡΥΦΤό',
+    telemachos: 'Pilot',
+    compromised: '⚠ Alert',
+    guest: 'Guest',
   },
 
   MOTTO_RE: /justice\s*→\s*truth\s*→\s*freedom|collective intelligence|astranov command line\s*—|architect\s*·\s*collective|δικαιοσύνη|αλήθεια|ελευθερία/gi,
@@ -2429,10 +2536,11 @@ const CliRibbon = {
     if (window._handsFreeVoice) parts.push('hands-free');
     else if (isListening) parts.push('listening');
 
-    if (Auth?.user?.email) {
-      const who = (Auth.user.email.split('@')[0] || '').slice(0, 12);
-      if (who) parts.push(who);
-    } else parts.push('guest');
+    if (Auth?.user) {
+      const who = Auth._profileVisual?.avatar_emoji
+        || (Auth.user.user_metadata?.full_name || Auth.user.email?.split('@')[0] || 'user').slice(0, 12);
+      parts.push((Auth._authDegraded ? '⟳ ' : '● ') + who);
+    } else parts.push('guest · sign in');
 
     if (this._notice) parts.push(this._notice);
 
@@ -2738,6 +2846,7 @@ const SuperCli = {
   },
 
   inferContext() {
+    if (ContextTruth?.infer) return ContextTruth.infer().ctx;
     if (DrivingView?.active) return 'drive';
     const task = GlobeDeck?.activeTask;
     if (task === 'commerce') return 'commerce';
@@ -2745,6 +2854,8 @@ const SuperCli = {
     if (task === 'radio') return 'radio';
     if (task === 'phone') return 'phone';
     if (task === 'add') return 'add';
+    if (task === 'coders') return 'coders';
+    if (task === 'chats') return 'chats';
     if (!Auth?.user) return 'guest';
     return 'idle';
   },
@@ -2802,7 +2913,7 @@ const SuperCli = {
 
   bindToolbar() {
     const actions = {
-      'aci-login': () => Auth?.user ? Auth.signOut() : Auth?.signInGoogle(),
+      'aci-login': () => Auth?.user ? Auth.signOut() : (Auth?.openLoginModal?.() || Auth?.signInGoogle?.()),
       'aci-cli-toggle': () => GlobeDeck?.toggle(),
       'aci-stop': () => userIntervene?.(),
       'aci-hold': () => SessionHold?.toggle?.(),
@@ -3836,6 +3947,203 @@ const CliHub = {
 };
 
 window.CliHub = CliHub;
+
+// === CONTEXT TRUTH — visual mirror of auth · channel · game · compromise ===
+const ContextTruth = {
+  compromised: null,
+  _lastLabel: '',
+
+  AUTH_KEEP: new Set(['astranov_auth_v2']),
+
+  init() {
+    setInterval(() => this.sync(), 2500);
+    window.addEventListener('astranov-context', () => this.sync());
+  },
+
+  infer() {
+    if (MapComms?.compromised || this.compromised) {
+      const c = MapComms?.compromised || this.compromised;
+      return {
+        mode: 'compromised',
+        ctx: 'compromised',
+        label: '⚠ COMPROMISED · ' + (c.name || c.id?.slice(0, 8) || '?'),
+        detail: 'Intruder: ' + (c.name || 'unknown'),
+        intruder: c,
+      };
+    }
+    if (AstranovPresence?.game === 'kryfto') {
+      const hidden = !!window.hidden;
+      return {
+        mode: 'game',
+        ctx: 'game',
+        label: hidden ? 'ΚΡΥΦΤό · hidden' : 'ΚΡΥΦΤό · hide & seek',
+        detail: hidden ? 'You are hidden on the map' : 'Housekeeping / hide and seek LIVE',
+      };
+    }
+    if (MapComms?.teamId && MapComms?.kind === 'dm' && MapComms?.dmUser) {
+      return {
+        mode: 'dm',
+        ctx: 'dm',
+        label: 'DM · ' + (MapComms.dmUser.name || 'User'),
+        detail: 'Private cloud · ' + (MapComms.teamId || ''),
+        peer: MapComms.dmUser,
+      };
+    }
+    if (MapComms?.teamId && MapComms?.kind === 'team') {
+      return {
+        mode: 'team',
+        ctx: 'team',
+        label: 'Team · ' + (MapComms.teamName || 'Cloud'),
+        detail: (MapComms.members?.size || 0) + ' on map cloud',
+      };
+    }
+    if (MarketplaceComms?.teamId) {
+      return {
+        mode: 'market',
+        ctx: 'commerce',
+        label: 'Delivery · ' + (MarketplaceComms.teamName || 'order'),
+        detail: 'Marketplace cloud',
+      };
+    }
+    const task = GlobeDeck?.activeTask;
+    if (task === 'coders' || window._aciCodersAlwaysOn) {
+      return { mode: 'coders', ctx: 'coders', label: 'Coders · collective', detail: 'Task conversation · dev bridge' };
+    }
+    if (task === 'chats') {
+      return { mode: 'chats', ctx: 'chats', label: 'CLI hub · search', detail: 'Users · conversations · transcripts' };
+    }
+    if (task === 'commerce') {
+      return { mode: 'commerce', ctx: 'commerce', label: 'Shops · order', detail: 'Commerce task' };
+    }
+    if (task === 'batch') {
+      return { mode: 'batch', ctx: 'batch', label: 'Batch · node', detail: 'Collaborative task' };
+    }
+    if (task === 'radio') {
+      return { mode: 'radio', ctx: 'radio', label: 'PMR · radio', detail: 'VHF comms task' };
+    }
+    if (task === 'phone') {
+      return { mode: 'phone', ctx: 'phone', label: 'Phone · call', detail: 'Voice call task' };
+    }
+    if (task === 'video') {
+      return { mode: 'video', ctx: 'video', label: 'Video', detail: 'YouTube / video task' };
+    }
+    if (task === 'add') {
+      return { mode: 'add', ctx: 'add', label: 'Super Add', detail: 'Post · vendor · site' };
+    }
+    if (TelemachosPilot?.edition && (GlobeDeck?.activeTask === 'telemachos' || window._pilot)) {
+      return {
+        mode: 'telemachos',
+        ctx: 'telemachos',
+        label: (TelemachosPilot.edition.name_gr || 'ΤΗΛΕΜΑΧΟΣ') + ' · pilot',
+        detail: 'In-game drone field',
+      };
+    }
+    if (DrivingView?.active) {
+      return { mode: 'drive', ctx: 'drive', label: 'Drive · navigate', detail: 'Road routing' };
+    }
+    if (!Auth?.user) {
+      return { mode: 'guest', ctx: 'guest', label: 'Guest · sign in', detail: 'Not authenticated' };
+    }
+    return { mode: 'cli', ctx: 'idle', label: 'CLI · central', detail: 'Astranov command line' };
+  },
+
+  syncAuth() {
+    this.sync();
+  },
+
+  setCompromised(intruder) {
+    this.compromised = intruder || null;
+    if (intruder) {
+      CliRibbon?.setNotice?.('⚠ compromised · ' + (intruder.name || '?'), 'err');
+      MapComms?._applyCloudTruth?.();
+    }
+    this.sync();
+  },
+
+  clearCompromised() {
+    this.compromised = null;
+    if (MapComms) MapComms.compromised = null;
+    MapComms?._applyCloudTruth?.();
+    CliRibbon?.clearNotice?.();
+    this.sync();
+  },
+
+  sync() {
+    const ctx = this.infer();
+    const bar = document.getElementById('super-cli-bar');
+    const deck = document.getElementById('globe-deck');
+    if (bar) {
+      bar.dataset.truth = ctx.ctx;
+      bar.dataset.mode = ctx.mode;
+    }
+    if (deck) deck.dataset.truth = ctx.mode;
+
+    const cloud = document.getElementById('map-comms-cloud');
+    if (cloud?.classList.contains('open')) {
+      cloud.dataset.truth = ctx.mode === 'compromised' ? 'compromised' : (MapComms?.kind || 'team');
+      this._renderCloudBadge(ctx);
+    }
+
+    const label = ctx.label;
+    if (label !== this._lastLabel) {
+      this._lastLabel = label;
+      CliRibbon?.setActive?.(label);
+      if (GlobeDeck?.expanded && ctx.mode !== 'cli' && ctx.mode !== 'idle' && ctx.mode !== 'guest') {
+        GlobeDeck?.setPreview?.(ctx.detail);
+      }
+    }
+    SuperCli?.setContext?.(ctx.ctx);
+    CliRibbon?.render?.();
+    this._renderAuthChip(ctx);
+  },
+
+  _renderAuthChip(ctx) {
+    const chip = document.getElementById('user-chip');
+    if (!chip || !Auth?.user) return;
+    const channel = ctx.mode === 'compromised' ? ' · ⚠ INTRUSION'
+      : ctx.mode === 'dm' ? ' · DM'
+      : ctx.mode === 'team' ? ' · TEAM'
+      : ctx.mode === 'game' ? ' · ΚΡΥΦΤό'
+      : ctx.mode === 'telemachos' ? ' · PILOT'
+      : ctx.mode === 'coders' ? ' · CODERS'
+      : '';
+    if (!AstranovSession?.isAstranov?.() && !Auth.isOwner && channel) {
+      const base = chip.textContent?.split(' · ')[0] || Auth.user.email?.split('@')[0] || 'User';
+      chip.textContent = (base + channel).slice(0, 52);
+      chip.title = ctx.detail || ctx.label;
+    }
+  },
+
+  _renderCloudBadge(ctx) {
+    let badge = document.getElementById('mc-badge');
+    const head = document.getElementById('mc-head');
+    if (!head) return;
+    if (!badge) {
+      badge = document.createElement('span');
+      badge.id = 'mc-badge';
+      head.insertBefore(badge, head.querySelector('#mc-close'));
+    }
+    if (ctx.mode === 'compromised' && ctx.intruder) {
+      badge.className = 'mc-badge mc-badge-alert';
+      badge.innerHTML = '⚠ <button type="button" class="mc-intruder" data-intruder="' + (ctx.intruder.id || '') + '">'
+        + String(ctx.intruder.name || 'intruder').replace(/[<>&"]/g, '') + '</button>';
+      badge.querySelector('.mc-intruder')?.addEventListener('click', () => {
+        CliHub?.viewUser?.(ctx.intruder.id);
+        ACIControl?.reply('Compromised cloud — intruder: ' + (ctx.intruder.name || ctx.intruder.id));
+      });
+    } else if (MapComms?.kind === 'dm') {
+      badge.className = 'mc-badge mc-badge-dm';
+      badge.textContent = '🔒 private';
+    } else if (MapComms?.kind === 'team') {
+      badge.className = 'mc-badge mc-badge-team';
+      badge.textContent = '◎ team';
+    } else {
+      badge.className = 'mc-badge';
+      badge.textContent = '';
+    }
+  },
+};
+window.ContextTruth = ContextTruth;
 
 // === ACI CLI — Collective dev terminal (login required) ===
 const AciCli = {
@@ -11601,10 +11909,11 @@ const AstranovSession = {
 
   purgeAllLocalState() {
     try {
+      const keep = ContextTruth?.AUTH_KEEP || new Set(['astranov_auth_v2']);
       const drop = [];
       for (let i = 0; i < localStorage.length; i++) {
         const k = localStorage.key(i);
-        if (!k) continue;
+        if (!k || keep.has(k)) continue;
         if (k.startsWith('astranov_')) drop.push(k);
         if (k.startsWith('aci-')) drop.push(k);
       }
@@ -11707,7 +12016,7 @@ const AstranovSession = {
   },
 
   async onAuth() {
-    this.purgeAllLocalState();
+    if (this.isAstranov()) this.purgeAllLocalState();
     this._deviceId = this._deriveDeviceId();
     this._applyIdentity();
     if (Auth?.user) {
@@ -12228,6 +12537,7 @@ const AstranovPresence = {
       ? 'Κρυφτό — hidden from other players'
       : 'Visible — back on the map for collab';
     ACIControl?.reply(msg);
+    ContextTruth?.sync?.();
     if (Voice.maySpeak()) speak(msg.slice(0, 80), () => resumeListening?.());
     return window.hidden;
   },
@@ -12288,6 +12598,8 @@ const AstranovPresence = {
     GlobeDeck?.expand?.(SuperCli?.title || 'Astranov Command Line');
     GlobeDeck?.setTitle?.('ΚΡΥΦΤΟ');
     GlobeDeck?.setPreview?.('◎ ' + total + ' player(s) · say hide to vanish · players to seek');
+    GlobeDeck.activeTask = 'game';
+    ContextTruth?.sync?.();
     AciCli?.print('◎ GAME START · κρυφτό / hide and seek · ' + total + ' on map', 'ok');
     const msg = n > 0
       ? 'Κρυφτό ξεκίνησε! ' + total + ' παίκτες. Πες hide για να κρυφτείς · players για αναζήτηση'
@@ -12323,6 +12635,7 @@ const MapComms = {
   members: new Map(),
   messages: [],
   dmUser: null,
+  compromised: null,
   rtChannel: null,
   callChannel: null,
   _viz: null,
@@ -12410,10 +12723,13 @@ const MapComms = {
       t: m.t || Date.now(),
       author_id: m.author_id,
     }));
+    this.compromised = null;
+    ContextTruth?.clearCompromised?.();
     await this._joinChannel(circleId);
     this._openCloud(this.teamName);
     this._rebuildViz();
     this._renderMessages();
+    ContextTruth?.sync?.();
     return circleId;
   },
 
@@ -12535,6 +12851,7 @@ const MapComms = {
     this._rebuildViz();
     this._renderMessages();
     AciCli?.print('◎ joined ' + this.teamName, 'ok');
+    ContextTruth?.sync?.();
   },
 
   async leaveTeam() {
@@ -12547,9 +12864,12 @@ const MapComms = {
     this.members.clear();
     this.messages = [];
     this.dmUser = null;
+    this.compromised = null;
+    ContextTruth?.clearCompromised?.();
     this._clearViz();
     this.closeCloud();
     this.hideDriverPicker();
+    ContextTruth?.sync?.();
   },
 
   async _joinChannel(teamId) {
@@ -12593,10 +12913,46 @@ const MapComms = {
 
   _onChat(msg) {
     if (!msg?.body) return;
+    this._checkIntrusion(msg);
     this.messages.push(msg);
     if (this.messages.length > 80) this.messages.shift();
     this._renderMessages();
     this._persistMessage(msg);
+  },
+
+  _checkIntrusion(msg) {
+    const uid = msg.author_id || msg.from || msg.user_id;
+    const selfId = Auth?.user?.id;
+    if (!uid || uid === selfId) return;
+    if (this.kind === 'dm' && this.dmUser?.id && uid !== this.dmUser.id) {
+      this.compromised = { id: uid, name: msg.author || msg.name || 'Intruder', at: Date.now() };
+      ContextTruth?.setCompromised?.(this.compromised);
+      this.postSystem('⚠ COMPROMISED — unexpected sender: ' + (msg.author || uid.slice(0, 8)));
+      return;
+    }
+    if (this.kind === 'team' && this.members?.size && !this.members.has(uid)) {
+      this.compromised = { id: uid, name: msg.author || msg.name || 'Intruder', at: Date.now() };
+      ContextTruth?.setCompromised?.(this.compromised);
+      this.postSystem('⚠ COMPROMISED — non-member on team cloud: ' + (msg.author || uid.slice(0, 8)));
+    }
+  },
+
+  _applyCloudTruth() {
+    const cloud = document.getElementById('map-comms-cloud');
+    if (!cloud) return;
+    const mode = this.compromised ? 'compromised' : (this.kind || 'team');
+    cloud.dataset.truth = mode;
+    if (this.compromised) {
+      cloud.classList.add('compromised');
+      this.BLUE = 0xff3344;
+      this.BLUE_GLOW = 0xff6688;
+    } else {
+      cloud.classList.remove('compromised');
+      this.BLUE = 0x1a6fd4;
+      this.BLUE_GLOW = 0x3d9eff;
+    }
+    this._rebuildViz();
+    ContextTruth?.sync?.();
   },
 
   async _persistMessage(msg) {
@@ -12656,7 +13012,9 @@ const MapComms = {
     document.getElementById('mc-title').textContent = title || 'Cloud chat';
     cloud.classList.add('open');
     cloud.dataset.kind = this.kind || 'team';
+    this._applyCloudTruth();
     this._renderMessages();
+    ContextTruth?.sync?.();
   },
 
   closeCloud() {
@@ -16219,6 +16577,7 @@ GlobeDeck.init();
 SuperCli.init();
 SessionHold.init();
 CliHub.init();
+ContextTruth.init();
 AciCli.init();
 setTimeout(() => Auth.refreshAuthority(), 800);
 setTimeout(() => {

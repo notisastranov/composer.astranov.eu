@@ -16,6 +16,12 @@ const CliRibbon = {
     site: 'Site',
     cli: 'CLI',
     chats: 'Chats',
+    dm: 'DM',
+    team: 'Team',
+    game: 'ΚΡΥΦΤό',
+    telemachos: 'Pilot',
+    compromised: '⚠ Alert',
+    guest: 'Guest',
   },
 
   MOTTO_RE: /justice\s*→\s*truth\s*→\s*freedom|collective intelligence|astranov command line\s*—|architect\s*·\s*collective|δικαιοσύνη|αλήθεια|ελευθερία/gi,
@@ -110,10 +116,11 @@ const CliRibbon = {
     if (window._handsFreeVoice) parts.push('hands-free');
     else if (isListening) parts.push('listening');
 
-    if (Auth?.user?.email) {
-      const who = (Auth.user.email.split('@')[0] || '').slice(0, 12);
-      if (who) parts.push(who);
-    } else parts.push('guest');
+    if (Auth?.user) {
+      const who = Auth._profileVisual?.avatar_emoji
+        || (Auth.user.user_metadata?.full_name || Auth.user.email?.split('@')[0] || 'user').slice(0, 12);
+      parts.push((Auth._authDegraded ? '⟳ ' : '● ') + who);
+    } else parts.push('guest · sign in');
 
     if (this._notice) parts.push(this._notice);
 
