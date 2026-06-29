@@ -1,5 +1,10 @@
-// === WILLA GAMES — demo players · κρυφτό/housekeeping · pyramid · multi-domain warfare ===
+// === WILLA GAMES — demo players · κρυφτό/ΣΥΓΥΡΙΣΜΑ · pyramid · multi-domain warfare ===
 const WillaGames = {
+  ROLE_LABEL: { housekeeping: 'ΣΥΓΥΡΙΣΜΑ', seeker: 'seeker', hider: 'hidden' },
+
+  roleLabel(role) {
+    return this.ROLE_LABEL[role] || role || 'agent';
+  },
   _timer: null,
   _demo: [],
   _units: [],
@@ -92,7 +97,7 @@ const WillaGames = {
 
   boot() {
     CosmicZoom?.trackISS?.();
-    AciCli?.print?.('◎ Solar view · ISS live · 12 Olympians 🔵 · 12 Cronians 🔴 · kryfto · pyramid · willa', 'dim');
+    AciCli?.print?.('◎ Solar view default · ISS live · kryfto · ΣΥΓΥΡΙΣΜΑ · pyramid · willa', 'dim');
   },
 
   _buildOlympians(game) {
@@ -184,17 +189,17 @@ const WillaGames = {
     window.hidden = false;
     const others = window.others || [];
     others.forEach(u => {
-      const tag = u.hidden ? 'hidden' : (u.role || 'agent');
+      const tag = u.hidden ? 'hidden' : this.roleLabel(u.role);
       if (u.hidden) return;
       const color = u.team === 'red' ? this.TEAM_COLOR.red : u.agent === 'grok-heavy' ? this.OLYMPUS_GLOW : 0x3d9eff;
       MapDepict?.pulse?.(u.lat, u.lng, color, (u.emoji || '⚡') + ' ' + u.name + ' · ' + tag, 16000);
     });
     const p = window._lastPos || { lat: 36.44, lng: 28.22 };
-    MapDepict?.action?.('play', { lat: p.lat, lng: p.lng, detail: 'κρυφτό · housekeeping demo' });
+    MapDepict?.action?.('play', { lat: p.lat, lng: p.lng, detail: 'κρυφτό · ΣΥΓΥΡΙΣΜΑ demo' });
     MapDepict?.pulse?.(p.lat, p.lng, 0x1a6fd4, 'ΚΡΥΦΤΟ DEMO', 18000);
     GlobeDeck?.expand?.(SuperCli?.title || 'Astranov Command Line');
     GlobeDeck?.setTitle?.('ΚΡΥΦΤΟ · DEMO');
-    GlobeDeck?.setPreview?.('◎ 12 Olympians 🔵 · 12 Cronians 🔴 · hide · seek');
+    GlobeDeck?.setPreview?.('◎ κρυφτό · ΣΥΓΥΡΙΣΜΑ · hide · seek');
     GlobeDeck.activeTask = 'game';
     ContextTruth?.sync?.();
     AciCli?.print('◎ κρυφτό · 12 Olympians 🔵 · 12 Cronians 🔴 (Kronos leads red)', 'ok');

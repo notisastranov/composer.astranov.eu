@@ -27,7 +27,7 @@ const ContextTruth = {
         mode: 'game',
         ctx: 'game',
         label: hidden ? 'ΚΡΥΦΤό · hidden' : 'ΚΡΥΦΤό · hide & seek',
-        detail: hidden ? 'You are hidden on the map' : 'Housekeeping / hide and seek LIVE',
+        detail: hidden ? 'You are hidden on the map' : 'ΣΥΓΥΡΙΣΜΑ · κρυφτό LIVE',
       };
     }
     if (AstranovPresence?.game === 'pyramid' || WillaGames?.active === 'pyramid') {

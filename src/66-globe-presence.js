@@ -16,11 +16,12 @@ const AstranovPresence = {
   wantsKryftoStart(line) {
     const low = String(line || '').toLowerCase().replace(/\s+/g, ' ').trim();
     if (!low) return false;
-    if (/^(κρυφτό|κρυφτο|kryfto|hideandseek|hide-and-seek)\b/.test(low)) return true;
+    if (/^(κρυφτό|κρυφτο|kryfto|hideandseek|hide-and-seek|συγύρισμα|συγυρισμα|συγυρίσμα)\b/.test(low)) return true;
     if (/\bhide\s*(and|&|n)?\s*seek/.test(low)) return true;
     if (/\bhouse\s*keep(ing)?\b/.test(low)) return true;
-    if (/\b(start|play|begin|παίξε|παιξε|άρχισε|αρχισε|ξεκίνα|ξεκινα)\b.*\b(κρυφτ|kryfto|hide\s*and\s*seek|house\s*keep)/.test(low)) return true;
-    if (/\b(κρυφτ|kryfto|hide\s*and\s*seek|house\s*keep).*\b(start|play|game|ξεκίνα|ξεκινα)\b/.test(low)) return true;
+    if (/\bσυγύρισμα|συγυρισμα|συγυρίσμα\b/.test(low)) return true;
+    if (/\b(start|play|begin|παίξε|παιξε|άρχισε|αρχισε|ξεκίνα|ξεκινα)\b.*\b(κρυφτ|kryfto|hide\s*and\s*seek|house\s*keep|συγύρισμα|συγυρισμα|συγυρίσμα)/.test(low)) return true;
+    if (/\b(κρυφτ|kryfto|hide\s*and\s*seek|house\s*keep|συγύρισμα|συγυρισμα|συγυρίσμα).*\b(start|play|game|ξεκίνα|ξεκινα)\b/.test(low)) return true;
     if (/\bπαιχνίδι\s+(κρυφτ|kryfto)\b/.test(low)) return true;
     return false;
   },

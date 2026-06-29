@@ -76,6 +76,7 @@ GlobeVideo.init();
 DrivingView.init();
 CosmicZoom.init();
 ZoomTiers.init();
+CosmicZoom?.update?.(camera.position.z, { tier: 'solar', label: 'SOLAR SYSTEM', cosmic: 'system' });
 AstranovTheme.init();
 AstranovLogo.init();
 CityMap.init();

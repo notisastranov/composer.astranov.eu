@@ -3195,7 +3195,7 @@ Object.assign(SuperCli, {
       'shops', 'order', 'vendor', 'ping', 'locate', 'gps', 'me', 'vhf', 'call', 'phone',
       'drive', 'news', 'roles', 'claim', 'field_stats', 'hold', 'resume', 'stop',
       'sync', 'requests', 'wishlist', 'players', 'friends', 'kryfto', 'hide', 'seek', 'collab',
-      'hideandseek', 'housekeeping', 'pyramid', 'pyramids', 'willa', 'willagame',
+      'hideandseek', 'housekeeping', 'συγυρισμα', 'συγύρισμα', 'pyramid', 'pyramids', 'willa', 'willagame',
       'team', 'contact', 'msg',
       'telemachos', 'tilemaxos', 'telemachus', 'tilemachos', 'teledromos', 'teledromus',
       'pilot', 'drone', 'drones', 'fleet',
@@ -3270,7 +3270,7 @@ Object.assign(SuperCli, {
     this.out('youtube <search> · watch <url> · play 2 (pick result)', 'ok');
     this.out('space locate <topic> · space status — brain places media on globe/cosmos', 'ok');
     this.out('scenario wake|city|groceries|youtube|reviews|list — real user flows', 'ok');
-    this.out('players · kryfto · housekeeping · pyramid · willa — 12 Olympians 🔵 · 12 Cronians 🔴', 'ok');
+    this.out('players · kryfto · ΣΥΓΥΡΙΣΜΑ · pyramid · willa — 12 Olympians 🔵 · 12 Cronians 🔴', 'ok');
     this.out('team create <name> · team join <id> · contact video|voice|message <name>', 'ok');
     this.out('cli search <text> · cli users · cli view <name> · cloud dm <name> · chat <name> <msg>', 'ok');
     this.out('drivers · driver <name> — pick delivery driver on map/cloud', 'ok');
@@ -4105,7 +4105,7 @@ const ContextTruth = {
         mode: 'game',
         ctx: 'game',
         label: hidden ? 'ΚΡΥΦΤό · hidden' : 'ΚΡΥΦΤό · hide & seek',
-        detail: hidden ? 'You are hidden on the map' : 'Housekeeping / hide and seek LIVE',
+        detail: hidden ? 'You are hidden on the map' : 'ΣΥΓΥΡΙΣΜΑ · κρυφτό LIVE',
       };
     }
     if (AstranovPresence?.game === 'pyramid' || WillaGames?.active === 'pyramid') {
@@ -10263,7 +10263,7 @@ window.GlobeVideo = GlobeVideo;
 
 // ── COSMIC ZOOM: Earth → satellites → solar system → galaxy ──
 const CosmicZoom = {
-  level: 'earth',
+  level: 'system',
   solarGroup: null,
   galaxyPts: null,
   satGroup: null,
@@ -13034,11 +13034,12 @@ const AstranovPresence = {
   wantsKryftoStart(line) {
     const low = String(line || '').toLowerCase().replace(/\s+/g, ' ').trim();
     if (!low) return false;
-    if (/^(κρυφτό|κρυφτο|kryfto|hideandseek|hide-and-seek)\b/.test(low)) return true;
+    if (/^(κρυφτό|κρυφτο|kryfto|hideandseek|hide-and-seek|συγύρισμα|συγυρισμα|συγυρίσμα)\b/.test(low)) return true;
     if (/\bhide\s*(and|&|n)?\s*seek/.test(low)) return true;
     if (/\bhouse\s*keep(ing)?\b/.test(low)) return true;
-    if (/\b(start|play|begin|παίξε|παιξε|άρχισε|αρχισε|ξεκίνα|ξεκινα)\b.*\b(κρυφτ|kryfto|hide\s*and\s*seek|house\s*keep)/.test(low)) return true;
-    if (/\b(κρυφτ|kryfto|hide\s*and\s*seek|house\s*keep).*\b(start|play|game|ξεκίνα|ξεκινα)\b/.test(low)) return true;
+    if (/\bσυγύρισμα|συγυρισμα|συγυρίσμα\b/.test(low)) return true;
+    if (/\b(start|play|begin|παίξε|παιξε|άρχισε|αρχισε|ξεκίνα|ξεκινα)\b.*\b(κρυφτ|kryfto|hide\s*and\s*seek|house\s*keep|συγύρισμα|συγυρισμα|συγυρίσμα)/.test(low)) return true;
+    if (/\b(κρυφτ|kryfto|hide\s*and\s*seek|house\s*keep|συγύρισμα|συγυρισμα|συγυρίσμα).*\b(start|play|game|ξεκίνα|ξεκινα)\b/.test(low)) return true;
     if (/\bπαιχνίδι\s+(κρυφτ|kryfto)\b/.test(low)) return true;
     return false;
   },
@@ -13424,8 +13425,13 @@ const AstranovPresence = {
 
 window.AstranovPresence = AstranovPresence;
 
-// === WILLA GAMES — demo players · κρυφτό/housekeeping · pyramid · multi-domain warfare ===
+// === WILLA GAMES — demo players · κρυφτό/ΣΥΓΥΡΙΣΜΑ · pyramid · multi-domain warfare ===
 const WillaGames = {
+  ROLE_LABEL: { housekeeping: 'ΣΥΓΥΡΙΣΜΑ', seeker: 'seeker', hider: 'hidden' },
+
+  roleLabel(role) {
+    return this.ROLE_LABEL[role] || role || 'agent';
+  },
   _timer: null,
   _demo: [],
   _units: [],
@@ -13518,7 +13524,7 @@ const WillaGames = {
 
   boot() {
     CosmicZoom?.trackISS?.();
-    AciCli?.print?.('◎ Solar view · ISS live · 12 Olympians 🔵 · 12 Cronians 🔴 · kryfto · pyramid · willa', 'dim');
+    AciCli?.print?.('◎ Solar view default · ISS live · kryfto · ΣΥΓΥΡΙΣΜΑ · pyramid · willa', 'dim');
   },
 
   _buildOlympians(game) {
@@ -13610,17 +13616,17 @@ const WillaGames = {
     window.hidden = false;
     const others = window.others || [];
     others.forEach(u => {
-      const tag = u.hidden ? 'hidden' : (u.role || 'agent');
+      const tag = u.hidden ? 'hidden' : this.roleLabel(u.role);
       if (u.hidden) return;
       const color = u.team === 'red' ? this.TEAM_COLOR.red : u.agent === 'grok-heavy' ? this.OLYMPUS_GLOW : 0x3d9eff;
       MapDepict?.pulse?.(u.lat, u.lng, color, (u.emoji || '⚡') + ' ' + u.name + ' · ' + tag, 16000);
     });
     const p = window._lastPos || { lat: 36.44, lng: 28.22 };
-    MapDepict?.action?.('play', { lat: p.lat, lng: p.lng, detail: 'κρυφτό · housekeeping demo' });
+    MapDepict?.action?.('play', { lat: p.lat, lng: p.lng, detail: 'κρυφτό · ΣΥΓΥΡΙΣΜΑ demo' });
     MapDepict?.pulse?.(p.lat, p.lng, 0x1a6fd4, 'ΚΡΥΦΤΟ DEMO', 18000);
     GlobeDeck?.expand?.(SuperCli?.title || 'Astranov Command Line');
     GlobeDeck?.setTitle?.('ΚΡΥΦΤΟ · DEMO');
-    GlobeDeck?.setPreview?.('◎ 12 Olympians 🔵 · 12 Cronians 🔴 · hide · seek');
+    GlobeDeck?.setPreview?.('◎ κρυφτό · ΣΥΓΥΡΙΣΜΑ · hide · seek');
     GlobeDeck.activeTask = 'game';
     ContextTruth?.sync?.();
     AciCli?.print('◎ κρυφτό · 12 Olympians 🔵 · 12 Cronians 🔴 (Kronos leads red)', 'ok');
@@ -17865,6 +17871,7 @@ GlobeVideo.init();
 DrivingView.init();
 CosmicZoom.init();
 ZoomTiers.init();
+CosmicZoom?.update?.(camera.position.z, { tier: 'solar', label: 'SOLAR SYSTEM', cosmic: 'system' });
 AstranovTheme.init();
 AstranovLogo.init();
 CityMap.init();

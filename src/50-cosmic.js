@@ -1,6 +1,6 @@
 // ── COSMIC ZOOM: Earth → satellites → solar system → galaxy ──
 const CosmicZoom = {
-  level: 'earth',
+  level: 'system',
   solarGroup: null,
   galaxyPts: null,
   satGroup: null,
