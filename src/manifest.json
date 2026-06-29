@@ -52,6 +52,7 @@
     { "file": "73-match-engine.js", "marker": "/* Astranov Match Engine — universal supply" },
     { "file": "70-yacht-matcher.js", "marker": "// === YACHT MATCHER" },
     { "file": "71-hellenic-source.js", "marker": "// === HELLENIC SOURCE" },
+    { "file": "74-telemachos-pilot.js", "marker": "// === TELEMACHOS PILOT" },
     { "file": "90-voice-world.js", "marker": "// Flow" },
     { "file": "99-boot.js", "marker": "function animate()" }
   ]

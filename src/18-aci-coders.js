@@ -565,6 +565,11 @@ const AciCoders = {
       AstranovPresence?.startKryfto?.();
       return { ok: true, game: 'kryfto' };
     }
+    if (TelemachosPilot?.wantsCmd?.(m)) {
+      GlobeDeck?.setThinking(false);
+      await TelemachosPilot.cli([], m);
+      return { ok: true, pilot: 'telemachos' };
+    }
     if (/yacht|charter|crew|captain|match|ενοικ|supply|demand|field\s+\w+/.test(m.toLowerCase())) {
       const ev = await YachtMatcher?.evolveFromText?.(m);
       if (ev?.best) {

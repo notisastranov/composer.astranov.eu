@@ -618,6 +618,16 @@ const Commerce = {
           seeking_driver: orderResult.seeking_driver,
           wants: items.map(i => i.name).join(', '),
         });
+        TelemachosPilot?.coordinateMarketplaceDelivery?.({
+          vendor,
+          order: orderResult.order,
+          items,
+          driver: driverObj,
+          deliveryLat: dLat,
+          deliveryLng: dLng,
+          seekingDriver: orderResult.seeking_driver,
+          wants: items.map(i => i.name).join(', '),
+        });
       } else {
         msg = 'Παραγγελία απέτυχε: ' + (errMsg || 'server error') + '. Δοκίμασε ξανά.';
       }
