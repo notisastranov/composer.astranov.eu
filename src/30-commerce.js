@@ -16,6 +16,9 @@ const Commerce = {
   _menuRequestSent: false,
   _suggestion: null,
   _balance: null,
+  _preferredDriverId: null,
+  _preferredDriver: null,
+  _lastWants: [],
 
   haversineKm(lat1, lng1, lat2, lng2) {
     const R = 6371;
@@ -246,11 +249,20 @@ const Commerce = {
     if (driverBox) {
       const n = drivers.length;
       driverBox.innerHTML = n
-        ? '<div class="vm-drivers-title">' + (AstroGlyphs?.driver || '🚚') + ' ' + n + ' οδηγοί κοντά:</div>' + drivers.slice(0, 4).map(d => {
+        ? '<div class="vm-drivers-title">' + (AstroGlyphs?.driver || '🚚') + ' ' + n + ' οδηγοί κοντά · tap to pick:</div>' + drivers.slice(0, 4).map(d => {
           const km = this.haversineKm(this.userLatLng().lat, this.userLatLng().lng, d.field_lat, d.field_lng).toFixed(1);
-          return '<span class="vm-tag driver">' + driverIcon(d) + ' ' + (d.display_name || 'Driver') + ' · ' + km + ' km</span>';
+          const picked = this._preferredDriverId === d.id ? ' picked' : '';
+          return '<span class="vm-tag driver' + picked + '" data-driver-id="' + d.id + '">' + driverIcon(d) + ' ' + (d.display_name || 'Driver') + ' · ' + km + ' km</span>';
         }).join('')
         : '<div class="vm-drivers-title" style="color:#ffd633">Δεν βρέθηκαν ενεργοί οδηγοί — θα αναζητηθεί μετά την παραγγελία</div>';
+      driverBox.querySelectorAll('.vm-tag.driver[data-driver-id]').forEach(tag => {
+        tag.onclick = (e) => {
+          e.stopPropagation();
+          MarketplaceComms?.selectDriver?.(tag.dataset.driverId);
+          driverBox.querySelectorAll('.vm-tag.driver').forEach(el => el.classList.remove('picked'));
+          tag.classList.add('picked');
+        };
+      });
     }
     if (balBox) {
       const b = balance != null ? balance : 0;
@@ -270,6 +282,7 @@ const Commerce = {
     const run = async () => {
       const q = String(query || '').replace(/^(order|παραγγελία?)\s*/i, '').trim();
       const wants = this.parseWantedItems(q);
+      this._lastWants = wants;
       if (!wants.length) {
         ACIControl?.reply('Δεν κατάλαβα είδη — π.χ. order pitogyra mpironia tsigareta');
         return this.openOrderFlow(q);
@@ -299,6 +312,7 @@ const Commerce = {
 
       if (!matches.length) {
         this.renderCompare([], drivers, wants, balance);
+        MarketplaceComms?.openForBrowse?.({ vendor: null, drivers, wants: wants.map(w => w.label).join(' + ') });
         const msg = 'Κανένα κατάστημα με πραγματικό μενού για αυτά τα είδη — ζήτησε μενού από κοντινό κατάστημα';
         ACIControl?.reply(msg);
         if (Voice.maySpeak()) speak(msg.slice(0, 120), () => resumeListening());
@@ -306,6 +320,13 @@ const Commerce = {
       }
 
       this.renderCompare(matches, drivers, wants, balance);
+      const bestVendor = matches[0]?.vendor || null;
+      MarketplaceComms?.openForBrowse?.({
+        vendor: bestVendor,
+        drivers,
+        wants: wants.map(w => w.label).join(' + '),
+        preferredDriverId: this._preferredDriverId,
+      });
       const best = matches[0];
       const driverNames = drivers.slice(0, 2).map(d => d.display_name || 'Driver').join(', ');
       const msg = 'Πρόταση: ' + best.vendor.name + ' · ' + best.total.toFixed(1) + ' AVC · ' + best.km.toFixed(1) + ' km'
@@ -557,6 +578,7 @@ const Commerce = {
             notes: notes || ('Astranov order · ' + vendor.name),
             calc: { total_avc: total },
             pay_with_balance: !!payWithBalance,
+            preferred_driver_id: this._preferredDriverId || null,
           }),
         });
         const j = await r.json().catch(() => ({}));
@@ -588,6 +610,14 @@ const Commerce = {
         if (orderResult.balance_after != null) this._balance = orderResult.balance_after;
         this.hideMenu();
         GlobeDeck?.completeTask('commerce');
+        const nearDrivers = await this.fetchNearbyDrivers(dLat, dLng);
+        MarketplaceComms?.openForOrder?.({
+          order: orderResult.order,
+          vendor,
+          drivers: nearDrivers,
+          seeking_driver: orderResult.seeking_driver,
+          wants: items.map(i => i.name).join(', '),
+        });
       } else {
         msg = 'Παραγγελία απέτυχε: ' + (errMsg || 'server error') + '. Δοκίμασε ξανά.';
       }

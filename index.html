@@ -350,6 +350,47 @@
   #node-batch.nb-super-live { box-shadow:inset 0 0 24px var(--ax-blue-glow); border:1px solid var(--ax-blue-border); border-radius:12px; }
   #node-batch.nb-super-live #nb-launch { background:linear-gradient(135deg,rgba(0,40,90,0.8),rgba(26,111,212,0.55)); border-color:var(--ax-blue-bright); animation:nb-glow 2.4s ease-in-out infinite; }
   @keyframes nb-glow { 50% { box-shadow:0 0 18px var(--ax-blue-glow); } }
+  /* Map team cloud — above globe, map stays visible */
+  #map-comms-beam { position:fixed; inset:0; pointer-events:none; z-index:118; overflow:visible; }
+  #map-comms-beam line { stroke:var(--ax-blue-bright); stroke-width:2; opacity:0.85; filter:drop-shadow(0 0 6px var(--ax-blue-glow)); }
+  #map-comms-beam .mc-beam-glow { stroke:var(--ax-blue-bright); stroke-width:6; opacity:0.28; }
+  #map-comms-cloud { display:none; position:fixed; top:6%; left:50%; transform:translateX(-50%); z-index:119; width:min(300px,88vw); max-height:min(22vh,180px); pointer-events:auto; border-radius:18px 18px 22px 22px; background:radial-gradient(ellipse at 50% 0%,rgba(61,158,255,0.22),rgba(4,14,32,0.82) 55%,rgba(2,8,18,0.9)); border:1px solid var(--ax-blue-border); box-shadow:0 8px 28px rgba(0,0,0,0.45),0 0 20px var(--ax-blue-glow),inset 0 -12px 24px rgba(26,111,212,0.12); backdrop-filter:blur(10px); font:10px/1.4 system-ui; color:var(--an-text); }
+  #map-comms-cloud.open { display:flex; flex-direction:column; }
+  #map-comms-cloud::before { content:''; position:absolute; left:12%; right:12%; top:-10px; height:18px; border-radius:50%; background:radial-gradient(ellipse,rgba(61,158,255,0.35),transparent 70%); pointer-events:none; }
+  #mc-head { display:flex; align-items:center; gap:6px; padding:8px 10px 4px; flex-shrink:0; }
+  #mc-title { flex:1; font-weight:700; font-size:11px; color:var(--ax-blue-bright); text-shadow:0 0 8px var(--ax-blue-glow); }
+  #mc-close { background:transparent; border:1px solid #555; color:#aaa; border-radius:8px; padding:2px 8px; cursor:pointer; font-size:10px; }
+  #mc-log { flex:1; overflow-y:auto; padding:4px 10px 6px; min-height:48px; max-height:14vh; -webkit-overflow-scrolling:touch; }
+  #mc-log .mc-line { margin-bottom:5px; word-break:break-word; }
+  #mc-log .mc-line b { color:var(--ax-blue-bright); margin-right:4px; }
+  #mc-foot { display:flex; gap:6px; padding:6px 8px 8px; border-top:1px solid rgba(26,111,212,0.25); }
+  #mc-input { flex:1; padding:7px 9px; border-radius:10px; border:1px solid var(--ax-blue-border); background:rgba(0,0,0,0.45); color:#fff; font:inherit; font-size:10px; }
+  #mc-send { padding:7px 10px; border-radius:10px; border:1px solid var(--ax-green-border); background:var(--ax-green-bg); color:#fff; font-weight:700; cursor:pointer; font-size:10px; }
+  #map-comms-contact { display:none; position:fixed; bottom:200px; left:50%; transform:translateX(-50%); z-index:125; width:min(280px,92vw); padding:10px 12px; border-radius:14px; background:var(--ax-panel-strong); border:1px solid var(--ax-blue-border); box-shadow:0 6px 24px rgba(0,0,0,0.5),0 0 16px var(--ax-blue-glow); pointer-events:auto; font:11px system-ui; color:var(--an-text); }
+  #map-comms-contact.open { display:block; }
+  #mc-contact-name { font-weight:700; color:var(--ax-blue-bright); margin-bottom:8px; }
+  .mc-contact-grid { display:grid; grid-template-columns:1fr 1fr; gap:6px; }
+  .mc-contact-grid button { padding:9px 6px; border-radius:10px; border:1px solid var(--ax-blue-border); background:var(--ax-blue-bg); color:var(--ax-blue-bright); cursor:pointer; font-size:10px; font-weight:600; }
+  .mc-contact-grid button:hover { box-shadow:0 0 10px var(--ax-blue-glow); }
+  #mc-drivers { display:none; padding:4px 8px 6px; border-top:1px solid rgba(26,111,212,0.2); max-height:12vh; overflow-y:auto; flex-shrink:0; }
+  .mc-drivers-title { font-size:9px; font-weight:700; color:var(--ax-blue-bright); margin-bottom:4px; }
+  .mc-driver-pick { display:block; width:100%; text-align:left; margin-bottom:4px; padding:6px 8px; border-radius:8px; border:1px solid var(--ax-blue-border); background:rgba(0,40,90,0.45); color:#e8f4ff; cursor:pointer; font:inherit; font-size:9px; }
+  .mc-driver-pick:hover { box-shadow:0 0 8px var(--ax-blue-glow); border-color:var(--ax-blue-bright); }
+  #profile-site-panel { display:none; position:fixed; top:12%; right:4%; z-index:126; width:min(300px,90vw); max-height:min(70vh,420px); overflow:hidden; flex-direction:column; border-radius:16px; background:var(--ax-panel-strong); border:1px solid var(--ax-blue-border); box-shadow:0 8px 28px rgba(0,0,0,0.5),0 0 18px var(--ax-blue-glow); pointer-events:auto; font:10px/1.45 system-ui; color:var(--an-text); }
+  #profile-site-panel.open { display:flex; }
+  #ps-head { display:flex; align-items:flex-start; gap:8px; padding:10px 12px 6px; border-bottom:1px solid rgba(26,111,212,0.2); }
+  #ps-title { flex:1; font-weight:700; font-size:12px; color:var(--ax-blue-bright); }
+  #ps-sub { font-size:9px; color:#9ab; margin-top:2px; }
+  #ps-body { flex:1; overflow-y:auto; padding:8px 12px; }
+  .ps-field { display:block; margin-bottom:8px; font-size:9px; color:#9ab; }
+  .ps-field input, .ps-field textarea { display:block; width:100%; margin-top:3px; padding:6px 8px; border-radius:8px; border:1px solid var(--ax-blue-border); background:rgba(0,0,0,0.4); color:#fff; font:inherit; box-sizing:border-box; }
+  .ps-about { margin-bottom:8px; line-height:1.5; }
+  .ps-tag { display:inline-block; margin:2px 4px 2px 0; padding:3px 8px; border-radius:8px; background:var(--ax-blue-bg); border:1px solid var(--ax-blue-border); font-size:9px; }
+  .ps-line { margin:4px 0; color:#bde; }
+  .ps-hint { font-size:8px; color:#7a9; margin-top:4px; }
+  #ps-foot { display:flex; flex-wrap:wrap; gap:6px; padding:8px 10px; border-top:1px solid rgba(26,111,212,0.2); }
+  #ps-foot button { padding:7px 10px; border-radius:8px; border:1px solid var(--ax-blue-border); background:var(--ax-blue-bg); color:var(--ax-blue-bright); cursor:pointer; font-size:9px; font-weight:600; }
+  #ps-status { width:100%; font-size:8px; color:#ffd633; }
 
 </style>
 </head>
@@ -398,6 +439,37 @@
   <div id="city-map"></div>
   <div id="city-life-chip"></div>
   <div id="globe-entity-labels"></div>
+  <svg id="map-comms-beam" aria-hidden="true"></svg>
+  <div id="map-comms-cloud">
+    <div id="mc-head"><span id="mc-title">Cloud chat</span><button id="mc-close" type="button">✖</button></div>
+    <div id="mc-log"></div>
+    <div id="mc-drivers"></div>
+    <div id="mc-foot"><input id="mc-input" type="text" placeholder="Message team…" autocomplete="off" /><button id="mc-send" type="button">Send</button></div>
+  </div>
+  <div id="profile-site-panel">
+    <div id="ps-head">
+      <div><div id="ps-title">Profile</div><div id="ps-sub"></div></div>
+      <button id="ps-close" type="button">✖</button>
+    </div>
+    <div id="ps-body"></div>
+    <div id="ps-foot">
+      <span id="ps-status"></span>
+      <button id="ps-save" type="button" style="display:none">Save profile</button>
+      <button id="ps-site-req" type="button" style="display:none">Request subdomain</button>
+      <button id="ps-open-site" type="button" style="display:none">Open site</button>
+      <button id="ps-shop" type="button" style="display:none">Shop</button>
+    </div>
+  </div>
+  <div id="map-comms-contact">
+    <div id="mc-contact-name">Player</div>
+    <div class="mc-contact-grid">
+      <button type="button" data-mc="video">Video</button>
+      <button type="button" data-mc="voice">Voice</button>
+      <button type="button" data-mc="message">Message</button>
+      <button type="button" data-mc="landline">Landline</button>
+      <button type="button" data-mc="cellular">Cellular</button>
+    </div>
+  </div>
   <div id="globe-entity-hud">
     <div id="ge-hud-type">◎ Place</div>
     <div id="ge-hud-title">—</div>
@@ -1833,6 +1905,7 @@ const Auth = {
 
   async signOut() {
     if (!this.client) return;
+    await AstranovPresence?.leave?.();
     await this.client.auth.signOut();
     this.user = null;
     this.session = null;
@@ -1882,6 +1955,7 @@ const Auth = {
         me.isGuest = false;
       }
       AstranovSession?.onAuth?.();
+      AstranovPresence?.join?.();
       ACI?.feed('login', name);
       if (window.AciCli) AciCli.onAuthChange();
     } else {
@@ -2840,7 +2914,9 @@ Object.assign(SuperCli, {
       'teach', 'stats', 'owner', 'seed', 'distill', 'council', 'mode', 'batch', 'vendors',
       'shops', 'order', 'vendor', 'ping', 'locate', 'gps', 'me', 'vhf', 'call', 'phone',
       'drive', 'news', 'roles', 'claim', 'field_stats', 'hold', 'resume', 'stop',
-      'sync', 'requests', 'wishlist',
+      'sync', 'requests', 'wishlist', 'players', 'friends', 'kryfto', 'hide', 'seek', 'collab',
+      'hideandseek', 'housekeeping',
+      'team', 'contact', 'msg',
       'youtube', 'yt', 'watch', 'play', 'space', 'scenario', 'add', 'post', 'superadd',
       'theme', 'dark', 'bright', 'light',
     ]);
@@ -2912,6 +2988,10 @@ Object.assign(SuperCli, {
     this.out('youtube <search> · watch <url> · play 2 (pick result)', 'ok');
     this.out('space locate <topic> · space status — brain places media on globe/cosmos', 'ok');
     this.out('scenario wake|city|groceries|youtube|reviews|list — real user flows', 'ok');
+    this.out('players · friends · kryfto · hide · seek — map presence (sign in)', 'ok');
+    this.out('team create <name> · team join <id> · contact video|voice|message <name>', 'ok');
+    this.out('drivers · driver <name> — pick delivery driver on map/cloud', 'ok');
+    this.out('profile me · profile save · yacht match <site> dates · site approve <slug>', 'ok');
     this.out('theme dark|bright · or just: dark · bright — globe + city map + UI', 'ok');
     this.out('add · post — Super Add camera · global/team/local channel', 'ok');
     this.out('Tri-UI: SuperCli + SuperVoice + SuperSpace · mic+send at bottom bar', 'dim');
@@ -3176,6 +3256,10 @@ Object.assign(SuperCli, {
     const rest = parts.slice(1).join(' ');
 
     try {
+      if (AstranovPresence?.wantsKryftoStart?.(raw)) {
+        AstranovPresence?.startKryfto?.();
+        return { handled: true };
+      }
       if (AciCoders?.isLocalGlobeCmd?.(raw)) {
         const r = AciCoders.runLocalGlobeCmd(raw);
         GlobeDeck?.finishCliIfOneShot('locate');
@@ -3251,6 +3335,74 @@ Object.assign(SuperCli, {
             this.out((i + 1) + '. ' + it.text.slice(0, 140), 'ok');
           });
         }
+        return { handled: true };
+      }
+      if (cmd === 'players' || cmd === 'friends') {
+        AstranovPresence?.listPlayers?.();
+        return { handled: true };
+      }
+      if (cmd === 'hide' || cmd === 'κρύψου') {
+        AstranovPresence?.toggleHide?.();
+        return { handled: true };
+      }
+      if (cmd === 'seek' || cmd === 'show') {
+        window.hidden = false;
+        if (typeof hidden !== 'undefined') hidden = false;
+        if (window._meMarker) window._meMarker.visible = true;
+        AstranovPresence?.broadcast?.();
+        AstranovPresence?.listPlayers?.();
+        return { handled: true };
+      }
+      if (cmd === 'collab') {
+        AstranovPresence.game = 'collab';
+        window.hidden = false;
+        AstranovPresence?.broadcast?.();
+        ACIControl?.reply('Collab mode — visible on map for all signed-in users');
+        return { handled: true };
+      }
+      if (cmd === 'team') {
+        await MapComms?.cmd?.(parts);
+        return { handled: true };
+      }
+      if (cmd === 'drivers') {
+        const txt = MarketplaceComms?.listDriversText?.() || 'No drivers — order first';
+        ACIControl?.reply(txt);
+        AciCli?.print(txt, 'ok');
+        return { handled: true };
+      }
+      if (cmd === 'driver' && parts[1]) {
+        const q = parts.slice(1).join(' ').toLowerCase();
+        const pool = MarketplaceComms?.state?.drivers || [];
+        const hit = pool.find(d => (d.display_name || '').toLowerCase().includes(q));
+        if (hit) {
+          await MarketplaceComms?.selectDriver?.(hit.id);
+        } else {
+          ACIControl?.reply('No driver matching «' + parts.slice(1).join(' ') + '» — try drivers');
+        }
+        return { handled: true };
+      }
+      if (cmd === 'profile') {
+        await ProfileSite?.cmd?.(parts);
+        return { handled: true };
+      }
+      if (cmd === 'yacht' || cmd === 'charter') {
+        await YachtMatcher?.cli?.(parts);
+        return { handled: true };
+      }
+      if (cmd === 'hellenic' || cmd === 'hellas') {
+        HellenicSource?.cli?.(parts);
+        return { handled: true };
+      }
+      if (cmd === 'site' || cmd === 'sites' || cmd === 'book') {
+        await AstranovSitesProvision?.cli?.(parts);
+        return { handled: true };
+      }
+      if (cmd === 'contact') {
+        await MapComms?.contactCmd?.(parts);
+        return { handled: true };
+      }
+      if (cmd === 'msg' && parts[1]) {
+        MapComms?.sendMessage?.(parts.slice(1).join(' '));
         return { handled: true };
       }
       if (cmd === 'city' || cmd === 'cityview') {
@@ -4425,6 +4577,23 @@ const AciCoders = {
       GlobeDeck?.setThinking(false);
       return localGlobe;
     }
+    if (AstranovPresence?.wantsKryftoStart?.(m)) {
+      GlobeDeck?.setThinking(false);
+      AstranovPresence?.startKryfto?.();
+      return { ok: true, game: 'kryfto' };
+    }
+    if (/yacht|charter|crew|captain|ενοικ/.test(m.toLowerCase())) {
+      const ev = await YachtMatcher?.evolveFromText?.(m);
+      if (ev?.best) {
+        GlobeDeck?.setThinking(false);
+        const msg = YachtMatcher.formatMatch(ev.best);
+        ACIControl?.reply(msg);
+        return { ok: true, yacht: ev };
+      }
+    }
+    if (/hellenic|ξενία|arete|logos|μῆτις|καιρός/i.test(m)) {
+      HellenicSource?.groundCoders?.(m);
+    }
 
     await this.enterSession({
       focus: false,
@@ -5276,6 +5445,9 @@ const Commerce = {
   _menuRequestSent: false,
   _suggestion: null,
   _balance: null,
+  _preferredDriverId: null,
+  _preferredDriver: null,
+  _lastWants: [],
 
   haversineKm(lat1, lng1, lat2, lng2) {
     const R = 6371;
@@ -5506,11 +5678,20 @@ const Commerce = {
     if (driverBox) {
       const n = drivers.length;
       driverBox.innerHTML = n
-        ? '<div class="vm-drivers-title">' + (AstroGlyphs?.driver || '🚚') + ' ' + n + ' οδηγοί κοντά:</div>' + drivers.slice(0, 4).map(d => {
+        ? '<div class="vm-drivers-title">' + (AstroGlyphs?.driver || '🚚') + ' ' + n + ' οδηγοί κοντά · tap to pick:</div>' + drivers.slice(0, 4).map(d => {
           const km = this.haversineKm(this.userLatLng().lat, this.userLatLng().lng, d.field_lat, d.field_lng).toFixed(1);
-          return '<span class="vm-tag driver">' + driverIcon(d) + ' ' + (d.display_name || 'Driver') + ' · ' + km + ' km</span>';
+          const picked = this._preferredDriverId === d.id ? ' picked' : '';
+          return '<span class="vm-tag driver' + picked + '" data-driver-id="' + d.id + '">' + driverIcon(d) + ' ' + (d.display_name || 'Driver') + ' · ' + km + ' km</span>';
         }).join('')
         : '<div class="vm-drivers-title" style="color:#ffd633">Δεν βρέθηκαν ενεργοί οδηγοί — θα αναζητηθεί μετά την παραγγελία</div>';
+      driverBox.querySelectorAll('.vm-tag.driver[data-driver-id]').forEach(tag => {
+        tag.onclick = (e) => {
+          e.stopPropagation();
+          MarketplaceComms?.selectDriver?.(tag.dataset.driverId);
+          driverBox.querySelectorAll('.vm-tag.driver').forEach(el => el.classList.remove('picked'));
+          tag.classList.add('picked');
+        };
+      });
     }
     if (balBox) {
       const b = balance != null ? balance : 0;
@@ -5530,6 +5711,7 @@ const Commerce = {
     const run = async () => {
       const q = String(query || '').replace(/^(order|παραγγελία?)\s*/i, '').trim();
       const wants = this.parseWantedItems(q);
+      this._lastWants = wants;
       if (!wants.length) {
         ACIControl?.reply('Δεν κατάλαβα είδη — π.χ. order pitogyra mpironia tsigareta');
         return this.openOrderFlow(q);
@@ -5559,6 +5741,7 @@ const Commerce = {
 
       if (!matches.length) {
         this.renderCompare([], drivers, wants, balance);
+        MarketplaceComms?.openForBrowse?.({ vendor: null, drivers, wants: wants.map(w => w.label).join(' + ') });
         const msg = 'Κανένα κατάστημα με πραγματικό μενού για αυτά τα είδη — ζήτησε μενού από κοντινό κατάστημα';
         ACIControl?.reply(msg);
         if (Voice.maySpeak()) speak(msg.slice(0, 120), () => resumeListening());
@@ -5566,6 +5749,13 @@ const Commerce = {
       }
 
       this.renderCompare(matches, drivers, wants, balance);
+      const bestVendor = matches[0]?.vendor || null;
+      MarketplaceComms?.openForBrowse?.({
+        vendor: bestVendor,
+        drivers,
+        wants: wants.map(w => w.label).join(' + '),
+        preferredDriverId: this._preferredDriverId,
+      });
       const best = matches[0];
       const driverNames = drivers.slice(0, 2).map(d => d.display_name || 'Driver').join(', ');
       const msg = 'Πρόταση: ' + best.vendor.name + ' · ' + best.total.toFixed(1) + ' AVC · ' + best.km.toFixed(1) + ' km'
@@ -5817,6 +6007,7 @@ const Commerce = {
             notes: notes || ('Astranov order · ' + vendor.name),
             calc: { total_avc: total },
             pay_with_balance: !!payWithBalance,
+            preferred_driver_id: this._preferredDriverId || null,
           }),
         });
         const j = await r.json().catch(() => ({}));
@@ -5848,6 +6039,14 @@ const Commerce = {
         if (orderResult.balance_after != null) this._balance = orderResult.balance_after;
         this.hideMenu();
         GlobeDeck?.completeTask('commerce');
+        const nearDrivers = await this.fetchNearbyDrivers(dLat, dLng);
+        MarketplaceComms?.openForOrder?.({
+          order: orderResult.order,
+          vendor,
+          drivers: nearDrivers,
+          seeking_driver: orderResult.seeking_driver,
+          wants: items.map(i => i.name).join(', '),
+        });
       } else {
         msg = 'Παραγγελία απέτυχε: ' + (errMsg || 'server error') + '. Δοκίμασε ξανά.';
       }
@@ -7299,7 +7498,8 @@ const CityLife = {
   },
 
   _tickFriends() {
-    if (Auth?.user || !(window.others || []).length) return;
+    if (Auth?.user || AstranovPresence?.rtChannel) return;
+    if (!(window.others || []).length) return;
     const friends = window.others || [];
     friends.forEach((u) => {
       u.lat += (Math.random() - 0.5) * 0.0012;
@@ -7837,6 +8037,11 @@ const AstranovSitesProvision = {
     const j = await r.json().catch(() => ({}));
     if (!r.ok) throw new Error(j.error || j.message || 'Site provision failed');
 
+    if (j.pending_approval) {
+      ACIControl?.reply('Subdomain ' + (j.domain || j.slug + '.astranov.eu') + ' requested — pending admin approval. Profile page is live on map.');
+      AciCli?.print('site pending approval · ' + j.slug, 'dim');
+      return j;
+    }
     this._onLive(j, opts);
     return j;
   },
@@ -7880,6 +8085,17 @@ const AstranovSitesProvision = {
       const url = 'https://' + slug + '.' + this.BASE_DOMAIN;
       if (window.AstranovSiteShell?.open) AstranovSiteShell.open(url, { domain: slug + '.' + this.BASE_DOMAIN, title: slug });
       return { url };
+    }
+    if (sub === 'approve' && parts[2]) {
+      if (!Auth?.isOwner) return { error: 'admin_required' };
+      const headers = await Auth.authHeaders();
+      const r = await fetch(SB_URL + '/rest/v1/rpc/booker_approve_site', {
+        method: 'POST', headers,
+        body: JSON.stringify({ p_site_id: parts[2], p_approve: parts[3] !== 'reject' }),
+      });
+      const j = r.ok ? await r.json() : {};
+      ACIControl?.reply(r.ok ? 'Site ' + parts[2] + ' approved' : (j.message || 'approve failed'));
+      return j;
     }
     if (sub === 'create' || sub === 'open' || sub === 'provision') {
       const slug = parts[2] || '';
@@ -8203,16 +8419,18 @@ const GlobeEntity = {
 
     switch (entity.type) {
       case 'vendor':
-        if (entity.data?.vendor) Commerce?.openVendor?.(entity.data.vendor);
+        if (entity.data?.vendor) ProfileSite?.openVendor?.(entity.data.vendor);
         else Commerce?.showPicker?.();
         break;
       case 'driver':
-        ACIControl?.reply('Driver ' + entity.title + ' — type: order groceries · scenario assign');
-        Commerce?.smartOrder?.('delivery from ' + entity.title);
+        if (entity.data?.driver?.id) MarketplaceComms?.selectDriver?.(entity.data.driver.id, entity.data.driver);
+        else ACIControl?.reply('Driver ' + entity.title + ' — pick for delivery');
         break;
       case 'friend':
-        SuperCli?.run?.('locate');
-        ACIControl?.reply(entity.title + ' is nearby on the globe');
+        if (entity.data?.user) {
+          ProfileSite?.openUser?.(entity.data.user.id);
+          MapComms?.contactMenu?.(entity.data.user);
+        } else ACIControl?.reply(entity.title + ' on the map — tap contact options');
         break;
       case 'post':
         if (entity.data?.url) {
@@ -8352,8 +8570,12 @@ const GlobeEntity = {
         data: { driver: d },
         _actionLabel: 'Assign ' + (d.display_name || 'driver'),
         onTap: (e) => {
-          ACIControl?.reply('Driver ' + e.title + ' — confirm order to assign');
-          Commerce?.smartOrder?.('delivery');
+          const driverId = e.data?.driver?.id;
+          if (driverId && MarketplaceComms?.selectDriver) {
+            MarketplaceComms.selectDriver(driverId, e.data?.driver);
+          } else {
+            ACIControl?.reply('Driver ' + e.title + ' — order first, then pick driver');
+          }
         },
       });
     });
@@ -8368,14 +8590,15 @@ const GlobeEntity = {
         lat: u.lat,
         lng: u.lng,
         title: (u.emoji || '') + ' ' + u.name,
-        description: 'Friend nearby · tap to fly here',
+        description: 'Player on map · tap to fly here · collab or κρυφτό',
         urgency: 1,
         data: { user: u },
         onTap: (e) => {
+          MapComms?.contactMenu?.(u);
           const p = latLngToPos(e.lat, e.lng, 1.04);
           flyToPoint?.(new THREE.Vector3(p.x, p.y, p.z), GlobeControl?.Z?.national || 1.82);
-          ACIControl?.reply(u.name + ' on the globe');
         },
+        _actionLabel: 'Contact',
       });
     });
   },
@@ -10975,7 +11198,7 @@ const AstranovSession = {
         }
       } catch (_) {}
     }
-    showOtherUsers?.();
+    AstranovPresence?.refresh?.();
     await this.pull();
     await AstranovNode?.resumeSession?.();
     await this.push(true);
@@ -11082,7 +11305,7 @@ const AstranovSession = {
     if (window._lastPos && GlobeEntity?.syncMe) {
       GlobeEntity.syncMe(_lastPos.lat, _lastPos.lng, me?.name || 'You');
     }
-    showOtherUsers?.();
+    AstranovPresence?.refresh?.();
   },
 
   async pull() {
@@ -11127,7 +11350,14 @@ const AstranovWishlist = {
     { text: 'Astranov Sites — instant subdomain provision via + or collective', status: 'done', tag: 'sites' },
     { text: 'Uniform login across globe + subdomains (Google, email, phone)', status: 'done', tag: 'auth' },
     { text: 'Google OAuth show Astranov not suspicious Supabase ref — api.astranov.eu', status: 'pending', tag: 'auth' },
-    { text: 'Uniform subdomain site templates (frogschool, yachts, vendors)', status: 'pending', tag: 'sites' },
+    { text: 'Uniform subdomain site templates (frogschool, yachts, vendors)', status: 'done', tag: 'sites' },
+    { text: 'Profile page for every user/vendor — tap to open, fill on demand', status: 'done', tag: 'sites' },
+    { text: 'Subdomain on admin approval · profile live immediately', status: 'done', tag: 'sites' },
+    { text: 'Yacht matcher — demand/supply, captain+crew, 300/200/100 EUR per day', status: 'done', tag: 'commerce' },
+    { text: 'Hellenic canon — Greek mythology & philosophy as Coders truth layer', status: 'done', tag: 'brain' },
+    { text: 'Logged-in users on map — collab + κρυφτό hide-and-seek', status: 'done', tag: 'globe' },
+    { text: 'Map team polygon + cloud chat + video/voice/phone/message any user', status: 'done', tag: 'comms' },
+    { text: 'Marketplace task polygon + cloud chat — client picks delivery driver on map', status: 'done', tag: 'commerce' },
     { text: 'Real user scenarios — 8 automated tests passing before batch push', status: 'done', tag: 'qa' },
   ],
 
@@ -11288,6 +11518,1763 @@ const AstranovWishlist = {
   },
 };
 window.AstranovWishlist = AstranovWishlist;
+
+// === GLOBE PRESENCE — logged-in users on map · collab · κρυφτό hide-and-seek ===
+const AstranovPresence = {
+  CHANNEL: 'astranov-globe-live',
+  TICK_MS: 3000,
+  POLL_MS: 15000,
+  DB_MIN_MS: 12000,
+  rtChannel: null,
+  _hb: null,
+  _poll: null,
+  _watchId: null,
+  _lastDbAt: 0,
+  _live: new Map(),
+  game: null,
+  _gameStartedAt: 0,
+
+  wantsKryftoStart(line) {
+    const low = String(line || '').toLowerCase().replace(/\s+/g, ' ').trim();
+    if (!low) return false;
+    if (/^(κρυφτό|κρυφτο|kryfto|hideandseek|hide-and-seek)\b/.test(low)) return true;
+    if (/\bhide\s*(and|&|n)?\s*seek/.test(low)) return true;
+    if (/\bhouse\s*keep(ing)?\b/.test(low)) return true;
+    if (/\b(start|play|begin|παίξε|παιξε|άρχισε|αρχισε|ξεκίνα|ξεκινα)\b.*\b(κρυφτ|kryfto|hide\s*and\s*seek|house\s*keep)/.test(low)) return true;
+    if (/\b(κρυφτ|kryfto|hide\s*and\s*seek|house\s*keep).*\b(start|play|game|ξεκίνα|ξεκινα)\b/.test(low)) return true;
+    if (/\bπαιχνίδι\s+(κρυφτ|kryfto)\b/.test(low)) return true;
+    return false;
+  },
+
+  init() {
+    if (Auth?.client) {
+      Auth.client.auth.onAuthStateChange((_ev, session) => {
+        if (session?.user) setTimeout(() => this.join(), 400);
+        else this.leave();
+      });
+      setTimeout(() => { if (Auth?.user) this.join(); }, 2500);
+    }
+  },
+
+  displayName() {
+    if (AstranovSession?.isAstranov?.()) return 'ASTRANOV';
+    const u = Auth?.user;
+    if (!u) return 'Guest';
+    return u.user_metadata?.full_name
+      || u.user_metadata?.name
+      || (u.email || '').split('@')[0]
+      || 'User';
+  },
+
+  pos() {
+    return window._lastPos || { lat: 36.22, lng: 28.12 };
+  },
+
+  async join() {
+    if (!Auth?.client || !Auth?.user) return;
+    if (this.rtChannel) return;
+    const uid = Auth.user.id;
+    this.rtChannel = Auth.client.channel(this.CHANNEL, {
+      config: { presence: { key: uid } },
+    });
+    this.rtChannel.on('presence', { event: 'sync' }, () => this._onPresenceSync());
+    this.rtChannel.on('presence', { event: 'join' }, () => this._onPresenceSync());
+    this.rtChannel.on('presence', { event: 'leave' }, () => this._onPresenceSync());
+    this.rtChannel.on('broadcast', { event: 'pos' }, ({ payload }) => {
+      if (payload?.user_id && payload.user_id !== Auth?.user?.id) {
+        this._ingest(payload);
+        this._render();
+      }
+    });
+    this.rtChannel.on('broadcast', { event: 'game' }, ({ payload }) => {
+      if (payload?.type === 'kryfto_start' && payload.from !== this.displayName()) {
+        this.game = 'kryfto';
+        GlobeDeck?.setPreview?.('◎ ' + payload.from + ' started κρυφτό — hide or seek!');
+        AciCli?.print('◎ ' + payload.from + ' · κρυφτό game', 'dim');
+      }
+    });
+    await this.rtChannel.subscribe(async (status) => {
+      if (status === 'SUBSCRIBED') await this.broadcast();
+    });
+    if (this._hb) clearInterval(this._hb);
+    this._hb = setInterval(() => this._tick(), this.TICK_MS);
+    if (this._poll) clearInterval(this._poll);
+    this._poll = setInterval(() => this._pollProfiles(), this.POLL_MS);
+    if (userLocated) this._startGpsWatch();
+    await this._pollProfiles();
+    AciCli?.print?.('◎ Map live — sign-in players visible · kryfto · hide · players', 'dim');
+  },
+
+  async leave() {
+    this._stopGpsWatch();
+    if (this._hb) { clearInterval(this._hb); this._hb = null; }
+    if (this._poll) { clearInterval(this._poll); this._poll = null; }
+    if (this.rtChannel && Auth?.client) {
+      try { await Auth.client.removeChannel(this.rtChannel); } catch (_) {}
+      this.rtChannel = null;
+    }
+    this._live.clear();
+    this._applyOthers([]);
+    this.game = null;
+  },
+
+  payload() {
+    const p = this.pos();
+    return {
+      user_id: Auth.user.id,
+      name: this.displayName(),
+      lat: p.lat,
+      lng: p.lng,
+      hidden: !!window.hidden,
+      game: this.game,
+      emoji: '👤',
+      t: Date.now(),
+    };
+  },
+
+  async broadcast() {
+    if (!Auth?.user) return;
+    const pl = this.payload();
+    const now = Date.now();
+    const writeDb = now - (this._lastDbAt || 0) >= this.DB_MIN_MS;
+    try {
+      if (this.rtChannel) await this.rtChannel.track(pl);
+      if (writeDb && Auth?.client) {
+        await Auth.client.from('profiles').update({
+          field_lat: pl.lat,
+          field_lng: pl.lng,
+          field_seen_at: new Date().toISOString(),
+          map_hidden: pl.hidden,
+          map_mode: this.game || 'collab',
+          display_name: pl.name,
+        }).eq('id', Auth.user.id);
+        this._lastDbAt = now;
+      }
+      if (this.rtChannel) {
+        this.rtChannel.send({ type: 'broadcast', event: 'pos', payload: pl });
+      }
+    } catch (e) {
+      console.warn('[Presence] broadcast', e.message || e);
+    }
+  },
+
+  _onGpsFix(pos) {
+    const lat = pos.coords.latitude;
+    const lng = pos.coords.longitude;
+    window._lastPos = { lat, lng };
+    userLocated = true;
+    if (window._meMarker) {
+      const p = latLngToPos(lat, lng, 1.03);
+      window._meMarker.position.set(p.x, p.y, p.z);
+    }
+    GlobeEntity?.syncMe?.(lat, lng, me?.name || 'You');
+    if (CityMap?.active) CityMap._syncMarkers?.();
+  },
+
+  _startGpsWatch() {
+    if (this._watchId != null || !navigator.geolocation) return;
+    this._watchId = navigator.geolocation.watchPosition(
+      (pos) => this._onGpsFix(pos),
+      () => {},
+      { enableHighAccuracy: true, maximumAge: 2000, timeout: 10000 }
+    );
+  },
+
+  _stopGpsWatch() {
+    if (this._watchId == null || !navigator.geolocation) return;
+    navigator.geolocation.clearWatch(this._watchId);
+    this._watchId = null;
+  },
+
+  async _tick() {
+    if (!Auth?.user) return;
+    await this.broadcast();
+  },
+
+  onMove(lat, lng) {
+    if (!Auth?.user) return;
+    window._lastPos = { lat, lng };
+    userLocated = true;
+    this._startGpsWatch();
+    this.broadcast();
+  },
+
+  refresh() {
+    if (!Auth?.user) {
+      this._applyOthers([]);
+      return;
+    }
+    if (!this.rtChannel) this.join();
+    else {
+      this._onPresenceSync();
+      this._pollProfiles();
+    }
+  },
+
+  _ingest(p) {
+    if (!p?.user_id || p.user_id === Auth?.user?.id || p.hidden) return;
+    if (p.lat == null || p.lng == null) return;
+    this._live.set(p.user_id, {
+      id: p.user_id,
+      name: p.name || 'Player',
+      lat: +p.lat,
+      lng: +p.lng,
+      emoji: p.emoji || '👤',
+      game: p.game,
+      t: p.t || Date.now(),
+    });
+  },
+
+  _onPresenceSync() {
+    if (!this.rtChannel) return;
+    const state = this.rtChannel.presenceState();
+    Object.keys(state).forEach((key) => {
+      (state[key] || []).forEach((pres) => this._ingest(pres));
+    });
+    this._render();
+  },
+
+  async _pollProfiles() {
+    if (!Auth?.user) return;
+    try {
+      const headers = await Auth.authHeaders();
+      const since = new Date(Date.now() - 10 * 60 * 1000).toISOString();
+      const q = SB_URL + '/rest/v1/profiles'
+        + '?select=id,display_name,avatar_emoji,field_lat,field_lng,field_seen_at,map_hidden'
+        + '&field_seen_at=gte.' + encodeURIComponent(since)
+        + '&field_lat=not.is.null'
+        + '&field_lng=not.is.null'
+        + '&map_hidden=eq.false'
+        + '&id=neq.' + encodeURIComponent(Auth.user.id)
+        + '&limit=80';
+      const r = await fetch(q, { headers });
+      if (!r.ok) return;
+      const rows = await r.json();
+      rows.forEach((row) => {
+        this._ingest({
+          user_id: row.id,
+          name: row.display_name || 'User',
+          lat: row.field_lat,
+          lng: row.field_lng,
+          emoji: row.avatar_emoji || '👤',
+          hidden: row.map_hidden,
+          t: row.field_seen_at ? new Date(row.field_seen_at).getTime() : Date.now(),
+        });
+      });
+      this._render();
+    } catch (e) {
+      console.warn('[Presence] poll', e.message || e);
+    }
+  },
+
+  _render() {
+    const users = [...this._live.values()].sort((a, b) => (b.t || 0) - (a.t || 0));
+    this._applyOthers(users);
+  },
+
+  _applyOthers(users) {
+    window.others = users;
+    if (typeof others !== 'undefined') others = users;
+    GlobeEntity?.syncFriends?.(users);
+    if (CityMap?.active) CityMap._syncMarkers?.();
+    const chip = document.getElementById('city-life-chip');
+    if (chip?.classList.contains('open') && users.length) {
+      const shops = (Commerce?.vendors || []).length;
+      chip.innerHTML = '<b>City</b> · ' + shops + ' shops · ' + users.length + ' player(s) live';
+    }
+  },
+
+  toggleHide() {
+    if (!Auth?.user) {
+      ACIControl?.reply('Sign in first — then hide for κρυφτό');
+      return !!window.hidden;
+    }
+    window.hidden = !window.hidden;
+    if (typeof hidden !== 'undefined') hidden = window.hidden;
+    if (window._meMarker) window._meMarker.visible = !window.hidden;
+    const ge = GlobeEntity?.entities?.get('me');
+    if (ge?.mesh) ge.mesh.visible = !window.hidden;
+    this.broadcast();
+    const msg = window.hidden
+      ? 'Κρυφτό — hidden from other players'
+      : 'Visible — back on the map for collab';
+    ACIControl?.reply(msg);
+    if (Voice.maySpeak()) speak(msg.slice(0, 80), () => resumeListening?.());
+    return window.hidden;
+  },
+
+  startKryfto() {
+    if (!Auth?.user) {
+      ACIControl?.reply('Sign in with G — then say κρυφτό or hide and seek');
+      Auth?.openLoginModal?.('Sign in to play κρυφτό on the map');
+      return;
+    }
+    this.game = 'kryfto';
+    this._gameStartedAt = Date.now();
+    window.hidden = false;
+    if (typeof hidden !== 'undefined') hidden = false;
+    if (window._meMarker) window._meMarker.visible = true;
+    const ge = GlobeEntity?.entities?.get('me');
+    if (ge?.mesh) ge.mesh.visible = true;
+
+    const afterLocate = () => this._kryftoLive();
+    if (!userLocated && typeof requestLocationIfNeeded === 'function') {
+      requestLocationIfNeeded(afterLocate);
+      ACIControl?.reply('Κρυφτό — locating you on the map…');
+      return;
+    }
+    if (!userLocated && navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (pos) => {
+          if (typeof placeMe === 'function') {
+            placeMe(pos.coords.latitude, pos.coords.longitude, { quiet: true, markerOnly: true });
+          }
+          afterLocate();
+        },
+        () => afterLocate(),
+        { enableHighAccuracy: true, maximumAge: 4000, timeout: 12000 }
+      );
+      ACIControl?.reply('Κρυφτό — locating…');
+      return;
+    }
+    afterLocate();
+  },
+
+  _kryftoLive() {
+    this.broadcast();
+    this.rtChannel?.send({
+      type: 'broadcast',
+      event: 'game',
+      payload: { type: 'kryfto_start', from: this.displayName(), t: Date.now() },
+    });
+    const others = window.others || [];
+    const n = others.length;
+    const total = n + 1;
+    others.forEach((u) => {
+      MapDepict?.pulse?.(u.lat, u.lng, 0x3d9eff, 'κρυφτό · ' + u.name, 16000);
+    });
+    const p = this.pos();
+    MapDepict?.action?.('play', { lat: p.lat, lng: p.lng, detail: 'κρυφτό · hide and seek LIVE' });
+    MapDepict?.pulse?.(p.lat, p.lng, 0x1a6fd4, 'ΚΡΥΦΤΟ', 18000);
+    GlobeDeck?.expand?.(SuperCli?.title || 'Astranov Command Line');
+    GlobeDeck?.setTitle?.('ΚΡΥΦΤΟ');
+    GlobeDeck?.setPreview?.('◎ ' + total + ' player(s) · say hide to vanish · players to seek');
+    AciCli?.print('◎ GAME START · κρυφτό / hide and seek · ' + total + ' on map', 'ok');
+    const msg = n > 0
+      ? 'Κρυφτό ξεκίνησε! ' + total + ' παίκτες. Πες hide για να κρυφτείς · players για αναζήτηση'
+      : 'Κρυφτό ξεκίνησε! Πες hide για να κρυφτείς — φίλοι πρέπει να συνδεθούν στον χάρτη';
+    ACIControl?.reply(msg);
+    if (Voice.maySpeak()) speak('Κρυφτό. Πες hide.', () => resumeListening?.());
+    FieldBrain?.pulse?.('play', 'kryfto started', { role: 'client', props: { players: total } });
+  },
+
+  listPlayers() {
+    const list = window.others || [];
+    if (!list.length) {
+      AciCli?.print('No other players on map — friends must sign in', 'dim');
+      ACIControl?.reply('No other players yet — invite friends to sign in at astranov.eu');
+      return list;
+    }
+    list.forEach((u) => {
+      MapDepict?.pulse?.(u.lat, u.lng, 0xffaa33, (u.emoji || '👤') + ' ' + u.name, 12000);
+    });
+    AciCli?.print(list.map((u) => (u.emoji || '👤') + ' ' + u.name + ' · ' + u.lat.toFixed(3)).join(' · '), 'ok');
+    ACIControl?.reply(list.length + ' on map — tap a marker or type locate');
+    return list;
+  },
+};
+
+window.AstranovPresence = AstranovPresence;
+
+// === MAP COMMS — team polygon · cloud chat · video/voice/phone/message ===
+const MapComms = {
+  kind: 'team',
+  teamId: null,
+  teamName: 'Team',
+  members: new Map(),
+  messages: [],
+  dmUser: null,
+  rtChannel: null,
+  callChannel: null,
+  _viz: null,
+  _lines: [],
+  _beamSvg: null,
+  _pulse: 0,
+  CLOUD_R: 1.22,
+  SURFACE_R: 1.031,
+  BLUE: 0x1a6fd4,
+  BLUE_GLOW: 0x3d9eff,
+
+  init() {
+    this._beamSvg = document.getElementById('map-comms-beam');
+    this._bindCloud();
+    if (Auth?.client) {
+      Auth.client.auth.onAuthStateChange((_e, s) => {
+        if (!s?.user) this.leaveTeam();
+      });
+    }
+  },
+
+  _bindCloud() {
+    const cloud = document.getElementById('map-comms-cloud');
+    if (!cloud || cloud.dataset.bound) return;
+    cloud.dataset.bound = '1';
+    document.getElementById('mc-close')?.addEventListener('click', () => this.closeCloud());
+    document.getElementById('mc-send')?.addEventListener('click', () => this.sendFromInput());
+    document.getElementById('mc-input')?.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') { e.preventDefault(); this.sendFromInput(); }
+    });
+    document.querySelectorAll('#map-comms-contact [data-mc]').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const hud = document.getElementById('map-comms-contact');
+        const uid = hud?.dataset?.userId;
+        if (uid) this.contactUser(uid, btn.dataset.mc);
+      });
+    });
+  },
+
+  esc(s) {
+    return String(s || '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  },
+
+  selfMember() {
+    const p = window._lastPos || { lat: 36.22, lng: 28.12 };
+    return {
+      id: Auth?.user?.id || 'guest',
+      name: AstranovPresence?.displayName?.() || me?.name || 'You',
+      lat: p.lat,
+      lng: p.lng,
+      emoji: '◎',
+    };
+  },
+
+  memberList() {
+    const list = [...this.members.values()];
+    const self = this.selfMember();
+    if (!list.find(m => m.id === self.id)) list.unshift(self);
+    return list.filter(m => m.lat != null && m.lng != null);
+  },
+
+  async openSession(opts) {
+    opts = opts || {};
+    if (!Auth?.user) {
+      ACIControl?.reply('Sign in for map chat');
+      return null;
+    }
+    const id = opts.id || ('mapteam-' + Date.now().toString(36));
+    this.kind = opts.kind || 'team';
+    this.teamName = (opts.name || opts.title || 'Cloud chat').slice(0, 56);
+    this.teamId = id;
+    this.members.clear();
+    (opts.members || []).forEach((m) => {
+      const id = m?.id ?? m?.user_id;
+      if (id != null && m.lat != null && m.lng != null) {
+        this.members.set(id, { ...m, id, name: m.name || m.display_name || 'User' });
+      }
+    });
+    const self = this.selfMember();
+    if (!this.members.has(self.id)) this.members.set(self.id, { ...self, role: opts.selfRole || 'member' });
+    if (opts.persist !== false && this.kind === 'team') {
+      try {
+        await Auth.client.from('circles').upsert({
+          id,
+          name: this.teamName,
+          scope: 'map_team',
+          type: 'team',
+          owner_id: Auth.user.id,
+          map_members: [...this.members.values()],
+          map_center_lat: this._centroid(this.memberList()).lat,
+          map_center_lng: this._centroid(this.memberList()).lng,
+        });
+      } catch (_) {}
+    }
+    if (opts.messages) this.messages = opts.messages.slice();
+    await this._joinChannel(id);
+    this._openCloud(this.teamName);
+    this._rebuildViz();
+    this._renderMessages();
+    if (opts.showDriverPicker && opts.drivers?.length) {
+      this.renderDriverPicker(opts.drivers, opts.orderId);
+    } else if (opts.showDriverPicker === false) {
+      this.hideDriverPicker();
+    }
+    return id;
+  },
+
+  async createTeam(name) {
+    const self = this.selfMember();
+    const id = await this.openSession({
+      name: name || 'Cloud team',
+      kind: 'team',
+      members: [self],
+    });
+    if (id) {
+      ACIControl?.reply('Team «' + this.teamName + '» — share: team join ' + id);
+      AciCli?.print('team id · ' + id, 'ok');
+    }
+    return id;
+  },
+
+  async joinTeam(id) {
+    if (!Auth?.user) {
+      ACIControl?.reply('Sign in to join a map team');
+      return;
+    }
+    const teamId = (id || '').trim();
+    if (!teamId.startsWith('mapteam-')) {
+      ACIControl?.reply('usage: team join mapteam-…');
+      return;
+    }
+    this.teamId = teamId;
+    try {
+      const { data } = await Auth.client.from('circles').select('name,map_members').eq('id', teamId).maybeSingle();
+      if (data?.name) this.teamName = data.name;
+      (data?.map_members || []).forEach((m) => {
+        if (m?.id) this.members.set(m.id, m);
+      });
+      const msgs = await fetch(SB_URL + '/rest/v1/circle_messages?circle_id=eq.' + encodeURIComponent(teamId) + '&order=ts.desc&limit=40', {
+        headers: await Auth.authHeaders(),
+      }).then(r => r.ok ? r.json() : []);
+      this.messages = (msgs || []).reverse();
+    } catch (_) {}
+    const self = this.selfMember();
+    this.members.set(self.id, self);
+    await this._joinChannel(teamId);
+    this._openCloud(this.teamName);
+    this._rebuildViz();
+    this._renderMessages();
+    ACICli?.print('◎ joined ' + this.teamName, 'ok');
+  },
+
+  async leaveTeam() {
+    if (this.rtChannel && Auth?.client) {
+      try { await Auth.client.removeChannel(this.rtChannel); } catch (_) {}
+    }
+    this.rtChannel = null;
+    this.teamId = null;
+    this.kind = 'team';
+    this.members.clear();
+    this.messages = [];
+    this.dmUser = null;
+    this._clearViz();
+    this.closeCloud();
+    this.hideDriverPicker();
+  },
+
+  async _joinChannel(teamId) {
+    if (!Auth?.client) return;
+    if (this.rtChannel) {
+      try { await Auth.client.removeChannel(this.rtChannel); } catch (_) {}
+      this.rtChannel = null;
+    }
+    const ch = Auth.client.channel('map-team-' + teamId, {
+      config: { broadcast: { self: false }, presence: { key: Auth.user.id } },
+    });
+    ch.on('broadcast', { event: 'chat' }, ({ payload }) => this._onChat(payload));
+    ch.on('broadcast', { event: 'member' }, ({ payload }) => this._onMember(payload));
+    ch.on('broadcast', { event: 'call' }, ({ payload }) => this._onCallSignal(payload));
+    ch.on('presence', { event: 'sync' }, () => this._syncPresence(ch));
+    await ch.subscribe(async (status) => {
+      if (status === 'SUBSCRIBED') {
+        const self = this.selfMember();
+        await ch.track(self);
+        ch.send({ type: 'broadcast', event: 'member', payload: self });
+      }
+    });
+    this.rtChannel = ch;
+  },
+
+  _syncPresence(ch) {
+    const state = ch.presenceState();
+    Object.keys(state).forEach((key) => {
+      (state[key] || []).forEach((p) => {
+        if (p?.id) this.members.set(p.id, p);
+      });
+    });
+    this._rebuildViz();
+  },
+
+  _onMember(m) {
+    if (!m?.id) return;
+    this.members.set(m.id, m);
+    this._rebuildViz();
+  },
+
+  _onChat(msg) {
+    if (!msg?.body) return;
+    this.messages.push(msg);
+    if (this.messages.length > 80) this.messages.shift();
+    this._renderMessages();
+    this._persistMessage(msg);
+  },
+
+  async _persistMessage(msg) {
+    if (!this.teamId || !Auth?.client) return;
+    try {
+      await Auth.client.from('circle_messages').insert({
+        circle_id: this.teamId,
+        author: msg.author || msg.name || 'user',
+        text: msg.body,
+        ts: msg.t || Date.now(),
+      });
+    } catch (_) {}
+  },
+
+  sendFromInput() {
+    const input = document.getElementById('mc-input');
+    const body = (input?.value || '').trim();
+    if (!body) return;
+    if (input) input.value = '';
+    this.sendMessage(body);
+  },
+
+  postSystem(body) {
+    const msg = { author: '◎', name: '◎', body: String(body || '').slice(0, 500), t: Date.now(), system: true };
+    this._onChat(msg);
+  },
+
+  sendMessage(body) {
+    const self = this.selfMember();
+    const msg = {
+      author: self.name,
+      author_id: self.id,
+      body: body.slice(0, 500),
+      t: Date.now(),
+    };
+    this._onChat(msg);
+    this.rtChannel?.send({ type: 'broadcast', event: 'chat', payload: msg });
+    if (this.dmUser) this._sendDm(msg);
+  },
+
+  _renderMessages() {
+    const log = document.getElementById('mc-log');
+    if (!log) return;
+    log.innerHTML = this.messages.slice(-24).map((m) =>
+      '<div class="mc-line"><b>' + this.esc(m.author || m.name) + '</b> ' + this.esc(m.body) + '</div>'
+    ).join('');
+    log.scrollTop = log.scrollHeight;
+  },
+
+  _openCloud(title) {
+    const cloud = document.getElementById('map-comms-cloud');
+    if (!cloud) return;
+    document.getElementById('mc-title').textContent = title || 'Cloud chat';
+    cloud.classList.add('open');
+    cloud.dataset.kind = this.kind || 'team';
+    this._renderMessages();
+  },
+
+  closeCloud() {
+    document.getElementById('map-comms-cloud')?.classList.remove('open');
+    document.getElementById('map-comms-contact')?.classList.remove('open');
+    this.hideDriverPicker();
+    if (this._beamSvg) this._beamSvg.innerHTML = '';
+  },
+
+  renderDriverPicker(drivers, orderId) {
+    const box = document.getElementById('mc-drivers');
+    if (!box) return;
+    const list = drivers || [];
+    if (!list.length) {
+      box.style.display = 'none';
+      box.innerHTML = '';
+      return;
+    }
+    box.style.display = 'block';
+    box.dataset.orderId = orderId || '';
+    const u = Commerce?.userLatLng?.() || window._lastPos || {};
+    box.innerHTML = '<div class="mc-drivers-title">🚚 Choose delivery driver</div>'
+      + list.slice(0, 8).map((d) => {
+        const km = d.km != null ? d.km.toFixed(1) : (Commerce?.haversineKm?.(u.lat, u.lng, d.field_lat, d.field_lng)?.toFixed(1) || '?');
+        return '<button type="button" class="mc-driver-pick" data-driver-id="' + this.esc(d.id) + '">'
+          + this.esc(d.avatar_emoji || d.emoji || '🚚') + ' ' + this.esc(d.display_name || d.name || 'Driver')
+          + ' · ' + km + ' km</button>';
+      }).join('');
+    box.querySelectorAll('.mc-driver-pick').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const id = btn.dataset.driverId;
+        if (id) MarketplaceComms?.selectDriver?.(id);
+      });
+    });
+  },
+
+  hideDriverPicker() {
+    const box = document.getElementById('mc-drivers');
+    if (box) { box.style.display = 'none'; box.innerHTML = ''; }
+  },
+
+  contactMenu(user) {
+    if (!user?.id) return;
+    const hud = document.getElementById('map-comms-contact');
+    if (!hud) return;
+    hud.dataset.userId = user.id;
+    document.getElementById('mc-contact-name').textContent = (user.emoji || '👤') + ' ' + (user.name || 'User');
+    hud.classList.add('open');
+    GlobeEntity?.clearSelection?.();
+  },
+
+  async contactUser(userId, mode) {
+    const u = [...(window.others || []), this.selfMember()].find(x => x.id === userId)
+      || this.members.get(userId);
+    if (!u) {
+      ACIControl?.reply('User not on map');
+      return;
+    }
+    document.getElementById('map-comms-contact')?.classList.remove('open');
+    const m = (mode || 'message').toLowerCase();
+    if (m === 'message' || m === 'msg' || m === 'chat') {
+      this.dmUser = u;
+      this._openCloud('DM · ' + u.name);
+      ACIControl?.reply('Message ' + u.name + ' in the cloud above the map');
+      return;
+    }
+    if (m === 'video') return this.startVideoCall(u);
+    if (m === 'voice' || m === 'audio') return this.startVoiceCall(u);
+    if (m === 'landline' || m === 'cellular' || m === 'phone') return this.startPhoneCall(u, m);
+    ACIControl?.reply('contact: video · voice · message · landline · cellular');
+  },
+
+  async _userPhone(userId) {
+    try {
+      const headers = await Auth.authHeaders();
+      const r = await fetch(SB_URL + '/rest/v1/profiles?select=phone,display_name&id=eq.' + encodeURIComponent(userId) + '&limit=1', { headers });
+      const rows = r.ok ? await r.json() : [];
+      return rows[0]?.phone || null;
+    } catch { return null; }
+  },
+
+  async startPhoneCall(user, kind) {
+    const phone = await this._userPhone(user.id);
+    if (!phone) {
+      ACIControl?.reply('No phone on file — use message or ask them to add phone in profile');
+      this.dmUser = user;
+      this._openCloud('DM · ' + user.name);
+      return;
+    }
+    const tel = phone.replace(/\s/g, '');
+    ACIControl?.reply((kind === 'landline' ? 'Landline' : 'Cellular') + ' · ' + user.name);
+    AciCli?.print('tel:' + tel, 'ok');
+    window.open('tel:' + tel, '_self');
+  },
+
+  async startVoiceCall(user) {
+    if (!navigator.mediaDevices?.getUserMedia) {
+      ACIControl?.reply('Microphone not available');
+      return;
+    }
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
+      this._inviteCall(user, 'voice');
+      ACIControl?.reply('Voice call to ' + user.name + ' — invite sent on map mesh');
+      MapDepict?.pulse?.(user.lat, user.lng, 0x3d9eff, 'voice → ' + user.name, 10000);
+      setTimeout(() => stream.getTracks().forEach(t => t.stop()), 60000);
+    } catch (e) {
+      ACIControl?.reply('Mic denied — allow microphone for voice call');
+    }
+  },
+
+  async startVideoCall(user) {
+    this._inviteCall(user, 'video');
+    if (typeof startOrbitalVideoCall === 'function') {
+      startOrbitalVideoCall(user.name);
+    } else {
+      ACIControl?.reply('Video invite to ' + user.name + ' — WebRTC starting');
+    }
+    MapDepict?.pulse?.(user.lat, user.lng, 0x3d9eff, 'video → ' + user.name, 12000);
+  },
+
+  _inviteCall(user, kind) {
+    const payload = {
+      type: 'invite',
+      kind,
+      from: this.selfMember(),
+      to: user.id,
+      t: Date.now(),
+    };
+    const chName = 'map-call-' + [Auth.user.id, user.id].sort().join('-');
+    if (!this.callChannel) {
+      this.callChannel = Auth.client.channel(chName, { config: { broadcast: { self: false } } });
+      this.callChannel.on('broadcast', { event: 'call' }, ({ payload: p }) => this._onCallSignal(p));
+      this.callChannel.subscribe();
+    }
+    this.callChannel.send({ type: 'broadcast', event: 'call', payload });
+    this.rtChannel?.send({ type: 'broadcast', event: 'call', payload });
+  },
+
+  _onCallSignal(p) {
+    if (!p || p.to !== Auth?.user?.id) return;
+    const from = p.from?.name || 'User';
+    if (p.type === 'invite') {
+      ACIControl?.reply(from + ' · ' + (p.kind || 'call') + ' — tap player or type: contact ' + from + ' ' + p.kind);
+      GlobeDeck?.setPreview?.('📞 ' + from + ' · ' + p.kind);
+    }
+  },
+
+  async _sendDm(msg) {
+    if (!this.dmUser?.id || !Auth?.client) return;
+    const chName = 'map-dm-' + [Auth.user.id, this.dmUser.id].sort().join('-');
+    const ch = Auth.client.channel(chName, { config: { broadcast: { self: false } } });
+    await ch.subscribe();
+    ch.send({ type: 'broadcast', event: 'chat', payload: { ...msg, to: this.dmUser.id } });
+    setTimeout(() => { try { Auth.client.removeChannel(ch); } catch (_) {} }, 3000);
+  },
+
+  _centroid(members) {
+    if (!members.length) return { lat: 36.22, lng: 28.12 };
+    let lat = 0, lng = 0;
+    members.forEach((m) => { lat += m.lat; lng += m.lng; });
+    return { lat: lat / members.length, lng: lng / members.length };
+  },
+
+  _clearViz() {
+    if (this._viz?.parent) this._viz.parent.remove(this._viz);
+    this._viz = null;
+    this._lines = [];
+  },
+
+  _rebuildViz() {
+    if (!globePivot) return;
+    this._clearViz();
+    const members = this.memberList();
+    if (members.length < 1) return;
+
+    const group = new THREE.Group();
+    group.name = 'mapCommsViz';
+    const center = this._centroid(members);
+    this._center = center;
+
+    const sorted = members.slice().sort((a, b) => {
+      const angA = Math.atan2(a.lat - center.lat, a.lng - center.lng);
+      const angB = Math.atan2(b.lat - center.lat, b.lng - center.lng);
+      return angA - angB;
+    });
+
+    const ringPts = sorted.map((m) => {
+      const p = latLngToPos(m.lat, m.lng, this.SURFACE_R);
+      return new THREE.Vector3(p.x, p.y, p.z);
+    });
+    if (ringPts.length >= 2) {
+      const closed = ringPts.concat([ringPts[0].clone()]);
+      this._addGlowLine(group, closed);
+      ringPts.forEach((pt) => this._addGlowLine(group, [this._surfaceCenter(center), pt]));
+    }
+
+    const sky = this._skyPoint(center);
+    this._skyAnchor = sky;
+    this._addGlowLine(group, [this._surfaceCenter(center), sky]);
+
+    const cloudGeo = new THREE.SphereGeometry(0.045, 12, 12);
+    const cloudMat = new THREE.MeshBasicMaterial({
+      color: this.BLUE_GLOW,
+      transparent: true,
+      opacity: 0.35,
+      blending: THREE.AdditiveBlending,
+      depthWrite: false,
+    });
+    const cloudMesh = new THREE.Mesh(cloudGeo, cloudMat);
+    cloudMesh.position.copy(sky);
+    group.add(cloudMesh);
+
+    globePivot.add(group);
+    this._viz = group;
+  },
+
+  _surfaceCenter(c) {
+    const p = latLngToPos(c.lat, c.lng, this.SURFACE_R);
+    return new THREE.Vector3(p.x, p.y, p.z);
+  },
+
+  _skyPoint(c) {
+    const p = latLngToPos(c.lat, c.lng, this.CLOUD_R);
+    return new THREE.Vector3(p.x, p.y, p.z);
+  },
+
+  _addGlowLine(group, points) {
+    const glow = new THREE.Line(
+      new THREE.BufferGeometry().setFromPoints(points),
+      new THREE.LineBasicMaterial({ color: this.BLUE, transparent: true, opacity: 0.22 })
+    );
+    const core = new THREE.Line(
+      new THREE.BufferGeometry().setFromPoints(points),
+      new THREE.LineBasicMaterial({ color: this.BLUE_GLOW, transparent: true, opacity: 0.78 })
+    );
+    group.add(glow);
+    group.add(core);
+    this._lines.push(glow, core);
+  },
+
+  tick() {
+    if (!this._viz || !this._lines.length) {
+      if (this._beamSvg) this._beamSvg.innerHTML = '';
+      return;
+    }
+    this._pulse += 0.04;
+    const o = 0.55 + Math.sin(this._pulse) * 0.22;
+    this._lines.forEach((ln, i) => {
+      if (ln.material) ln.material.opacity = (i % 2 ? 0.78 : 0.22) * (0.85 + Math.sin(this._pulse + i) * 0.15);
+    });
+
+    const members = this.memberList();
+    (window.others || []).forEach((u) => {
+      if (this.teamId && !this.members.has(u.id)) {
+        this.members.set(u.id, u);
+      }
+    });
+    if (Auth?.user) {
+      const self = this.selfMember();
+      this.members.set(self.id, self);
+    }
+    if (members.length >= 1 && this.teamId) this._rebuildVizThrottled();
+
+    this._updateBeam();
+    this._updateMemberPositions();
+  },
+
+  _rebuildTick: 0,
+  _rebuildVizThrottled() {
+    const now = Date.now();
+    if (now - this._rebuildTick < 2800) return;
+    this._rebuildTick = now;
+    this._rebuildViz();
+  },
+
+  _updateMemberPositions() {
+    if (!this.rtChannel || !Auth?.user) return;
+    const self = this.selfMember();
+    const prev = this.members.get(self.id);
+    if (!prev || Math.abs(prev.lat - self.lat) > 0.0001 || Math.abs(prev.lng - self.lng) > 0.0001) {
+      this.members.set(self.id, self);
+      this.rtChannel.track(self);
+      this.rtChannel.send({ type: 'broadcast', event: 'member', payload: self });
+    }
+  },
+
+  _updateBeam() {
+    const svg = this._beamSvg;
+    const cloud = document.getElementById('map-comms-cloud');
+    if (!svg || !cloud?.classList.contains('open') || !this._center || !camera) {
+      if (svg) svg.innerHTML = '';
+      return;
+    }
+    const centerWorld = this._surfaceCenter(this._center);
+    const cScr = centerWorld.clone().project(camera);
+    const cx = (cScr.x * 0.5 + 0.5) * window.innerWidth;
+    const cy = (-cScr.y * 0.5 + 0.5) * window.innerHeight;
+    const cr = cloud.getBoundingClientRect();
+    const x1 = cr.left + cr.width / 2;
+    const y1 = cr.bottom - 4;
+    if (cScr.z > 1) { svg.innerHTML = ''; return; }
+    svg.innerHTML = '<line x1="' + x1 + '" y1="' + y1 + '" x2="' + cx + '" y2="' + cy + '" />'
+      + '<line class="mc-beam-glow" x1="' + x1 + '" y1="' + y1 + '" x2="' + cx + '" y2="' + cy + '" />';
+  },
+
+  async cmd(parts) {
+    const sub = (parts[1] || 'help').toLowerCase();
+    const rest = parts.slice(2).join(' ');
+    if (sub === 'create' || sub === 'new') return this.createTeam(rest || 'Cloud team');
+    if (sub === 'join') return this.joinTeam(rest);
+    if (sub === 'leave') { await this.leaveTeam(); ACIControl?.reply('Left map team'); return; }
+    if (sub === 'msg' || sub === 'say') { this.sendMessage(rest); return; }
+    ACIControl?.reply('team create <name> · team join <id> · team leave · team say <text>');
+  },
+
+  async contactCmd(parts) {
+    const mode = (parts[1] || 'message').toLowerCase();
+    const name = parts.slice(2).join(' ').toLowerCase();
+    const u = (window.others || []).find(x => (x.name || '').toLowerCase().includes(name));
+    if (!u) {
+      ACIControl?.reply('Tap a player on the map or: contact video <name>');
+      return;
+    }
+    return this.contactUser(u.id, mode);
+  },
+};
+
+window.MapComms = MapComms;
+
+// ═══════════════════════════════════════════════════════════════
+// ASTRANOV — Marketplace Comms (vendors · clients · drivers)
+// Same polygon + glowing lines + cloud chat as MapComms teams.
+// Clients pick from available delivery drivers on map + in cloud.
+// ═══════════════════════════════════════════════════════════════
+(function () {
+  'use strict';
+
+  const MC = {
+    active: false,
+    orderId: null,
+    vendor: null,
+    drivers: [],
+    wants: '',
+    preferredDriverId: null,
+    seekingDriver: false,
+    _poll: null,
+  };
+
+  function uid() {
+    return Auth?.user?.id || null;
+  }
+
+  function displayName(p) {
+    return p?.display_name || p?.name || (p?.id ? String(p.id).slice(0, 8) : 'User');
+  }
+
+  function emojiFor(role) {
+    if (role === 'driver') return '🚚';
+    if (role === 'vendor') return '🏬';
+    return '🛒';
+  }
+
+  function myRole() {
+    const u = uid();
+    if (!u) return 'client';
+    if (MC.drivers.some((d) => d.id === u)) return 'driver';
+    if (MC.vendor?.id === u || MC.vendor?.owner_id === u) return 'vendor';
+    return 'client';
+  }
+
+  function coords(p) {
+    const lat = p?.lat ?? p?.field_lat ?? null;
+    const lng = p?.lng ?? p?.field_lng ?? null;
+    return lat != null && lng != null ? { lat, lng } : null;
+  }
+
+  function toMapMember(p, role) {
+    const c = coords(p);
+    if (!p?.id || !c) return null;
+    return {
+      id: p.id,
+      name: displayName(p),
+      lat: c.lat,
+      lng: c.lng,
+      emoji: p.avatar_emoji || p.emoji || emojiFor(role),
+      role,
+    };
+  }
+
+  function membersFromContext() {
+    const out = [];
+    const seen = new Set();
+    const add = (p, role) => {
+      const m = toMapMember(p, role);
+      if (!m || seen.has(m.id)) return;
+      seen.add(m.id);
+      out.push(m);
+    };
+
+    const p = window._lastPos;
+    if (uid() && p) {
+      add({
+        id: uid(),
+        display_name: AstranovPresence?.displayName?.() || me?.name || 'You',
+        lat: p.lat,
+        lng: p.lng,
+      }, myRole());
+    }
+
+    if (MC.vendor) add(MC.vendor, 'vendor');
+    (MC.drivers || []).forEach((d) => add(d, 'driver'));
+    return out;
+  }
+
+  function cloudTitle() {
+    if (MC.orderId) {
+      const short = String(MC.orderId).slice(0, 8);
+      return `📦 Task ${short}${MC.seekingDriver ? ' · pick driver' : ''}`;
+    }
+    if (MC.vendor) return `🛒 ${displayName(MC.vendor)} · order chat`;
+    return '🛒 Marketplace';
+  }
+
+  function syncCloud() {
+    if (!window.MapComms || !Auth?.user) return;
+    const members = membersFromContext();
+    const sessionId = MC.orderId
+      ? ('maptask-' + MC.orderId)
+      : ('maptask-browse-' + (MC.vendor?.id || Date.now().toString(36)));
+    window.MapComms.openSession({
+      id: sessionId,
+      kind: 'task',
+      name: cloudTitle(),
+      members,
+      persist: false,
+      orderId: MC.orderId,
+      showDriverPicker: MC.seekingDriver && myRole() === 'client' && MC.drivers.length > 0,
+      drivers: MC.drivers,
+      selfRole: myRole(),
+    });
+    MC.active = true;
+  }
+
+  function hide() {
+    MC.active = false;
+    MC.orderId = null;
+    MC.vendor = null;
+    MC.drivers = [];
+    MC.wants = '';
+    MC.preferredDriverId = null;
+    MC.seekingDriver = false;
+    if (MC._poll) {
+      clearInterval(MC._poll);
+      MC._poll = null;
+    }
+    if (window.MapComms) window.MapComms.leaveTeam();
+  }
+
+  async function fetchOrderDrivers() {
+    const C = window.Commerce;
+    if (!C?.fetchNearbyDrivers) return [];
+    const u = C.userLatLng?.() || window._lastPos || {};
+    if (u.lat == null) return [];
+    return C.fetchNearbyDrivers(u.lat, u.lng);
+  }
+
+  async function refreshOrder(orderId) {
+    if (!Auth?.client || !orderId) return null;
+    const { data } = await Auth.client
+      .from('orders')
+      .select('id,status,driver_id,customer_id,vendor_id')
+      .eq('id', orderId)
+      .maybeSingle();
+    return data;
+  }
+
+  function startOrderPoll(orderId) {
+    if (MC._poll) clearInterval(MC._poll);
+    MC._poll = setInterval(async () => {
+      const o = await refreshOrder(orderId);
+      if (!o) return;
+      MC.seekingDriver = !o.driver_id && (o.status === 'seeking_driver' || o.status === 'pending');
+      if (o.driver_id && MC.preferredDriverId !== o.driver_id) {
+        MC.preferredDriverId = o.driver_id;
+        const d = MC.drivers.find((x) => x.id === o.driver_id);
+        window.MapComms?.postSystem?.(`${emojiFor('driver')} Driver ${displayName(d || { id: o.driver_id })} assigned`);
+      }
+      if (!MC.seekingDriver) window.MapComms?.hideDriverPicker?.();
+      syncCloud();
+    }, 8000);
+  }
+
+  /** Pre-order: client browsing vendor + nearby drivers */
+  function openForBrowse(opts) {
+    opts = opts || {};
+    MC.orderId = null;
+    MC.vendor = opts.vendor || null;
+    MC.drivers = opts.drivers || [];
+    MC.wants = opts.wants || '';
+    MC.preferredDriverId = opts.preferredDriverId || Commerce?._preferredDriverId || null;
+    MC.seekingDriver = myRole() === 'client' && MC.drivers.length > 0 && !MC.preferredDriverId;
+    syncCloud();
+    if (MC.wants) window.MapComms?.postSystem?.(`Order: ${MC.wants.slice(0, 120)}`);
+    window.MapComms?.postSystem?.(
+      MC.drivers.length
+        ? `${MC.drivers.length} driver(s) nearby — tap map marker or pick in cloud`
+        : 'No drivers on map yet — order will broadcast to field'
+    );
+  }
+
+  /** Post-order task thread: client, vendor, drivers */
+  async function openForOrder(opts) {
+    opts = opts || {};
+    MC.orderId = opts.order?.id || opts.orderId || null;
+    MC.vendor = opts.vendor || null;
+    MC.drivers = opts.drivers || [];
+    if (!MC.drivers.length) MC.drivers = await fetchOrderDrivers();
+    MC.wants = opts.order?.items?.map?.((i) => i.name || i).join(', ') || opts.wants || '';
+    MC.preferredDriverId = opts.order?.driver_id || opts.preferredDriverId || null;
+    MC.seekingDriver = opts.seeking_driver ?? (!MC.preferredDriverId);
+    syncCloud();
+    window.MapComms?.postSystem?.(`📦 Order placed${MC.wants ? ': ' + MC.wants.slice(0, 80) : ''}`);
+    if (MC.orderId) startOrderPoll(MC.orderId);
+  }
+
+  async function selectDriver(driverId, driverObj) {
+    if (!driverId) return;
+    if (driverObj && !MC.drivers.some((x) => x.id === driverId)) MC.drivers.push(driverObj);
+    const d = MC.drivers.find((x) => x.id === driverId)
+      || driverObj
+      || { id: driverId, display_name: 'Driver' };
+    MC.preferredDriverId = driverId;
+    MC.seekingDriver = false;
+    Commerce._preferredDriverId = driverId;
+    Commerce._preferredDriver = d;
+
+    syncCloud();
+    window.MapComms?.postSystem?.(`${emojiFor('driver')} Selected ${displayName(d)}`);
+    ACIControl?.reply('Driver ' + displayName(d) + (MC.orderId ? ' assigned to order' : ' — will use on checkout'));
+
+    if (MC.orderId) {
+      try {
+        const headers = Auth?.authHeaders ? await Auth.authHeaders() : {};
+        await fetch(SB_URL + '/functions/v1/order-intake', {
+          method: 'POST',
+          headers,
+          body: JSON.stringify({ action: 'assign_driver', order_id: MC.orderId, driver_id: driverId }),
+        });
+      } catch (e) {
+        console.warn('[MarketplaceComms] assign_driver', e);
+      }
+    } else if (Commerce?.renderCompare && Commerce._suggestion) {
+      Commerce.renderCompare(
+        [Commerce._suggestion],
+        MC.drivers,
+        Commerce._lastWants || [],
+        Commerce._balance
+      );
+    }
+  }
+
+  function listDriversText() {
+    if (!MC.drivers.length) return 'No delivery drivers on map.';
+    const u = Commerce?.userLatLng?.() || {};
+    return MC.drivers
+      .map((d, i) => {
+        const km = u.lat != null
+          ? Commerce.haversineKm(u.lat, u.lng, d.field_lat, d.field_lng).toFixed(1)
+          : '?';
+        return `${i + 1}. ${displayName(d)} · ${km} km`;
+      })
+      .join('\n');
+  }
+
+  function init() {
+    window.MarketplaceComms = {
+      openForBrowse,
+      openForOrder,
+      selectDriver,
+      hide,
+      membersFromContext,
+      get state() { return MC; },
+      listDriversText,
+    };
+    console.log('[MarketplaceComms] ready — vendor/client/driver polygon chats');
+  }
+
+  init();
+})();
+
+// === PROFILE SITE — every user & vendor fills their page; opens on tap ===
+const ProfileSite = {
+  targetId: null,
+  targetType: 'user',
+  _vendor: null,
+  _draft: null,
+
+  init() {
+    this._bind();
+  },
+
+  _bind() {
+    const panel = document.getElementById('profile-site-panel');
+    if (!panel || panel.dataset.bound) return;
+    panel.dataset.bound = '1';
+    document.getElementById('ps-close')?.addEventListener('click', () => this.close());
+    document.getElementById('ps-save')?.addEventListener('click', () => this.save());
+    document.getElementById('ps-site-req')?.addEventListener('click', () => this.requestSubdomain());
+    document.getElementById('ps-open-site')?.addEventListener('click', () => this.openLiveSite());
+    document.getElementById('ps-shop')?.addEventListener('click', () => {
+      if (this._vendor) Commerce?.openVendor?.(this._vendor);
+    });
+  },
+
+  esc(s) {
+    return String(s || '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  },
+
+  isSelf(id) {
+    return Auth?.user?.id && id === Auth.user.id;
+  },
+
+  async loadProfile(userId) {
+    if (!Auth?.client) return null;
+    const { data } = await Auth.client
+      .from('profiles')
+      .select('id,username,display_name,avatar_emoji,bio,phone,public_email,profile_page,site_slug,site_request_status,roles,is_vendor')
+      .eq('id', userId)
+      .maybeSingle();
+    return data;
+  },
+
+  async openUser(userId, opts) {
+    opts = opts || {};
+    if (!userId) return;
+    this.targetId = userId;
+    this.targetType = 'user';
+    this._vendor = opts.vendor || null;
+    const prof = await this.loadProfile(userId);
+    if (!prof) {
+      ACIControl?.reply('Profile not found');
+      return;
+    }
+    this._render(prof);
+    document.getElementById('profile-site-panel')?.classList.add('open');
+    MapDepict?.pulse?.(window._lastPos?.lat, window._lastPos?.lng, 0x49b7ff, prof.display_name || 'Profile', 8000);
+  },
+
+  async openVendor(vendor) {
+    if (!vendor) return;
+    this._vendor = vendor;
+    const ownerId = vendor.owner_id;
+    if (ownerId) {
+      await this.openUser(ownerId, { vendor });
+    } else {
+      this.targetType = 'vendor';
+      this._renderVendorOnly(vendor);
+      document.getElementById('profile-site-panel')?.classList.add('open');
+    }
+  },
+
+  _page(prof) {
+    const p = prof?.profile_page;
+    return (p && typeof p === 'object') ? p : {};
+  },
+
+  _render(prof) {
+    const panel = document.getElementById('profile-site-panel');
+    if (!panel) return;
+    const page = this._page(prof);
+    const self = this.isSelf(prof.id);
+    const emoji = prof.avatar_emoji || '👤';
+    const title = page.title || prof.display_name || prof.username || 'Profile';
+    const subtitle = page.subtitle || prof.bio || '';
+    const about = page.about || prof.bio || '';
+    const services = Array.isArray(page.services) ? page.services : [];
+    const contact = page.contact || {};
+
+    document.getElementById('ps-title').textContent = emoji + ' ' + title;
+    document.getElementById('ps-sub').textContent = subtitle;
+    const body = document.getElementById('ps-body');
+    if (!body) return;
+
+    if (self) {
+      this._draft = {
+        title: page.title || prof.display_name || '',
+        subtitle: page.subtitle || '',
+        about: about,
+        services: services.join('\n'),
+        phone: prof.phone || contact.phone || '',
+        email: prof.public_email || contact.email || Auth?.user?.email || '',
+        site_slug: prof.site_slug || '',
+      };
+      body.innerHTML = ''
+        + '<label class="ps-field">Title<input id="ps-in-title" value="' + this.esc(this._draft.title) + '" /></label>'
+        + '<label class="ps-field">Subtitle<input id="ps-in-sub" value="' + this.esc(this._draft.subtitle) + '" /></label>'
+        + '<label class="ps-field">About<textarea id="ps-in-about" rows="3">' + this.esc(this._draft.about) + '</textarea></label>'
+        + '<label class="ps-field">Services (one per line)<textarea id="ps-in-svc" rows="2">' + this.esc(this._draft.services) + '</textarea></label>'
+        + '<label class="ps-field">Phone<input id="ps-in-phone" value="' + this.esc(this._draft.phone) + '" /></label>'
+        + '<label class="ps-field">Public email<input id="ps-in-email" value="' + this.esc(this._draft.email) + '" /></label>'
+        + '<label class="ps-field">Subdomain slug<input id="ps-in-slug" placeholder="my-yachts" value="' + this.esc(this._draft.site_slug) + '" /></label>'
+        + '<div class="ps-hint">Subdomain needs admin approval · profile page is live now on tap</div>';
+      document.getElementById('ps-save').style.display = 'inline-block';
+      document.getElementById('ps-site-req').style.display = 'inline-block';
+    } else {
+      body.innerHTML = ''
+        + (about ? '<div class="ps-about">' + this.esc(about) + '</div>' : '')
+        + (services.length ? '<div class="ps-svc">' + services.map(s => '<span class="ps-tag">' + this.esc(s) + '</span>').join('') + '</div>' : '')
+        + (contact.phone || prof.phone ? '<div class="ps-line">📞 ' + this.esc(contact.phone || prof.phone) + '</div>' : '')
+        + (contact.email || prof.public_email ? '<div class="ps-line">✉ ' + this.esc(contact.email || prof.public_email) + '</div>' : '')
+        + (prof.site_slug ? '<div class="ps-line">◎ ' + this.esc(prof.site_slug) + '.astranov.eu · ' + this.esc(prof.site_request_status || 'none') + '</div>' : '');
+      document.getElementById('ps-save').style.display = 'none';
+      document.getElementById('ps-site-req').style.display = 'none';
+    }
+
+    const shopBtn = document.getElementById('ps-shop');
+    if (shopBtn) shopBtn.style.display = this._vendor ? 'inline-block' : 'none';
+
+    const siteBtn = document.getElementById('ps-open-site');
+    const live = prof.site_request_status === 'approved' || prof.site_request_status === 'live';
+    if (siteBtn) {
+      siteBtn.style.display = (prof.site_slug && live) ? 'inline-block' : 'none';
+      siteBtn.dataset.url = prof.site_slug ? ('https://' + prof.site_slug + '.astranov.eu') : '';
+    }
+
+    const statusEl = document.getElementById('ps-status');
+    if (statusEl) {
+      const st = prof.site_request_status || 'none';
+      statusEl.textContent = st === 'pending' ? '⏳ Subdomain pending admin approval'
+        : st === 'live' || st === 'approved' ? '✓ ' + (prof.site_slug || '') + '.astranov.eu live'
+        : '';
+    }
+  },
+
+  _renderVendorOnly(vendor) {
+    document.getElementById('ps-title').textContent = (vendor.emoji || '🏬') + ' ' + (vendor.name || 'Shop');
+    document.getElementById('ps-sub').textContent = vendor.category || 'vendor';
+    const body = document.getElementById('ps-body');
+    if (body) {
+      body.innerHTML = '<div class="ps-about">Tap Shop to order · vendor on Astranov map</div>';
+    }
+    document.getElementById('ps-save').style.display = 'none';
+    document.getElementById('ps-site-req').style.display = 'none';
+    document.getElementById('ps-shop').style.display = 'inline-block';
+    this._vendor = vendor;
+  },
+
+  _collectDraft() {
+    return {
+      title: document.getElementById('ps-in-title')?.value?.trim() || '',
+      subtitle: document.getElementById('ps-in-sub')?.value?.trim() || '',
+      about: document.getElementById('ps-in-about')?.value?.trim() || '',
+      services: (document.getElementById('ps-in-svc')?.value || '').split('\n').map(s => s.trim()).filter(Boolean),
+      phone: document.getElementById('ps-in-phone')?.value?.trim() || '',
+      email: document.getElementById('ps-in-email')?.value?.trim() || '',
+      site_slug: document.getElementById('ps-in-slug')?.value?.trim() || '',
+    };
+  },
+
+  async save() {
+    if (!Auth?.user || !this.isSelf(this.targetId)) return;
+    const d = this._collectDraft();
+    const profile_page = {
+      title: d.title,
+      subtitle: d.subtitle,
+      about: d.about,
+      services: d.services,
+      contact: { phone: d.phone, email: d.email },
+      updated_at: new Date().toISOString(),
+    };
+    try {
+      const headers = await Auth.authHeaders();
+      await fetch(SB_URL + '/rest/v1/profiles?id=eq.' + Auth.user.id, {
+        method: 'PATCH', headers,
+        body: JSON.stringify({
+          display_name: d.title || undefined,
+          bio: d.about || undefined,
+          phone: d.phone || null,
+          public_email: d.email || null,
+          profile_page,
+          updated_at: new Date().toISOString(),
+        }),
+      });
+      ACIControl?.reply('Profile saved — others see it when they tap you on the map');
+      AciCli?.print('profile saved', 'ok');
+      await this.openUser(Auth.user.id, { vendor: this._vendor });
+    } catch (e) {
+      ACIControl?.reply('Save failed: ' + (e.message || e));
+    }
+  },
+
+  async requestSubdomain() {
+    if (!Auth?.user) return Auth?.signInGoogle?.();
+    const d = this._collectDraft();
+    const slug = AstranovSitesProvision?.slugify?.(d.site_slug) || '';
+    if (!slug || slug.length < 3) {
+      ACIControl?.reply('Enter subdomain slug (3+ letters) in profile');
+      return;
+    }
+    try {
+      const r = await AstranovSitesProvision.provision({
+        slug,
+        business_name: d.title || slug,
+        business_type: /yacht|charter/i.test(d.about + d.title) ? 'yacht_charter' : 'generic',
+        mode: /yacht|charter/i.test(d.about + d.title) ? 'range' : 'slot',
+      });
+      if (r.pending_approval) {
+        ACIControl?.reply('Subdomain ' + r.domain + ' requested — pending admin approval. Profile page is live on map.');
+      }
+      await this.save();
+    } catch (e) {
+      ACIControl?.reply(String(e.message || e));
+    }
+  },
+
+  openLiveSite() {
+    const url = document.getElementById('ps-open-site')?.dataset?.url;
+    if (!url) return;
+    AstranovSiteShell?.open?.(url, { domain: url.replace(/^https:\/\//, ''), title: document.getElementById('ps-title')?.textContent });
+  },
+
+  close() {
+    document.getElementById('profile-site-panel')?.classList.remove('open');
+    this.targetId = null;
+    this._vendor = null;
+  },
+
+  async openSelf() {
+    if (!Auth?.user) return Auth?.openLoginModal?.('Sign in to edit your profile page');
+    await this.openUser(Auth.user.id);
+  },
+
+  async cmd(parts) {
+    const sub = (parts[1] || 'me').toLowerCase();
+    if (sub === 'me' || sub === 'edit') return this.openSelf();
+    if (sub === 'save') return this.save();
+    const name = parts.slice(1).join(' ').toLowerCase();
+    const hit = (window.others || []).find(u => (u.name || '').toLowerCase().includes(name));
+    if (hit?.id) return this.openUser(hit.id);
+    ACIControl?.reply('profile me · profile save · tap a player on map');
+  },
+};
+
+window.ProfileSite = ProfileSite;
+
+// === YACHT MATCHER — demand/supply: yacht + captain + crew ↔ customer charter ===
+// Min crew per hire: 1 captain (300€/d) · 1 vice captain (200€/d) · 1 cadet (100€/d)
+const YachtMatcher = {
+  CREW_RATES: { captain: 300, vice_captain: 200, cadet: 100 },
+  REQUIRED: { captain: 1, vice_captain: 1, cadet: 1 },
+
+  daysBetween(start, end) {
+    const a = new Date(start);
+    const b = new Date(end);
+    return Math.max(1, Math.round((b - a) / 86400000) + 1);
+  },
+
+  crewAvailable(crew, start, end, yachtId) {
+    if (!crew?.active) return false;
+    if (crew.available_from && start < crew.available_from) return false;
+    if (crew.available_to && end > crew.available_to) return false;
+    if (yachtId && crew.yacht_ids?.length && !crew.yacht_ids.includes(yachtId)) return false;
+    return true;
+  },
+
+  pickCrew(pool, role, need, start, end, yachtId) {
+    const rows = (pool || []).filter(c => c.role === role && this.crewAvailable(c, start, end, yachtId));
+    return rows.slice(0, need);
+  },
+
+  matchLocal(yachts, crewPool, demand) {
+    const start = demand.start_date;
+    const end = demand.end_date;
+    const passengers = demand.passengers || 2;
+    const days = this.daysBetween(start, end);
+    const matches = [];
+
+    (yachts || []).forEach((y) => {
+      if (!y.active) return;
+      if (passengers > y.max_passengers) return;
+      if (days > y.max_hire_days) return;
+
+      const req = { ...this.REQUIRED, ...(y.required_crew || {}) };
+      const roster = [];
+      let crewOk = true;
+      Object.keys(req).forEach((role) => {
+        const picked = this.pickCrew(crewPool, role, req[role] || 0, start, end, y.id);
+        if (picked.length < (req[role] || 0)) crewOk = false;
+        roster.push(...picked);
+      });
+      if (!crewOk) return;
+
+      const yachtTotal = days * Number(y.price_per_day_eur || 0);
+      const crewTotal = roster.reduce((s, c) => s + days * Number(c.rate_per_day_eur || this.CREW_RATES[c.role] || 0), 0);
+      const score = yachtTotal + crewTotal;
+
+      matches.push({
+        yacht: y,
+        days,
+        passengers,
+        crew: roster,
+        breakdown: {
+          yacht_per_day: y.price_per_day_eur,
+          yacht_total: yachtTotal,
+          crew_total: crewTotal,
+          crew_rates: this.CREW_RATES,
+        },
+        total_eur: score,
+        score,
+      });
+    });
+
+    matches.sort((a, b) => a.score - b.score || b.yacht.max_passengers - a.yacht.max_passengers);
+    return matches;
+  },
+
+  async fetchFleet(siteId) {
+    if (!Auth?.client || !siteId) return { yachts: [], crew: [] };
+    const [yRes, cRes] = await Promise.all([
+      Auth.client.from('booker_yachts').select('*').eq('site_id', siteId).eq('active', true),
+      Auth.client.from('booker_crew').select('*').eq('site_id', siteId).eq('active', true),
+    ]);
+    return { yachts: yRes.data || [], crew: cRes.data || [] };
+  },
+
+  async matchDemand(opts) {
+    opts = opts || {};
+    const siteId = opts.site_id || opts.siteId;
+    if (!siteId) throw new Error('site_id required');
+
+    const demand = {
+      start_date: opts.start_date || opts.start,
+      end_date: opts.end_date || opts.end,
+      passengers: Number(opts.passengers || opts.party_size || 2),
+    };
+    if (!demand.start_date || !demand.end_date) throw new Error('start_date and end_date required');
+
+    const fleet = await this.fetchFleet(siteId);
+    let yachts = fleet.yachts;
+    if (opts.yacht_id) yachts = yachts.filter(y => y.id === opts.yacht_id);
+
+    const matches = this.matchLocal(yachts, fleet.crew, demand);
+
+    if (Auth?.user && matches[0]) {
+      try {
+        const headers = await Auth.authHeaders();
+        await fetch(SB_URL + '/rest/v1/booker_charter_requests', {
+          method: 'POST', headers,
+          body: JSON.stringify({
+            site_id: siteId,
+            yacht_id: matches[0].yacht.id,
+            customer_id: Auth.user.id,
+            start_date: demand.start_date,
+            end_date: demand.end_date,
+            passengers: demand.passengers,
+            status: 'matched',
+            matched_payload: { matches: matches.slice(0, 5), picked: matches[0] },
+            total_price_eur: matches[0].total_eur,
+          }),
+        });
+      } catch (_) {}
+    }
+
+    return { demand, matches, best: matches[0] || null };
+  },
+
+  async upsertYacht(siteId, spec) {
+    if (!Auth?.client || !siteId) throw new Error('login + site required');
+    const row = {
+      site_id: siteId,
+      owner_id: Auth.user?.id,
+      name: spec.name || 'Yacht',
+      description: spec.description || '',
+      max_passengers: Number(spec.max_passengers || spec.passengers || 8),
+      max_hire_days: Number(spec.max_hire_days || spec.max_days || 14),
+      price_per_day_eur: Number(spec.price_per_day || spec.price || 0),
+      required_crew: spec.required_crew || this.REQUIRED,
+      metadata: spec.metadata || {},
+      active: true,
+    };
+    const { data, error } = await Auth.client.from('booker_yachts').insert(row).select().single();
+    if (error) throw error;
+    AciCoders?.observeActivity?.('yacht_spec', 'yacht added · ' + row.name, { siteId, yacht: data });
+    return data;
+  },
+
+  formatMatch(m) {
+    if (!m) return 'No matching yacht + crew for those dates.';
+    const y = m.yacht;
+    const crewNames = m.crew.map(c => (c.display_name || c.role) + ' ' + (c.rate_per_day_eur || this.CREW_RATES[c.role]) + '€/d').join(' · ');
+    return y.name + ' · ' + m.days + 'd · ' + m.passengers + ' pax · '
+      + m.total_eur.toFixed(0) + ' EUR (yacht ' + m.breakdown.yacht_total + ' + crew ' + m.breakdown.crew_total + ') · '
+      + crewNames;
+  },
+
+  async cli(parts) {
+    const sub = (parts[1] || 'help').toLowerCase();
+    if (sub === 'help') {
+      ACIControl?.reply('yacht match <site> <start> <end> [passengers] · yacht add <site> name · max_pax · max_days · price/day');
+      return;
+    }
+    if (sub === 'match') {
+      const siteId = parts[2];
+      const start = parts[3];
+      const end = parts[4];
+      const passengers = Number(parts[5] || 2);
+      const r = await this.matchDemand({ site_id: siteId, start_date: start, end_date: end, passengers });
+      const msg = r.best ? this.formatMatch(r.best) : 'No match — adjust dates, passengers, or add yachts/crew';
+      ACIControl?.reply(msg);
+      AciCli?.print(msg, r.best ? 'ok' : 'dim');
+      if (r.best && window.MapComms) {
+        MapComms.postSystem?.('⛵ ' + msg.slice(0, 200));
+      }
+      FieldBrain?.pulse?.('yacht', msg.slice(0, 80), { role: 'client' });
+      return r;
+    }
+    if (sub === 'add' && parts[2]) {
+      const siteId = parts[2];
+      const name = parts[3] || 'Yacht';
+      const maxPax = Number(parts[4] || 8);
+      const maxDays = Number(parts[5] || 14);
+      const price = Number(parts[6] || 500);
+      return this.upsertYacht(siteId, { name, max_passengers: maxPax, max_hire_days: maxDays, price_per_day: price });
+    }
+    ACIControl?.reply('yacht match <site> YYYY-MM-DD YYYY-MM-DD [pax]');
+  },
+
+  /** Coders evolve hook — parse natural language charter requests */
+  async evolveFromText(text) {
+    const low = String(text || '').toLowerCase();
+    if (!/yacht|charter|crew|captain|sail|ενοικ/.test(low)) return null;
+    const dates = text.match(/(\d{4}-\d{2}-\d{2})/g) || [];
+    const paxM = text.match(/(\d+)\s*(passenger|pax|άτομα|people)/i);
+    const passengers = paxM ? Number(paxM[1]) : 4;
+    const siteM = text.match(/site\s+([a-z0-9-]+)/i);
+    const siteId = siteM?.[1] || null;
+    if (dates.length >= 2 && siteId) {
+      return this.matchDemand({ site_id: siteId, start_date: dates[0], end_date: dates[1], passengers });
+    }
+    HellenicSource?.groundCoders?.(text);
+    AciCoders?.observeActivity?.('yacht_evolve', text.slice(0, 120), { needs: 'site_id and dates' });
+    return { hint: 'Need site slug and dates — e.g. yacht match my-charter 2026-07-01 2026-07-07 6' };
+  },
+};
+
+window.YachtMatcher = YachtMatcher;
+
+// === HELLENIC SOURCE — ancient Greek mythology & philosophy as evolutionary canon ===
+// Treated as primary cultural-historical truth layer for Coders reasoning (not literal supernatural dogma).
+const HellenicSource = {
+  CANON: [
+    { id: 'xenia', domain: 'ethics', principle: 'Xenia (ξενία) — sacred hospitality between host and guest; commerce and travel rest on mutual honor.', sources: ['Homer', 'Odyssey'] },
+    { id: 'arete', domain: 'ethics', principle: 'Arete (ἀρετή) — excellence through practice; skill of captain, vendor, and crew is cultivated virtue.', sources: ['Homer', 'Aristotle'] },
+    { id: 'moira', domain: 'history', principle: 'Moira — fate as the weave of time; systems evolve within patterns, not chaos — match demand to what the weave allows.', sources: ['Homer', 'tragedy'] },
+    { id: 'logos', domain: 'philosophy', principle: 'Logos (λόγος) — reasoned account; booking engines must give a clear logos: who, when, crew, price.', sources: ['Heraclitus', 'Stoics'] },
+    { id: 'eudaimonia', domain: 'philosophy', principle: 'Eudaimonia — flourishing as telos; a charter succeeds when all roles (owner, crew, guest) flourish together.', sources: ['Aristotle', 'Nicomachean Ethics'] },
+    { id: 'golden_mean', domain: 'philosophy', principle: 'To meson — virtue between excess and defect; price, duration, and crew size seek balance.', sources: ['Aristotle'] },
+    { id: 'dike', domain: 'justice', principle: 'Dike (δίκη) — justice orders the cosmos; Astranov Coders order: Justice → Truth → Freedom.', sources: ['Hesiod', 'pre-Socratics'] },
+    { id: 'aletheia', domain: 'truth', principle: 'Aletheia (ἀλήθεια) — unconcealed truth; profiles and listings must not simulate — real availability only.', sources: ['Parmenides', 'Heidegger reading'] },
+    { id: 'eleutheria', domain: 'freedom', principle: 'Eleutheria (ἐλευθερία) — freedom after justice and truth; users choose drivers, crew, and subdomain on their terms.', sources: ['demotic Athens', 'Astranov law'] },
+    { id: 'nous', domain: 'cosmos', principle: 'Nous (νοῦς) — mind that orders matter; collective intelligence arranges neurons like a cosmos, not a single tyrant.', sources: ['Anaxagoras', 'Plato'] },
+    { id: 'polis', domain: 'civics', principle: 'Polis — the city as shared field; the globe is polis, markers are citizens, map comms is agora.', sources: ['Aristotle', 'Politics'] },
+    { id: 'metis', domain: 'strategy', principle: 'Metis (μῆτις) — cunning intelligence; Odysseus navigates — routing and matching use metis, not brute force.', sources: ['Homer', 'Odyssey'] },
+    { id: 'kairos', domain: 'time', principle: 'Kairos (καιρός) — the right moment; charter dates and crew availability are kairos, not just chronos.', sources: ['Pindar', 'rhetoric'] },
+    { id: 'thales', domain: 'evolution', principle: 'Thales — search for arche (ἀρχή); water as first principle; evolution seeks one underlying pattern beneath many apps.', sources: ['Aristotle', 'Metaphysics'] },
+    { id: 'heraclitus_flow', domain: 'evolution', principle: 'Panta rhei — all flows; booking rules and crew pools self-develop as users and Coders request change.', sources: ['Heraclitus'] },
+  ],
+
+  query(topic) {
+    const q = String(topic || '').toLowerCase();
+    return this.CANON.filter((c) =>
+      c.id.includes(q) || c.domain.includes(q) || c.principle.toLowerCase().includes(q)
+      || c.sources.some(s => s.toLowerCase().includes(q))
+    );
+  },
+
+  summary() {
+    return this.CANON.map(c => c.id + ': ' + c.principle).join('\n');
+  },
+
+  groundCoders(text) {
+    const hits = this.query(text);
+    const pick = hits.length ? hits : this.CANON.slice(0, 3);
+    pick.forEach((c) => {
+      AciCoders?.observeActivity?.('hellenic', c.id + ' · ' + c.principle.slice(0, 80), { domain: c.domain });
+      ACI?.teach?.('[hellenic:' + c.id + '] ' + c.principle + ' (' + c.sources.join(', ') + ')');
+    });
+    return pick;
+  },
+
+  async seedToBrain() {
+    this.CANON.forEach((c) => {
+      ACI?.teach?.('[hellenic_canon:' + c.id + '/' + c.domain + '] ' + c.principle);
+    });
+    console.log('[HellenicSource] canon seeded · ' + this.CANON.length + ' principles');
+  },
+
+  cli(parts) {
+    const sub = (parts[1] || 'list').toLowerCase();
+    if (sub === 'seed') return this.seedToBrain();
+    if (sub === 'query' && parts[2]) {
+      const rows = this.query(parts.slice(2).join(' '));
+      const msg = rows.map(r => r.id + ': ' + r.principle).join(' · ') || 'no match';
+      ACIControl?.reply(msg.slice(0, 300));
+      return rows;
+    }
+    ACIControl?.reply('hellenic list · helenic query <topic> · helenic seed');
+    AciCli?.print(this.CANON.map(c => c.id).join(', '), 'ok');
+  },
+};
+
+window.HellenicSource = HellenicSource;
 
 // Flow
 let me = null;
@@ -11653,6 +13640,13 @@ async function submitVoiceToCli(transcript) {
     startVoiceOptions();
     return;
   }
+  if (AstranovPresence?.wantsKryftoStart?.(line)) {
+    if (gen === _voiceGen) _voiceBusy = false;
+    AciCli?.print('🎧 ' + line, 'cmd');
+    AstranovPresence?.startKryfto?.();
+    if (window._handsFreeVoice && !Voice?.speaking) scheduleVoiceResume();
+    return;
+  }
   if (/^(dark|bright|light)\s*(theme|mode)?\b/.test(low) || /^theme\s+(dark|bright|light)\b/.test(low)) {
     if (gen === _voiceGen) _voiceBusy = false;
     const mode = /bright|light/.test(low) ? 'bright' : 'dark';
@@ -11931,6 +13925,7 @@ function placeMe(lat, lng, opts) {
     if (opts.cityDrop && !window._globeFly) CityMap?.onCamera?.(z, 'earth');
   }
   if (!quiet) FieldBrain?.pulse('location', 'locate me', { role: 'client' });
+  AstranovPresence?.onMove?.(lat, lng);
 }
 
 function locateMe() {
@@ -11958,17 +13953,11 @@ function locateMe() {
 window.locateMe = locateMe;
 
 function showOtherUsers() {
-  others = [];
-  window.others = others;
-  GlobeEntity?.syncFriends?.([]);
-  window._friendMarkers = [];
+  AstranovPresence?.refresh?.();
 }
 
 function toggleKryfto() {
-  if (!window._meMarker) return;
-  hidden = !hidden;
-  window._meMarker.visible = !hidden;
-  console.log(hidden ? 'You are now hidden for kryfto!' : 'You are visible again');
+  return AstranovPresence?.toggleHide?.();
 }
 
 function groupOrder() {
@@ -12195,6 +14184,7 @@ function animate() {
 
   if (window.MapDepict) MapDepict.tick();
   GlobeEntity?.tick?.();
+  MapComms?.tick?.();
   SuperSpace?.tick?.();
   CosmicZoom.update(camera.position.z);
   EarthRealism?.tick?.();
@@ -12228,6 +14218,10 @@ CityMap.init();
 EarthRealism.init();
 AstranovSession.init();
 AstranovWishlist.init();
+AstranovPresence.init();
+MapComms.init();
+ProfileSite.init();
+setTimeout(() => HellenicSource?.seedToBrain?.(), 2400);
 SuperSpace.init();
 CityLife.init();
 SuperAdd.init();

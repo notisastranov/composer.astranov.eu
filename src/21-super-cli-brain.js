@@ -56,7 +56,9 @@ Object.assign(SuperCli, {
       'teach', 'stats', 'owner', 'seed', 'distill', 'council', 'mode', 'batch', 'vendors',
       'shops', 'order', 'vendor', 'ping', 'locate', 'gps', 'me', 'vhf', 'call', 'phone',
       'drive', 'news', 'roles', 'claim', 'field_stats', 'hold', 'resume', 'stop',
-      'sync', 'requests', 'wishlist',
+      'sync', 'requests', 'wishlist', 'players', 'friends', 'kryfto', 'hide', 'seek', 'collab',
+      'hideandseek', 'housekeeping',
+      'team', 'contact', 'msg',
       'youtube', 'yt', 'watch', 'play', 'space', 'scenario', 'add', 'post', 'superadd',
       'theme', 'dark', 'bright', 'light',
     ]);
@@ -128,6 +130,10 @@ Object.assign(SuperCli, {
     this.out('youtube <search> · watch <url> · play 2 (pick result)', 'ok');
     this.out('space locate <topic> · space status — brain places media on globe/cosmos', 'ok');
     this.out('scenario wake|city|groceries|youtube|reviews|list — real user flows', 'ok');
+    this.out('players · friends · kryfto · hide · seek — map presence (sign in)', 'ok');
+    this.out('team create <name> · team join <id> · contact video|voice|message <name>', 'ok');
+    this.out('drivers · driver <name> — pick delivery driver on map/cloud', 'ok');
+    this.out('profile me · profile save · yacht match <site> dates · site approve <slug>', 'ok');
     this.out('theme dark|bright · or just: dark · bright — globe + city map + UI', 'ok');
     this.out('add · post — Super Add camera · global/team/local channel', 'ok');
     this.out('Tri-UI: SuperCli + SuperVoice + SuperSpace · mic+send at bottom bar', 'dim');
@@ -392,6 +398,10 @@ Object.assign(SuperCli, {
     const rest = parts.slice(1).join(' ');
 
     try {
+      if (AstranovPresence?.wantsKryftoStart?.(raw)) {
+        AstranovPresence?.startKryfto?.();
+        return { handled: true };
+      }
       if (AciCoders?.isLocalGlobeCmd?.(raw)) {
         const r = AciCoders.runLocalGlobeCmd(raw);
         GlobeDeck?.finishCliIfOneShot('locate');
@@ -467,6 +477,74 @@ Object.assign(SuperCli, {
             this.out((i + 1) + '. ' + it.text.slice(0, 140), 'ok');
           });
         }
+        return { handled: true };
+      }
+      if (cmd === 'players' || cmd === 'friends') {
+        AstranovPresence?.listPlayers?.();
+        return { handled: true };
+      }
+      if (cmd === 'hide' || cmd === 'κρύψου') {
+        AstranovPresence?.toggleHide?.();
+        return { handled: true };
+      }
+      if (cmd === 'seek' || cmd === 'show') {
+        window.hidden = false;
+        if (typeof hidden !== 'undefined') hidden = false;
+        if (window._meMarker) window._meMarker.visible = true;
+        AstranovPresence?.broadcast?.();
+        AstranovPresence?.listPlayers?.();
+        return { handled: true };
+      }
+      if (cmd === 'collab') {
+        AstranovPresence.game = 'collab';
+        window.hidden = false;
+        AstranovPresence?.broadcast?.();
+        ACIControl?.reply('Collab mode — visible on map for all signed-in users');
+        return { handled: true };
+      }
+      if (cmd === 'team') {
+        await MapComms?.cmd?.(parts);
+        return { handled: true };
+      }
+      if (cmd === 'drivers') {
+        const txt = MarketplaceComms?.listDriversText?.() || 'No drivers — order first';
+        ACIControl?.reply(txt);
+        AciCli?.print(txt, 'ok');
+        return { handled: true };
+      }
+      if (cmd === 'driver' && parts[1]) {
+        const q = parts.slice(1).join(' ').toLowerCase();
+        const pool = MarketplaceComms?.state?.drivers || [];
+        const hit = pool.find(d => (d.display_name || '').toLowerCase().includes(q));
+        if (hit) {
+          await MarketplaceComms?.selectDriver?.(hit.id);
+        } else {
+          ACIControl?.reply('No driver matching «' + parts.slice(1).join(' ') + '» — try drivers');
+        }
+        return { handled: true };
+      }
+      if (cmd === 'profile') {
+        await ProfileSite?.cmd?.(parts);
+        return { handled: true };
+      }
+      if (cmd === 'yacht' || cmd === 'charter') {
+        await YachtMatcher?.cli?.(parts);
+        return { handled: true };
+      }
+      if (cmd === 'hellenic' || cmd === 'hellas') {
+        HellenicSource?.cli?.(parts);
+        return { handled: true };
+      }
+      if (cmd === 'site' || cmd === 'sites' || cmd === 'book') {
+        await AstranovSitesProvision?.cli?.(parts);
+        return { handled: true };
+      }
+      if (cmd === 'contact') {
+        await MapComms?.contactCmd?.(parts);
+        return { handled: true };
+      }
+      if (cmd === 'msg' && parts[1]) {
+        MapComms?.sendMessage?.(parts.slice(1).join(' '));
         return { handled: true };
       }
       if (cmd === 'city' || cmd === 'cityview') {

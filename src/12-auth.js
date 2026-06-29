@@ -288,6 +288,7 @@ const Auth = {
 
   async signOut() {
     if (!this.client) return;
+    await AstranovPresence?.leave?.();
     await this.client.auth.signOut();
     this.user = null;
     this.session = null;
@@ -337,6 +338,7 @@ const Auth = {
         me.isGuest = false;
       }
       AstranovSession?.onAuth?.();
+      AstranovPresence?.join?.();
       ACI?.feed('login', name);
       if (window.AciCli) AciCli.onAuthChange();
     } else {

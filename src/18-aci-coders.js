@@ -560,6 +560,23 @@ const AciCoders = {
       GlobeDeck?.setThinking(false);
       return localGlobe;
     }
+    if (AstranovPresence?.wantsKryftoStart?.(m)) {
+      GlobeDeck?.setThinking(false);
+      AstranovPresence?.startKryfto?.();
+      return { ok: true, game: 'kryfto' };
+    }
+    if (/yacht|charter|crew|captain|ενοικ/.test(m.toLowerCase())) {
+      const ev = await YachtMatcher?.evolveFromText?.(m);
+      if (ev?.best) {
+        GlobeDeck?.setThinking(false);
+        const msg = YachtMatcher.formatMatch(ev.best);
+        ACIControl?.reply(msg);
+        return { ok: true, yacht: ev };
+      }
+    }
+    if (/hellenic|ξενία|arete|logos|μῆτις|καιρός/i.test(m)) {
+      HellenicSource?.groundCoders?.(m);
+    }
 
     await this.enterSession({
       focus: false,

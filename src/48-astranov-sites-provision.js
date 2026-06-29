@@ -67,6 +67,11 @@ const AstranovSitesProvision = {
     const j = await r.json().catch(() => ({}));
     if (!r.ok) throw new Error(j.error || j.message || 'Site provision failed');
 
+    if (j.pending_approval) {
+      ACIControl?.reply('Subdomain ' + (j.domain || j.slug + '.astranov.eu') + ' requested — pending admin approval. Profile page is live on map.');
+      AciCli?.print('site pending approval · ' + j.slug, 'dim');
+      return j;
+    }
     this._onLive(j, opts);
     return j;
   },
@@ -110,6 +115,17 @@ const AstranovSitesProvision = {
       const url = 'https://' + slug + '.' + this.BASE_DOMAIN;
       if (window.AstranovSiteShell?.open) AstranovSiteShell.open(url, { domain: slug + '.' + this.BASE_DOMAIN, title: slug });
       return { url };
+    }
+    if (sub === 'approve' && parts[2]) {
+      if (!Auth?.isOwner) return { error: 'admin_required' };
+      const headers = await Auth.authHeaders();
+      const r = await fetch(SB_URL + '/rest/v1/rpc/booker_approve_site', {
+        method: 'POST', headers,
+        body: JSON.stringify({ p_site_id: parts[2], p_approve: parts[3] !== 'reject' }),
+      });
+      const j = r.ok ? await r.json() : {};
+      ACIControl?.reply(r.ok ? 'Site ' + parts[2] + ' approved' : (j.message || 'approve failed'));
+      return j;
     }
     if (sub === 'create' || sub === 'open' || sub === 'provision') {
       const slug = parts[2] || '';

@@ -45,6 +45,7 @@ function animate() {
 
   if (window.MapDepict) MapDepict.tick();
   GlobeEntity?.tick?.();
+  MapComms?.tick?.();
   SuperSpace?.tick?.();
   CosmicZoom.update(camera.position.z);
   EarthRealism?.tick?.();
@@ -78,6 +79,10 @@ CityMap.init();
 EarthRealism.init();
 AstranovSession.init();
 AstranovWishlist.init();
+AstranovPresence.init();
+MapComms.init();
+ProfileSite.init();
+setTimeout(() => HellenicSource?.seedToBrain?.(), 2400);
 SuperSpace.init();
 CityLife.init();
 SuperAdd.init();

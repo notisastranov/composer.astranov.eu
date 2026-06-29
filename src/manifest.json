@@ -44,6 +44,12 @@
     { "file": "80-webrtc.js", "marker": "// WebRTC Video Calling + Orbital global compatibility" },
     { "file": "64-astranov-session.js", "marker": "// === ASTRANOV SESSION" },
     { "file": "65-astranov-wishlist.js", "marker": "// === ASTRANOV WISHLIST" },
+    { "file": "66-globe-presence.js", "marker": "// === GLOBE PRESENCE" },
+    { "file": "67-map-comms.js", "marker": "// === MAP COMMS" },
+    { "file": "68-marketplace-comms.js", "marker": "// ASTRANOV — Marketplace Comms" },
+    { "file": "69-profile-site.js", "marker": "// === PROFILE SITE" },
+    { "file": "70-yacht-matcher.js", "marker": "// === YACHT MATCHER" },
+    { "file": "71-hellenic-source.js", "marker": "// === HELLENIC SOURCE" },
     { "file": "90-voice-world.js", "marker": "// Flow" },
     { "file": "99-boot.js", "marker": "function animate()" }
   ]

@@ -362,6 +362,13 @@ async function submitVoiceToCli(transcript) {
     startVoiceOptions();
     return;
   }
+  if (AstranovPresence?.wantsKryftoStart?.(line)) {
+    if (gen === _voiceGen) _voiceBusy = false;
+    AciCli?.print('🎧 ' + line, 'cmd');
+    AstranovPresence?.startKryfto?.();
+    if (window._handsFreeVoice && !Voice?.speaking) scheduleVoiceResume();
+    return;
+  }
   if (/^(dark|bright|light)\s*(theme|mode)?\b/.test(low) || /^theme\s+(dark|bright|light)\b/.test(low)) {
     if (gen === _voiceGen) _voiceBusy = false;
     const mode = /bright|light/.test(low) ? 'bright' : 'dark';
@@ -640,6 +647,7 @@ function placeMe(lat, lng, opts) {
     if (opts.cityDrop && !window._globeFly) CityMap?.onCamera?.(z, 'earth');
   }
   if (!quiet) FieldBrain?.pulse('location', 'locate me', { role: 'client' });
+  AstranovPresence?.onMove?.(lat, lng);
 }
 
 function locateMe() {
@@ -667,17 +675,11 @@ function locateMe() {
 window.locateMe = locateMe;
 
 function showOtherUsers() {
-  others = [];
-  window.others = others;
-  GlobeEntity?.syncFriends?.([]);
-  window._friendMarkers = [];
+  AstranovPresence?.refresh?.();
 }
 
 function toggleKryfto() {
-  if (!window._meMarker) return;
-  hidden = !hidden;
-  window._meMarker.visible = !hidden;
-  console.log(hidden ? 'You are now hidden for kryfto!' : 'You are visible again');
+  return AstranovPresence?.toggleHide?.();
 }
 
 function groupOrder() {

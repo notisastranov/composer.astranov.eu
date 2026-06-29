@@ -103,7 +103,8 @@ const CityLife = {
   },
 
   _tickFriends() {
-    if (Auth?.user || !(window.others || []).length) return;
+    if (Auth?.user || AstranovPresence?.rtChannel) return;
+    if (!(window.others || []).length) return;
     const friends = window.others || [];
     friends.forEach((u) => {
       u.lat += (Math.random() - 0.5) * 0.0012;

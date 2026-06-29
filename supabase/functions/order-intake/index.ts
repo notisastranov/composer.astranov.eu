@@ -1,4 +1,4 @@
-// order-intake: validate, persist order, assign real logged-in driver, broadcast to vendor
+// order-intake: validate, persist order, assign driver (client pick or preferred), broadcast to vendor
 
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { createClient } from 'npm:@supabase/supabase-js@2'
@@ -21,7 +21,25 @@ function haversineM(lat1: number, lng1: number, lat2: number, lng2: number) {
 
 type DriverPick = { id: string; name: string; emoji: string; self?: boolean }
 
-async function pickDriver(
+async function loadDriver(
+  sb: ReturnType<typeof createClient>,
+  driverId: string,
+  customerId: string | null,
+): Promise<DriverPick | null> {
+  const { data: d } = await sb.from('profiles')
+    .select('id, display_name, avatar_emoji, roles, field_lat, field_lng, field_seen_at')
+    .eq('id', driverId)
+    .maybeSingle()
+  if (!d) return null
+  const roles = Array.isArray(d.roles) ? d.roles : []
+  if (!roles.includes('driver')) return null
+  if (d.id === customerId) return { id: d.id, name: d.display_name || 'You', emoji: d.avatar_emoji || '🚚', self: true }
+  const since = Date.now() - 30 * 60 * 1000
+  if (d.field_seen_at && new Date(d.field_seen_at).getTime() < since) return null
+  return { id: d.id, name: d.display_name || 'Driver', emoji: d.avatar_emoji || '🚚' }
+}
+
+async function pickNearestDriver(
   sb: ReturnType<typeof createClient>,
   deliveryLat: number | null,
   deliveryLng: number | null,
@@ -49,10 +67,6 @@ async function pickDriver(
     const d = pool[0]
     return { id: d.id, name: d.display_name || 'Driver', emoji: d.avatar_emoji || '🚚' }
   }
-  if (customerId) {
-    const { data: self } = await sb.from('profiles').select('display_name, avatar_emoji').eq('id', customerId).single()
-    return { id: customerId, name: self?.display_name || 'You', emoji: self?.avatar_emoji || '🚚', self: true }
-  }
   return null
 }
 
@@ -78,7 +92,82 @@ serve(async (req) => {
     }
 
     const body = await req.json().catch(() => ({}))
-    const { vendor_id, items, calc, delivery_lat, delivery_lng, delivery_address, notes, pay_with_balance } = body
+
+    if (body.action === 'assign_driver') {
+      if (!customerId) {
+        return new Response(JSON.stringify({ error: 'login_required' }), { status: 401, headers: cors })
+      }
+      const orderId = body.order_id
+      const driverId = body.driver_id
+      if (!orderId || !driverId) {
+        return new Response(JSON.stringify({ error: 'order_id and driver_id required' }), { status: 400, headers: cors })
+      }
+
+      const { data: order, error: oErr } = await sb.from('orders')
+        .select('id, short_id, customer_id, vendor_id, status, driver_id, delivery_lat, delivery_lng')
+        .eq('id', orderId)
+        .single()
+      if (oErr || !order) {
+        return new Response(JSON.stringify({ error: 'order_not_found' }), { status: 404, headers: cors })
+      }
+      if (order.customer_id !== customerId) {
+        return new Response(JSON.stringify({ error: 'forbidden' }), { status: 403, headers: cors })
+      }
+
+      const driver = await loadDriver(sb, driverId, customerId)
+      if (!driver) {
+        return new Response(JSON.stringify({ error: 'driver_unavailable' }), { status: 400, headers: cors })
+      }
+
+      const { data: updated, error: uErr } = await sb.from('orders')
+        .update({
+          driver_id: driver.id,
+          driver_name: driver.name,
+          driver_emoji: driver.emoji,
+          status: 'assigned',
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', orderId)
+        .select()
+        .single()
+      if (uErr) throw uErr
+
+      if (!driver.self) {
+        await sb.from('field_events').insert({
+          user_id: driver.id,
+          role: 'driver',
+          action: 'order',
+          detail: `assigned ${order.short_id}`,
+          lat: order.delivery_lat,
+          lng: order.delivery_lng,
+          props: { order_id: order.id, assigned: true, picked_by_client: true },
+          brain_synced: true,
+        }).catch(() => {})
+      }
+
+      try {
+        const ch = sb.channel(`vendor-orders-${order.vendor_id}`)
+        await ch.send({
+          type: 'broadcast',
+          event: 'driver_assigned',
+          payload: {
+            order_id: order.id,
+            short_id: order.short_id,
+            driver: { id: driver.id, name: driver.name, emoji: driver.emoji },
+          },
+        })
+        await sb.removeChannel(ch)
+      } catch { /* non-fatal */ }
+
+      return new Response(JSON.stringify({
+        ok: true,
+        order: updated,
+        driver: { id: driver.id, name: driver.name, emoji: driver.emoji, self: !!driver.self },
+        seeking_driver: false,
+      }), { headers: cors })
+    }
+
+    const { vendor_id, items, calc, delivery_lat, delivery_lng, delivery_address, notes, pay_with_balance, preferred_driver_id } = body
 
     if (!vendor_id || !Array.isArray(items) || items.length === 0) {
       return new Response(JSON.stringify({ error: 'vendor_id and items required' }), { status: 400, headers: cors })
@@ -124,7 +213,11 @@ serve(async (req) => {
 
     const dLat = typeof delivery_lat === 'number' ? delivery_lat : null
     const dLng = typeof delivery_lng === 'number' ? delivery_lng : null
-    const driver = await pickDriver(sb, dLat, dLng, customerId)
+
+    let driver: DriverPick | null = null
+    if (preferred_driver_id) {
+      driver = await loadDriver(sb, preferred_driver_id, customerId)
+    }
 
     const totalAvc = typeof calc?.total_avc === 'number'
       ? calc.total_avc

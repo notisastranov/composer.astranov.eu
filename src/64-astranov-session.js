@@ -117,7 +117,7 @@ const AstranovSession = {
         }
       } catch (_) {}
     }
-    showOtherUsers?.();
+    AstranovPresence?.refresh?.();
     await this.pull();
     await AstranovNode?.resumeSession?.();
     await this.push(true);
@@ -224,7 +224,7 @@ const AstranovSession = {
     if (window._lastPos && GlobeEntity?.syncMe) {
       GlobeEntity.syncMe(_lastPos.lat, _lastPos.lng, me?.name || 'You');
     }
-    showOtherUsers?.();
+    AstranovPresence?.refresh?.();
   },
 
   async pull() {

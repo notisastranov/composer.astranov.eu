@@ -249,16 +249,18 @@ const GlobeEntity = {
 
     switch (entity.type) {
       case 'vendor':
-        if (entity.data?.vendor) Commerce?.openVendor?.(entity.data.vendor);
+        if (entity.data?.vendor) ProfileSite?.openVendor?.(entity.data.vendor);
         else Commerce?.showPicker?.();
         break;
       case 'driver':
-        ACIControl?.reply('Driver ' + entity.title + ' — type: order groceries · scenario assign');
-        Commerce?.smartOrder?.('delivery from ' + entity.title);
+        if (entity.data?.driver?.id) MarketplaceComms?.selectDriver?.(entity.data.driver.id, entity.data.driver);
+        else ACIControl?.reply('Driver ' + entity.title + ' — pick for delivery');
         break;
       case 'friend':
-        SuperCli?.run?.('locate');
-        ACIControl?.reply(entity.title + ' is nearby on the globe');
+        if (entity.data?.user) {
+          ProfileSite?.openUser?.(entity.data.user.id);
+          MapComms?.contactMenu?.(entity.data.user);
+        } else ACIControl?.reply(entity.title + ' on the map — tap contact options');
         break;
       case 'post':
         if (entity.data?.url) {
@@ -398,8 +400,12 @@ const GlobeEntity = {
         data: { driver: d },
         _actionLabel: 'Assign ' + (d.display_name || 'driver'),
         onTap: (e) => {
-          ACIControl?.reply('Driver ' + e.title + ' — confirm order to assign');
-          Commerce?.smartOrder?.('delivery');
+          const driverId = e.data?.driver?.id;
+          if (driverId && MarketplaceComms?.selectDriver) {
+            MarketplaceComms.selectDriver(driverId, e.data?.driver);
+          } else {
+            ACIControl?.reply('Driver ' + e.title + ' — order first, then pick driver');
+          }
         },
       });
     });
@@ -414,14 +420,15 @@ const GlobeEntity = {
         lat: u.lat,
         lng: u.lng,
         title: (u.emoji || '') + ' ' + u.name,
-        description: 'Friend nearby · tap to fly here',
+        description: 'Player on map · tap to fly here · collab or κρυφτό',
         urgency: 1,
         data: { user: u },
         onTap: (e) => {
+          MapComms?.contactMenu?.(u);
           const p = latLngToPos(e.lat, e.lng, 1.04);
           flyToPoint?.(new THREE.Vector3(p.x, p.y, p.z), GlobeControl?.Z?.national || 1.82);
-          ACIControl?.reply(u.name + ' on the globe');
         },
+        _actionLabel: 'Contact',
       });
     });
   },
