@@ -85,7 +85,7 @@ const ContextTruth = {
         mode: 'travel',
         ctx: 'travel',
         label: '→ ' + GhostTravel._target.city,
-        detail: 'Ghost route · ' + GhostTravel._target.name + ' · ' + GhostTravel.SPEED_KMH + ' km/h',
+        detail: 'Ghost route · ±' + GhostTravel.SCRAMBLE_KM + ' km mask · ' + GhostTravel.SPEED_KMH + ' km/h',
       };
     }
     if (TelemachosPilot?.edition && (GlobeDeck?.activeTask === 'telemachos' || window._pilot)) {

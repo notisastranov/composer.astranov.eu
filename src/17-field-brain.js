@@ -74,7 +74,10 @@ const FieldBrain = {
     if (!Auth?.user || !FIELD_SCOPE.has(action)) return;
     const pos = GhostTravel?.active?.() ? GhostTravel.publicPos() : (window._lastPos || {});
     const props = { ...(opts.props || {}) };
-    if (GhostTravel?.active?.()) props.visual_truth = true;
+    if (GhostTravel?.active?.()) {
+      props.visual_truth = true;
+      props.scramble_km = GhostTravel.SCRAMBLE_KM;
+    }
     ACI.api({
       mode: 'field_pulse',
       action,

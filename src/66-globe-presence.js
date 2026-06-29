@@ -85,7 +85,7 @@ const AstranovPresence = {
     await this._pollProfiles();
     if (GhostTravel?.active?.()) {
       GhostTravel._pollLastLogin?.();
-      AciCli?.print?.('◎ Ghost route — real location private · arrow → last login city', 'dim');
+      AciCli?.print?.('◎ Ghost route · ±3 km scramble · real GPS never leaves device', 'dim');
     } else {
       AciCli?.print?.('◎ Map live — sign-in players visible · kryfto · hide · players', 'dim');
     }

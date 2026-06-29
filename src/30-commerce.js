@@ -32,7 +32,11 @@ const Commerce = {
   },
 
   userLatLng() {
-    if (GhostTravel?.active?.() && window._truePos) return { lat: window._truePos.lat, lng: window._truePos.lng };
+    if (GhostTravel?.active?.()) {
+      const m = GhostTravel.maskedTrue?.();
+      if (m) return m;
+      return GhostTravel.publicPos?.() || { lat: 36.4239, lng: 28.2245 };
+    }
     if (userLocated && window._lastPos) return { lat: window._lastPos.lat, lng: window._lastPos.lng };
     return { lat: 36.4239, lng: 28.2245 };
   },
@@ -562,12 +566,9 @@ const Commerce = {
   async placeOrder(vendor, items, notes, payWithBalance, opts) {
     opts = opts || {};
     requestLocationIfNeeded(async () => {
-      let dLat = opts.deliveryLat ?? this.userLatLng().lat;
-      let dLng = opts.deliveryLng ?? this.userLatLng().lng;
-      if (!opts.deliveryLat && userLocated && window._lastPos) {
-        dLat = window._lastPos.lat;
-        dLng = window._lastPos.lng;
-      }
+      const u = this.userLatLng();
+      let dLat = opts.deliveryLat ?? u.lat;
+      let dLng = opts.deliveryLng ?? u.lng;
       const total = items.reduce((s, i) => s + (i.qty || 1) * (i.price || 0), 0);
       let orderResult = null;
       let errMsg = '';

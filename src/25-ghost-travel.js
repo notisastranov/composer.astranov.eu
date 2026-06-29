@@ -1,12 +1,14 @@
 // === GHOST TRAVEL — owner real location never leaves device; globe shows en-route ghost ===
 const GhostTravel = {
   SPEED_KMH: 820,
+  SCRAMBLE_KM: 3,
   TICK_MS: 1000,
   POLL_MS: 12000,
   ARRIVE_KM: 8,
   _truePos: null,
   _ghost: { lat: 20, lng: 0 },
   _target: null,
+  _scramble: null,
   _cityCache: new Map(),
   _timer: null,
   _poll: null,
@@ -33,13 +35,46 @@ const GhostTravel = {
     setTimeout(() => { if (this.active()) this._pollLastLogin(); }, 3000);
   },
 
-  truePos() {
-    return this._truePos;
+  _ensureScramble() {
+    if (this._scramble) return;
+    const id = Auth?.user?.id || 'ghost';
+    let h = 0;
+    for (let i = 0; i < id.length; i++) h = ((h << 5) - h + id.charCodeAt(i)) | 0;
+    const day = Math.floor(Date.now() / 3600000);
+    const seed = Math.abs((h ^ day) | 0);
+    const r1 = (seed % 997) / 997;
+    const r2 = ((seed >> 9) % 991) / 991;
+    this._scramble = {
+      bearing: r1 * 360,
+      distKm: 0.4 + r2 * (this.SCRAMBLE_KM - 0.4),
+    };
+  },
+
+  _offset(lat, lng, bearingDeg, km) {
+    const R = 6371;
+    const d = km / R;
+    const φ1 = lat * Math.PI / 180;
+    const λ1 = lng * Math.PI / 180;
+    const θ = bearingDeg * Math.PI / 180;
+    const φ2 = Math.asin(Math.sin(φ1) * Math.cos(d) + Math.cos(φ1) * Math.sin(d) * Math.cos(θ));
+    const λ2 = λ1 + Math.atan2(Math.sin(θ) * Math.sin(d) * Math.cos(φ1), Math.cos(d) - Math.sin(φ1) * Math.sin(φ2));
+    return { lat: φ2 * 180 / Math.PI, lng: ((λ2 * 180 / Math.PI + 540) % 360) - 180 };
+  },
+
+  mask(lat, lng) {
+    if (!this.active() || lat == null || lng == null) return { lat, lng };
+    this._ensureScramble();
+    return this._offset(lat, lng, this._scramble.bearing, this._scramble.distKm);
+  },
+
+  maskedTrue() {
+    if (!this._truePos) return null;
+    return this.mask(this._truePos.lat, this._truePos.lng);
   },
 
   publicPos() {
     if (!this.active()) return window._lastPos || { lat: 36.22, lng: 28.12 };
-    return { lat: this._ghost.lat, lng: this._ghost.lng };
+    return this.mask(this._ghost.lat, this._ghost.lng);
   },
 
   setTruePos(lat, lng) {
@@ -164,18 +199,20 @@ const GhostTravel = {
     } else {
       this._ghost = this._moveToward(this._ghost.lat, this._ghost.lng, this._target.lat, this._target.lng, km);
     }
-    window._lastPos = { lat: this._ghost.lat, lng: this._ghost.lng };
+    const pub = this.publicPos();
+    window._lastPos = { lat: pub.lat, lng: pub.lng };
     this._applyVisual();
     AstranovPresence?.broadcastGhost?.();
   },
 
   _applyVisual() {
     if (!this.active()) return;
-    const g = this._ghost;
+    const raw = this._ghost;
+    const g = this.publicPos();
     const t = this._target;
-    const bearing = t ? this._bearing(g.lat, g.lng, t.lat, t.lng) : 0;
+    const bearing = t ? this._bearing(raw.lat, raw.lng, t.lat, t.lng) : 0;
     const dest = t ? t.city : '…';
-    const dist = t ? this.haversineKm(g, t).toFixed(0) : '—';
+    const dist = t ? this.haversineKm(raw, t).toFixed(0) : '—';
     const label = '→ ' + dest;
 
     if (window._meMarker) {
@@ -193,7 +230,8 @@ const GhostTravel = {
       alwaysShow: true,
     });
 
-    GlobeDeck?.setMapStatus?.('✈ ' + label + ' · ' + dist + ' km · ' + this.SPEED_KMH + ' km/h');
+    const scr = this._scramble ? ' · ±' + this.SCRAMBLE_KM + ' km mask' : '';
+    GlobeDeck?.setMapStatus?.('✈ ' + label + ' · ' + dist + ' km · ' + this.SPEED_KMH + ' km/h' + scr);
     ContextTruth?.sync?.();
   },
 

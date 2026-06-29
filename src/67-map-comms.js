@@ -51,7 +51,9 @@ const MapComms = {
   },
 
   selfMember() {
-    const p = window._lastPos || { lat: 36.22, lng: 28.12 };
+    const p = GhostTravel?.active?.()
+      ? GhostTravel.publicPos()
+      : (window._lastPos || { lat: 36.22, lng: 28.12 });
     return {
       id: Auth?.user?.id || 'guest',
       name: AstranovPresence?.displayName?.() || me?.name || 'You',
