@@ -1,5 +1,6 @@
 -- Map team chats (polygon groups on globe)
 
+ALTER TABLE circles ADD COLUMN IF NOT EXISTS scope text;
 ALTER TABLE circles ADD COLUMN IF NOT EXISTS map_members jsonb NOT NULL DEFAULT '[]'::jsonb;
 ALTER TABLE circles ADD COLUMN IF NOT EXISTS map_center_lat double precision;
 ALTER TABLE circles ADD COLUMN IF NOT EXISTS map_center_lng double precision;
