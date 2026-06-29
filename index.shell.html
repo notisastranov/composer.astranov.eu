@@ -160,10 +160,7 @@
   @keyframes cli-think-glow { 0%,100%{ opacity:0.85; } 50%{ opacity:1; text-shadow:0 0 12px var(--ax-blue-glow); } }
   #super-cli-bar #cli-deck-handle { background:transparent; border:none; color:var(--ax-blue-bright); cursor:grab; font-size:18px; padding:6px 12px; min-width:44px; min-height:38px; width:auto; height:auto; border-radius:10px; flex-shrink:0; touch-action:none; -webkit-tap-highlight-color:transparent; text-shadow:0 0 6px var(--ax-blue-glow); border-bottom:2px solid var(--ax-blue-border); }
   #super-cli-bar #cli-deck-handle:active { cursor:grabbing; transform:scale(0.96); border-bottom-color:var(--ax-blue-bright); }
-  #super-cli-bar #aci-handsfree { display:inline-flex !important; align-items:center; justify-content:center; width:34px; height:34px; border-radius:50%; font-size:15px; flex-shrink:0; touch-action:manipulation; }
-  #super-cli-bar #aci-handsfree.listening, #super-cli-bar #aci-handsfree.deck-btn-active { border-color:var(--ax-blue-bright); box-shadow:0 0 12px var(--ax-blue-glow); }
-  #super-cli-bar #aci-handsfree.speaking { border-color:var(--ax-green-border); color:var(--ax-green-bright); box-shadow:0 0 10px var(--ax-green-glow); }
-  #super-cli-bar button:not(#aci-login):not(#super-add-fab):not(#aci-handsfree):not(#cli-deck-handle):not(.app-shortcut-btn) { display:none !important; }
+  #super-cli-bar button:not(#aci-login):not(#super-add-fab):not(#cli-deck-handle):not(.app-shortcut-btn) { display:none !important; }
   #app-shortcut-row { display:flex; gap:4px; align-items:center; flex:1; min-width:0; overflow-x:auto; overflow-y:hidden; padding:0 2px; scrollbar-width:none; -webkit-overflow-scrolling:touch; }
   #app-shortcut-row::-webkit-scrollbar { display:none; }
   #super-cli-bar .app-shortcut-btn { display:inline-flex !important; align-items:center; justify-content:center; width:32px; height:32px; font-size:15px; border-radius:10px; background:var(--ax-blue-bg); border:1px solid var(--ax-blue-border); color:var(--ax-blue-bright); cursor:pointer; flex-shrink:0; touch-action:manipulation; transition:background 0.15s,border-color 0.15s,transform 0.1s; }
@@ -178,7 +175,7 @@
   #super-cli-bar #aci-hold.deck-btn-active { background:var(--ax-yellow-bg); border-color:var(--ax-yellow-border); color:var(--ax-yellow-bright); box-shadow:0 0 10px var(--ax-yellow-glow); }
   #globe-deck.session-held #aci-hold { animation:hold-pulse 1.6s ease-in-out infinite; }
   @keyframes hold-pulse { 0%,100%{ box-shadow:0 0 6px var(--ax-yellow-glow); } 50%{ box-shadow:0 0 14px var(--ax-yellow-glow); } }
-  #globe-deck-input-row { display:none !important; }
+  #globe-deck-input-row { display:flex !important; align-items:center; gap:6px; padding:8px 10px; border-top:1px solid var(--ax-blue-border); flex-shrink:0; background:rgba(0,0,0,0.72); }
   #globe-deck-log, #globe-deck-stage { -webkit-overflow-scrolling:touch; touch-action:pan-y; }
   #aci-bar { display:none !important; }
   #news-ticker { display:none !important; }
@@ -244,18 +241,16 @@
   #cli-hub-panel .ch-line { padding:4px 0; color:var(--an-text); font-size:10px; border-bottom:1px solid rgba(255,255,255,0.04); }
   #cli-hub-panel .ch-mini { font-size:9px; padding:2px 6px; border-radius:6px; border:1px solid var(--ax-blue-border); background:var(--ax-blue-bg); color:var(--ax-blue-bright); cursor:pointer; margin-right:4px; }
   #cli-hub-panel .ch-empty { color:var(--an-muted); padding:12px 4px; }
-  #globe-deck-compose { display:none; align-items:flex-end; gap:8px; padding:6px 10px 8px; border-top:1px solid var(--ax-blue-border); flex-shrink:0; background:rgba(0,0,0,0.72); }
-  #globe-deck.expanded #globe-deck-compose { display:flex; }
-  #aci-cli-prompt { display:none !important; }
-  #aci-cli-in { flex:1; background:transparent; border:none; border-radius:0; color:var(--an-text); font:inherit; outline:none; min-width:0; padding:4px 0; font-size:13px; line-height:1.45; min-height:28px; max-height:22vh; resize:none; overflow-y:auto; white-space:pre-wrap; word-break:break-word; }
-  #aci-cli-in:focus { outline:none; }
+  #aci-cli-prompt { color:var(--ax-blue-bright); flex-shrink:0; font-size:11px; display:none; text-shadow:0 0 6px var(--ax-blue-glow); }
+  #globe-deck.expanded #aci-cli-prompt { display:inline; }
+  #aci-cli-in { flex:1; background:rgba(0,8,20,0.65); border:1px solid var(--ax-blue-border); border-radius:10px; color:var(--an-text); font:inherit; outline:none; min-width:0; padding:8px 10px; font-size:13px; line-height:1.45; min-height:20px; max-height:22vh; resize:none; overflow-y:auto; white-space:pre-wrap; word-break:break-word; }
+  #aci-cli-in:focus { border-color:var(--ax-blue-bright); box-shadow:0 0 0 2px var(--ax-blue-glow); }
   #aci-cli-in::placeholder { color:var(--an-muted); opacity:0.85; }
-  #aci-cli-in.voice-live { color:var(--ax-blue-bright); text-shadow:0 0 6px var(--ax-blue-glow); }
-  #globe-deck-compose .deck-compose-prefix { color:var(--ax-blue-bright); font-weight:700; flex-shrink:0; padding-bottom:6px; text-shadow:0 0 6px var(--ax-blue-glow); }
-  #globe-deck-compose .compose-field { flex:1; min-width:0; border-left:2px solid var(--ax-blue-border); padding-left:8px; }
-  #globe-deck-compose .compose-field:focus-within { border-left-color:var(--ax-blue-bright); }
-  #globe-deck-send { background:var(--ax-blue-bg); border:1px solid var(--ax-blue-border); color:var(--ax-blue-bright); border-radius:12px; width:44px; height:40px; font-size:15px; font-weight:700; cursor:pointer; flex-shrink:0; display:inline-flex; align-items:center; justify-content:center; touch-action:manipulation; margin-bottom:2px; }
-  #globe-deck-send:active { transform:scale(0.94); }
+  #aci-cli-in.voice-live { border-color:var(--ax-blue-bright); color:var(--ax-blue-bright); box-shadow:0 0 10px var(--ax-blue-glow); }
+  #globe-deck-input-row .deck-input-btn { background:var(--ax-blue-bg); border:1px solid var(--ax-blue-border); color:var(--ax-blue-bright); border-radius:50%; width:40px; height:40px; cursor:pointer; font-size:16px; flex-shrink:0; display:inline-flex; align-items:center; justify-content:center; touch-action:manipulation; }
+  #globe-deck-input-row #aci-handsfree.deck-btn-active, #globe-deck-input-row #aci-handsfree.listening { background:var(--ax-blue-bg); border-color:var(--ax-blue-bright); color:var(--ax-blue-bright); box-shadow:0 0 12px var(--ax-blue-glow); }
+  #globe-deck-input-row #globe-deck-send { border-radius:12px; width:44px; font-size:15px; font-weight:700; }
+  #globe-deck-input-row #aci-handsfree.speaking { background:var(--ax-green-bg); border-color:var(--ax-green-border); color:var(--ax-green-bright); box-shadow:0 0 10px var(--ax-green-glow); }
   #aci-cli-toggle { display:inline-flex; background:var(--ax-blue-bg); border:1px solid var(--ax-blue-border); color:var(--ax-blue-bright); border-radius:50%; width:38px; height:38px; cursor:pointer; font-size:15px; flex-shrink:0; align-items:center; justify-content:center; }
   #city-life-chip { display:none; position:fixed; top:52px; left:12px; bottom:auto; z-index:38; max-width:min(240px,calc(100vw - 24px)); padding:8px 12px; border-radius:12px; background:var(--ax-panel); border:1px solid var(--ax-blue-border); font:10px/1.4 system-ui; color:var(--an-text); pointer-events:none; backdrop-filter:blur(8px); }
   #city-life-chip.open { display:block; }
@@ -547,7 +542,6 @@
         <button id="aci-login" title="Sign in with Google" type="button">G</button>
         <div id="app-shortcut-row" role="toolbar" aria-label="Open applications"></div>
         <span id="cli-ribbon-status" aria-live="polite"></span>
-        <button id="aci-handsfree" type="button" title="AI hands-free — listen &amp; speak">🎧</button>
         <button id="super-add-fab" type="button" title="Super Add — post · vendor · site">+</button>
         <button id="cli-deck-handle" type="button" title="Drag to resize · tap to cycle size" aria-expanded="false">▔</button>
         <button id="aci-cli-toggle" title="Expand/collapse Astranov Command Line" type="button">💻</button>
@@ -649,13 +643,12 @@
       <div id="vm-body"><div id="vm-list"></div><div id="vm-detail" style="display:none"><button id="vm-back" type="button">← όλα τα καταστήματα</button><div id="vm-empty" style="display:none"></div><div id="vm-items"></div><button id="vm-request" type="button" style="display:none">Ζήτησε μενού από κατάστημα</button><button id="vm-place" type="button">Παραγγελία</button></div><div id="vm-compare" style="display:none"><button id="vm-compare-back" type="button">← όλα τα καταστήματα</button><div id="vm-wanted"></div><div id="vm-matches"></div><div id="vm-drivers"></div><div id="vm-balance"></div><button id="vm-confirm-pay" type="button" style="display:none">Επιβεβαίωση &amp; Πληρωμή</button></div></div>
     </div>
         </div>
-        <div id="globe-deck-compose">
-          <span class="deck-compose-prefix" id="aci-cli-prefix">›</span>
-          <div class="compose-field">
-            <textarea id="aci-cli-in" rows="1" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="Type or transcribe here — visible in CLI · Enter or ➡ to send"></textarea>
-          </div>
-          <button id="globe-deck-send" type="button" title="Send">➡</button>
-        </div>
+      </div>
+      <div id="globe-deck-input-row">
+        <span id="aci-cli-prompt">›</span>
+        <textarea id="aci-cli-in" rows="1" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="Talk to Coders — type or tap 🎧 · Enter to send"></textarea>
+        <button id="aci-handsfree" class="deck-input-btn" type="button" title="AI hands-free — listen &amp; speak">🎧</button>
+        <button id="globe-deck-send" class="deck-input-btn" type="button" title="Send">➡</button>
       </div>
     </div>
     <input id="aci-input" placeholder="" style="display:none" />

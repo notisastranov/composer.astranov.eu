@@ -7,8 +7,8 @@ const SuperCli = {
   title: ACL_TITLE,
 
   // Top bar: login + Super Add only — everything else via CLI (locate, order, batch, vhf, theme, hold, stop…)
-  TOOLBAR_VISIBLE: ['aci-login', 'aci-handsfree', 'super-add-fab', 'cli-deck-handle'],
-  INPUT_BTNS: ['globe-deck-send'],
+  TOOLBAR_VISIBLE: ['aci-login', 'super-add-fab', 'cli-deck-handle'],
+  INPUT_BTNS: ['aci-handsfree', 'globe-deck-send'],
 
   init() {
     if (this._bound) return;

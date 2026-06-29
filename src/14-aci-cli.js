@@ -58,9 +58,11 @@ const AciCli = {
       this.primeCodersCli();
       return;
     }
-    const prefix = document.getElementById('aci-cli-prefix');
-    if (prefix) {
-      prefix.textContent = AstranovSession?.isAstranov?.() ? 'ASTRANOV ›' : '›';
+    const prompt = document.getElementById('aci-cli-prompt');
+    if (prompt) {
+      prompt.textContent = AstranovSession?.isAstranov?.()
+        ? 'ASTRANOV@collective $'
+        : ((Auth.user.user_metadata?.full_name || Auth.user.email?.split('@')[0] || 'dev') + '@collective $');
     }
     if (AstranovSession?.isAstranov?.()) CliRibbon?.setActive?.('ACI');
     this.loadHistory();
@@ -209,7 +211,7 @@ const AciCli = {
     this.history.push(line);
     this.histIdx = -1;
     this.saveHistory();
-    this.print('› ' + line, 'cmd');
+    this.print((document.getElementById('aci-cli-prompt')?.textContent || '›') + ' ' + line, 'cmd');
     CliHub?.queueLine?.(line, 'cmd');
 
     const routed = await SuperCli?.exec?.(line, opts);

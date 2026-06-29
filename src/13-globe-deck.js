@@ -112,8 +112,8 @@ const GlobeDeck = {
     if (!deck || this._gesturesBound) return;
     this._gesturesBound = true;
     let sy = 0, st = 0, sx = 0, moved = false;
-    const scrollable = t => t?.closest?.('#globe-deck-log, #globe-deck-stage, #globe-deck-compose');
-    const interactive = t => t?.closest?.('button, input, textarea, a, #super-cli-bar button, #globe-deck-compose button, #globe-deck-compose textarea, #cli-deck-handle');
+    const scrollable = t => t?.closest?.('#globe-deck-log, #globe-deck-stage, #globe-deck-input-row');
+    const interactive = t => t?.closest?.('button, input, textarea, a, #super-cli-bar button, #globe-deck-input-row button, #globe-deck-input-row textarea, #cli-deck-handle');
 
     deck.addEventListener('touchstart', e => {
       if (e.touches.length !== 1 || interactive(e.target)) return;
@@ -180,13 +180,14 @@ const GlobeDeck = {
 
   setCompose(text) {
     const t = String(text || '');
-    const out = this.logEl();
-    if (!out) return;
     if (!t) {
       if (this._composeLine?.parentNode) this._composeLine.remove();
       this._composeLine = null;
       return;
     }
+    if (!this.expanded) return;
+    const out = this.logEl();
+    if (!out) return;
     if (!this._composeLine) {
       this._composeLine = document.createElement('div');
       this._composeLine.id = 'deck-compose-line';
@@ -195,7 +196,6 @@ const GlobeDeck = {
     }
     this._composeLine.textContent = '› ' + t;
     out.scrollTop = out.scrollHeight;
-    this.expand();
   },
 
   clearCompose() {
