@@ -18,6 +18,7 @@ const CliRibbon = {
   },
 
   MOTTO_RE: /justice\s*→\s*truth\s*→\s*freedom|collective intelligence|astranov command line\s*—|architect\s*·\s*collective|δικαιοσύνη|αλήθεια|ελευθερία/gi,
+  GLOBE_HINT_RE: /city map|scroll\/pinch|pinch\/scroll|pinch out|return to globe|zoom.tier|zoom out|zoom in|double.tap|drag to spin/i,
 
   init() {
     const bar = document.getElementById('super-cli-bar');
@@ -64,7 +65,16 @@ const CliRibbon = {
     this.render();
   },
 
+  isGlobeHint(text) {
+    return this.GLOBE_HINT_RE.test(String(text || ''));
+  },
+
+  clearGlobeHint() {
+    if (this._notice && this.isGlobeHint(this._notice)) this.clearNotice();
+  },
+
   setNotice(text, kind) {
+    if (this.isGlobeHint(text)) return;
     const s = this.shorten(text);
     this._notice = s;
     if (kind) this._kind = kind;

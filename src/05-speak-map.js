@@ -225,6 +225,7 @@ const MapDepict = {
 
   setHud(label, detail) {
     const line = detail ? label + ' — ' + detail : label;
+    if (CliRibbon?.isGlobeHint?.(line)) return;
     GlobeDeck?.setMapStatus(line);
   },
 

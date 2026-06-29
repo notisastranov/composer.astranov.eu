@@ -185,6 +185,7 @@ const CityMap = {
     const globe = document.getElementById('globe');
     if (el) el.classList.add('active');
     if (globe) globe.classList.add('city-map-active');
+    document.body.classList.add('city-map-active');
     const c = window._lastPos || this.globeCenterLatLng();
     this._center = c;
     this.map.setView([c.lat, c.lng], this.camZToZoom(camZ), { animate: false });
@@ -198,13 +199,6 @@ const CityMap = {
       (CityLife?.nearbyVendors?.(c.lat, c.lng) || []).length,
       Object.keys(this._markers).filter(k => k.startsWith('drv_')).length
     );
-    const chip = document.getElementById('city-life-chip');
-    if (chip) {
-      chip.classList.add('open');
-      chip.innerHTML = '<b>City map</b> · scroll/pinch <b>out</b> for globe';
-    }
-    MapDepict?.setHud?.('City map', 'pinch/scroll out → globe');
-    GlobeDeck?.setPreview?.('City map · scroll/pinch out to return to globe');
   },
 
   _exit() {
@@ -214,7 +208,11 @@ const CityMap = {
     const globe = document.getElementById('globe');
     if (el) el.classList.remove('active');
     if (globe) globe.classList.remove('city-map-active');
+    document.body.classList.remove('city-map-active');
     EarthRealism?._hudTimer && (EarthRealism._hudTimer = 0);
+    const chip = document.getElementById('city-life-chip');
+    if (chip) chip.classList.remove('open');
+    CliRibbon?.clearGlobeHint?.();
   },
 
   _syncView(camZ) {

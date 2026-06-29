@@ -90,6 +90,7 @@ const GlobeDeck = {
 
   setPreview(text) {
     const s = (text || '').slice(0, 120);
+    if (s && CliRibbon?.isGlobeHint?.(s)) return;
     if (s) CliRibbon?.setNotice?.(s);
     else CliRibbon?.clearNotice?.();
     if (!this.expanded && s) this.deck()?.classList.add('has-preview');
@@ -97,7 +98,9 @@ const GlobeDeck = {
   },
 
   setMapStatus(text) {
-    this.setPreview(text || '');
+    const s = String(text || '');
+    if (!s || CliRibbon?.isGlobeHint?.(s)) return;
+    this.setPreview(s);
   },
 
   log(text, cls) {

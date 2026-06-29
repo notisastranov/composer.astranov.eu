@@ -92,7 +92,7 @@
   #user-chip { position:fixed; top:10px; right:10px; z-index:45; font:11px system-ui; color:var(--an-muted); pointer-events:none; max-width:140px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
   #drive-guide { position:fixed; top:36px; left:10px; right:10px; z-index:42; font:12px/1.35 system-ui; color:#7df; background:rgba(0,20,40,0.75); border:1px solid rgba(68,170,255,0.35); border-radius:12px; padding:8px 12px; display:none; pointer-events:none; }
   #drive-guide.open { display:block; }
-  #aci-hud { position:fixed; left:0; right:0; bottom:0; z-index:50; pointer-events:none; }
+  #aci-hud { position:fixed; left:0; right:0; bottom:0; z-index:200; pointer-events:none; }
   #sat-radio { display:none; padding:10px 12px; background:var(--ax-panel-strong); pointer-events:auto; font:11px/1.45 system-ui; color:var(--an-text); }
   #sat-radio.open, #sat-radio.deck-active { display:block; }
   #sat-radio .sr-row { display:flex; justify-content:space-between; align-items:center; gap:8px; margin-bottom:6px; }
@@ -219,8 +219,9 @@
   #globe-deck-input-row #globe-deck-send { border-radius:12px; width:44px; font-size:15px; font-weight:700; }
   #globe-deck-input-row #aci-handsfree.speaking { background:var(--ax-green-bg); border-color:var(--ax-green-border); color:var(--ax-green-bright); box-shadow:0 0 10px var(--ax-green-glow); }
   #aci-cli-toggle { display:inline-flex; background:var(--ax-blue-bg); border:1px solid var(--ax-blue-border); color:var(--ax-blue-bright); border-radius:50%; width:38px; height:38px; cursor:pointer; font-size:15px; flex-shrink:0; align-items:center; justify-content:center; }
-  #city-life-chip { display:none; position:fixed; bottom:88px; left:12px; z-index:118; max-width:240px; padding:8px 12px; border-radius:12px; background:var(--ax-panel); border:1px solid var(--ax-blue-border); font:10px/1.4 system-ui; color:var(--an-text); pointer-events:none; backdrop-filter:blur(8px); }
+  #city-life-chip { display:none; position:fixed; top:52px; left:12px; bottom:auto; z-index:38; max-width:min(240px,calc(100vw - 24px)); padding:8px 12px; border-radius:12px; background:var(--ax-panel); border:1px solid var(--ax-blue-border); font:10px/1.4 system-ui; color:var(--an-text); pointer-events:none; backdrop-filter:blur(8px); }
   #city-life-chip.open { display:block; }
+  body.city-map-active #city-life-chip { display:none !important; }
   #city-life-chip b { color:var(--ax-blue-bright); }
   #vendor-menu { display:none; background:var(--ax-panel-strong); pointer-events:auto; font:12px/1.4 system-ui; overflow:hidden; flex-direction:column; }
   #vendor-menu.open, #vendor-menu.deck-active { display:flex; }
@@ -302,7 +303,7 @@
   .ge-label.ge-urg-3 { border-color:var(--ax-red-border); box-shadow:0 0 10px var(--ax-red-glow); }
   .ge-label.ge-selected { border-color:var(--ax-yellow-border); background:rgba(0,0,0,0.88); box-shadow:0 0 10px var(--ax-yellow-glow); }
   @keyframes ge-flash { 0%,100%{ opacity:1; } 50%{ opacity:0.55; } }
-  #globe-entity-hud { display:none; position:fixed; bottom:168px; left:50%; transform:translateX(-50%); z-index:124; width:min(320px,92vw); padding:12px 14px; border-radius:14px; background:var(--ax-panel-strong); border:1px solid var(--ax-blue-border); font:11px/1.45 system-ui; color:var(--an-text); pointer-events:auto; box-shadow:0 6px 24px rgba(0,0,0,0.55), 0 0 16px var(--ax-blue-glow); backdrop-filter:blur(12px); }
+  #globe-entity-hud { display:none; position:fixed; top:50%; left:50%; transform:translate(-50%,-50%); z-index:180; width:min(320px,92vw); padding:12px 14px; border-radius:14px; background:var(--ax-panel-strong); border:1px solid var(--ax-blue-border); font:11px/1.45 system-ui; color:var(--an-text); pointer-events:auto; box-shadow:0 6px 24px rgba(0,0,0,0.55), 0 0 16px var(--ax-blue-glow); backdrop-filter:blur(12px); }
   #globe-entity-hud.open { display:block; }
   #ge-hud-type { color:var(--ax-blue-bright); font-size:10px; margin-bottom:4px; }
   #ge-hud-title { font-weight:700; font-size:13px; color:var(--an-text); margin-bottom:4px; }
