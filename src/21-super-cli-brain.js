@@ -59,7 +59,8 @@ Object.assign(SuperCli, {
       'sync', 'requests', 'wishlist', 'players', 'friends', 'kryfto', 'hide', 'seek', 'collab',
       'hideandseek', 'housekeeping',
       'team', 'contact', 'msg',
-      'telemachos', 'tilemaxos', 'telemachus', 'tilemachos', 'pilot', 'drone', 'drones', 'fleet',
+      'telemachos', 'tilemaxos', 'telemachus', 'tilemachos', 'teledromos', 'teledromus',
+      'pilot', 'drone', 'drones', 'fleet',
       'youtube', 'yt', 'watch', 'play', 'space', 'scenario', 'add', 'post', 'superadd',
       'theme', 'dark', 'bright', 'light',
     ]);
@@ -134,7 +135,7 @@ Object.assign(SuperCli, {
     this.out('players · friends · kryfto · hide · seek — map presence (sign in)', 'ok');
     this.out('team create <name> · team join <id> · contact video|voice|message <name>', 'ok');
     this.out('drivers · driver <name> — pick delivery driver on map/cloud', 'ok');
-    this.out('telemachos / tilemaxos / τηλεμαχος — drone pilot · abilities · fleet · deliver', 'ok');
+    this.out('ΤΗΛΕΜΑΧΟΣ gaming · ΤΗΛΕΔΡΟΜΟΣ commercial · tilemaxos takeover · scan · evolve', 'ok');
     this.out('profile me · match <site> dates [pax] · match field <site> <name> · site approve <slug>', 'ok');
     this.out('theme dark|bright · or just: dark · bright — globe + city map + UI', 'ok');
     this.out('add · post — Super Add camera · global/team/local channel', 'ok');

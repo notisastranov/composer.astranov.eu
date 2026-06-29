@@ -249,6 +249,7 @@ const AstranovPresence = {
   _render() {
     const users = [...this._live.values()].sort((a, b) => (b.t || 0) - (a.t || 0));
     this._applyOthers(users);
+    TelemachosPilot?._syncGamerTelemetry?.();
   },
 
   _applyOthers(users) {
