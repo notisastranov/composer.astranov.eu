@@ -193,7 +193,20 @@ const TelemachosPilot = {
   async refreshTeamStatus(opts) {
     opts = opts || {};
     if (!Auth?.user) {
-      this._team = { red: [], pending: [], hits: [], won: false, fed: 0, redCount: 0 };
+      const titans = WillaGames?.getDemoRedTeam?.() || [];
+      if (titans.length) {
+        this._team = {
+          red: titans,
+          pending: titans.map((p) => ({ id: p.id, name: p.name })),
+          hits: [],
+          won: false,
+          fed: 0,
+          redCount: titans.length,
+        };
+        this._visualizeTeams();
+      } else {
+        this._team = { red: [], pending: [], hits: [], won: false, fed: 0, redCount: 0 };
+      }
       return this._team;
     }
     const r = await this.api({ action: 'team_status', blue_allies: this._blueAllyIds() });
@@ -234,13 +247,15 @@ const TelemachosPilot = {
       const fed = !pendingIds.has(p.id);
       MapDepict?.pulse?.(p.lat, p.lng, fed ? 0x884444 : this.TEAM_RED, (fed ? '✓ ' : '🔴 ') + p.name, 14000);
     });
-    const enriched = red.map((p) => ({
+    const enrichedRed = red.map((p) => ({
       ...p,
       team: 'red',
       emoji: pendingIds.has(p.id) ? '🔴' : '✓',
       fed: !pendingIds.has(p.id),
     }));
-    GlobeEntity?.syncFriends?.(enriched, { teamMode: true });
+    const redIds = new Set(red.map((p) => p.id));
+    const blues = (window.others || []).filter((u) => !redIds.has(u.id) && u.team !== 'red');
+    GlobeEntity?.syncFriends?.([...blues, ...enrichedRed], { teamMode: true });
     const u = Commerce?.userLatLng?.() || window._lastPos || this.HOME;
     MapDepict?.pulse?.(u.lat, u.lng, this.TEAM_BLUE, '🔵 BLUE TEAM', 10000);
   },
@@ -266,9 +281,9 @@ const TelemachosPilot = {
       return [
         '── Blue vs Red · ΤΗΛΕΜΑΧΟΣ ──',
         '🔵 You are always BLUE TEAM',
-        '🔴 Opponents = live players on map (not in your MapComms team)',
+        '🔴 Opponents = Cronian titans (Kronos leads) or live players on map',
         'Win: deliver πιτογύρο · burger · μπύρα/mpironi · τσιγάρα to EVERY red player',
-        'No rivals on field — invite gamers to sign in',
+        'Demo: players · kryfto · willa — 12 titans spawn as red team',
         'deliver red <name> pitogyra · teams · attack',
       ].join('\n');
     }

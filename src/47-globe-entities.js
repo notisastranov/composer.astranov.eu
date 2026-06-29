@@ -422,8 +422,9 @@ const GlobeEntity = {
     opts = opts || {};
     this.unregisterType('friend');
     (others || []).forEach(u => {
-      const isRed = opts.teamMode && u.team === 'red';
+      const isRed = u.team === 'red' || (opts.teamMode && u.team === 'red');
       const fed = !!u.fed;
+      const agentTag = u.agent === 'cronian' ? 'Cronian titan' : u.agent === 'grok-heavy' ? 'Grok Heavy agent' : '';
       this.register({
         id: 'friend-' + u.id,
         type: 'friend',
@@ -431,7 +432,7 @@ const GlobeEntity = {
         lng: u.lng,
         title: (u.emoji || (isRed ? '🔴' : '👤')) + ' ' + u.name,
         description: u.domain
-          ? (u.domain + ' · Grok Heavy agent')
+          ? (u.domain + (agentTag ? ' · ' + agentTag : ''))
           : isRed
           ? (fed ? 'RED · fed ✓ · blue team won slice' : 'RED rival · deliver pitogyro/beer/burger/tsigareta')
           : 'Player on map · tap to fly here · collab or κρυφτό',

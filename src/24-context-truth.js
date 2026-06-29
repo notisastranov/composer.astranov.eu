@@ -43,7 +43,7 @@ const ContextTruth = {
         mode: 'game',
         ctx: 'game',
         label: '⚔ Willa game',
-        detail: 'Air · sea · ground · space · SEALs · spies · drones',
+        detail: 'Olympians 🔵 vs Cronians 🔴 · Kronos leads red · multi-domain warfare',
       };
     }
     if (MapComms?.teamId && MapComms?.kind === 'dm' && MapComms?.dmUser) {

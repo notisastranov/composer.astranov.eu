@@ -22,6 +22,22 @@ const WillaGames = {
     { id: 'god-dionysus', name: 'Dionysus', domain: 'culture & freedom', emoji: '🍇', lat: 37.103, lng: 25.376, role: 'hider', hidden: true },
   ],
 
+  // Twelve Titans (Cronians) — red team · led by Kronos
+  TITAN_AGENTS: [
+    { id: 'titan-kronos', name: 'Kronos', domain: 'time & sovereignty', emoji: '⏳', lat: 39.52, lng: 22.12, role: 'seeker', team: 'red', hidden: false },
+    { id: 'titan-rhea', name: 'Rhea', domain: 'flow & motherhood', emoji: '🌙', lat: 35.48, lng: 24.05, role: 'housekeeping', team: 'red', hidden: false },
+    { id: 'titan-oceanus', name: 'Oceanus', domain: 'world ocean & currents', emoji: '🌀', lat: 36.05, lng: 29.55, role: 'seeker', team: 'red', hidden: false },
+    { id: 'titan-tethys', name: 'Tethys', domain: 'fresh water & springs', emoji: '💧', lat: 38.72, lng: 26.12, role: 'housekeeping', team: 'red', hidden: false },
+    { id: 'titan-hyperion', name: 'Hyperion', domain: 'light & dawn', emoji: '🌅', lat: 41.02, lng: 25.88, role: 'seeker', team: 'red', hidden: false },
+    { id: 'titan-theia', name: 'Theia', domain: 'sight & shining ore', emoji: '✨', lat: 37.52, lng: 26.98, role: 'hider', team: 'red', hidden: true },
+    { id: 'titan-coeus', name: 'Coeus', domain: 'intelligence & axis', emoji: '🧭', lat: 40.62, lng: 23.02, role: 'seeker', team: 'red', hidden: false },
+    { id: 'titan-phoebe', name: 'Phoebe', domain: 'prophecy & moonlight', emoji: '🌑', lat: 35.18, lng: 25.72, role: 'hider', team: 'red', hidden: true },
+    { id: 'titan-crius', name: 'Crius', domain: 'constellations & seasons', emoji: '⭐', lat: 39.88, lng: 20.28, role: 'seeker', team: 'red', hidden: false },
+    { id: 'titan-mnemosyne', name: 'Mnemosyne', domain: 'memory & archives', emoji: '📜', lat: 38.18, lng: 21.72, role: 'hider', team: 'red', hidden: true },
+    { id: 'titan-iapetus', name: 'Iapetus', domain: 'mortality & craft', emoji: '⚒️', lat: 36.88, lng: 21.62, role: 'hider', team: 'red', hidden: true },
+    { id: 'titan-themis', name: 'Themis', domain: 'divine law & order', emoji: '⚖️', lat: 37.38, lng: 25.12, role: 'seeker', team: 'red', hidden: false },
+  ],
+
   WILLA_UNIT_MAP: {
     'god-zeus': { unit: 'spaceforce', domain: 'air', team: 'blue' },
     'god-hera': { unit: 'ground', domain: 'ground', team: 'blue' },
@@ -35,6 +51,21 @@ const WillaGames = {
     'god-hephaestus': { unit: 'drone', domain: 'ground', team: 'blue' },
     'god-hermes': { unit: 'drone', domain: 'fpv', team: 'blue' },
     'god-dionysus': { unit: 'seals', domain: 'underwater', team: 'blue' },
+  },
+
+  TITAN_UNIT_MAP: {
+    'titan-kronos': { unit: 'spaceforce', domain: 'air', team: 'red' },
+    'titan-rhea': { unit: 'ground', domain: 'ground', team: 'red' },
+    'titan-oceanus': { unit: 'navy', domain: 'sea', team: 'red' },
+    'titan-tethys': { unit: 'seals', domain: 'underwater', team: 'red' },
+    'titan-hyperion': { unit: 'airfighter', domain: 'air', team: 'red' },
+    'titan-theia': { unit: 'spy', domain: 'ground', team: 'red' },
+    'titan-coeus': { unit: 'spy', domain: 'fpv', team: 'red' },
+    'titan-phoebe': { unit: 'drone', domain: 'fpv', team: 'red' },
+    'titan-crius': { unit: 'drone', domain: 'ground', team: 'red' },
+    'titan-mnemosyne': { unit: 'spy', domain: 'ground', team: 'red' },
+    'titan-iapetus': { unit: 'ground', domain: 'ground', team: 'red' },
+    'titan-themis': { unit: 'airfighter', domain: 'air', team: 'red' },
   },
 
   PYRAMID_SITES: [
@@ -59,12 +90,13 @@ const WillaGames = {
 
   boot() {
     CosmicZoom?.trackISS?.();
-    AciCli?.print?.('◎ Solar view · ISS live · 12 Olympian agents · kryfto · pyramid · willa', 'dim');
+    AciCli?.print?.('◎ Solar view · ISS live · 12 Olympians 🔵 · 12 Cronians 🔴 · kryfto · pyramid · willa', 'dim');
   },
 
   _buildOlympians(game) {
     return this.OLYMPIAN_AGENTS.map(g => ({
       ...g,
+      team: 'blue',
       demo: true,
       agent: 'grok-heavy',
       game: game || 'lobby',
@@ -72,17 +104,39 @@ const WillaGames = {
     }));
   },
 
+  _buildTitans(game) {
+    return this.TITAN_AGENTS.map(g => ({
+      ...g,
+      team: 'red',
+      demo: true,
+      agent: 'cronian',
+      game: game || 'lobby',
+      t: Date.now(),
+    }));
+  },
+
+  _buildAllDemo(game) {
+    return [...this._buildOlympians(game), ...this._buildTitans(game)];
+  },
+
+  getDemoRedTeam() {
+    const fromDemo = (this._demo || []).filter(u => u.team === 'red');
+    if (fromDemo.length) return fromDemo;
+    const fromUnits = (this._units || []).filter(u => u.team === 'red');
+    if (fromUnits.length) return fromUnits;
+    return this._buildTitans(this.active === 'kryfto' ? 'kryfto' : 'lobby');
+  },
+
   _buildWillaRoster() {
-    return this.OLYMPIAN_AGENTS.map(g => {
+    const blue = this.OLYMPIAN_AGENTS.map(g => {
       const w = this.WILLA_UNIT_MAP[g.id] || { unit: 'unit', domain: 'ground', team: 'blue' };
-      return {
-        ...g,
-        ...w,
-        demo: true,
-        agent: 'grok-heavy',
-        t: Date.now(),
-      };
+      return { ...g, ...w, demo: true, agent: 'grok-heavy', t: Date.now() };
     });
+    const red = this.TITAN_AGENTS.map(g => {
+      const w = this.TITAN_UNIT_MAP[g.id] || { unit: 'unit', domain: 'ground', team: 'red' };
+      return { ...g, ...w, demo: true, agent: 'cronian', t: Date.now() };
+    });
+    return [...blue, ...red];
   },
 
   wantsPyramid(line) {
@@ -102,9 +156,10 @@ const WillaGames = {
     const real = (window.others || []).filter(u => !u.demo);
     if (real.length) return real;
     if (!this._demo.length || mode === 'kryfto' || mode === 'lobby') {
-      this._demo = this._buildOlympians(mode === 'kryfto' ? 'kryfto' : 'lobby');
+      this._demo = this._buildAllDemo(mode === 'kryfto' ? 'kryfto' : 'lobby');
     }
     AstranovPresence?._applyOthers?.(this._demo);
+    TelemachosPilot?.refreshTeamStatus?.({ quiet: true });
     return this._demo;
   },
 
@@ -128,18 +183,20 @@ const WillaGames = {
     const others = window.others || [];
     others.forEach(u => {
       const tag = u.hidden ? 'hidden' : (u.role || 'agent');
-      if (!u.hidden) MapDepict?.pulse?.(u.lat, u.lng, 0x3d9eff, (u.emoji || '⚡') + ' ' + u.name + ' · ' + tag, 16000);
+      if (u.hidden) return;
+      const color = u.team === 'red' ? this.TEAM_COLOR.red : 0x3d9eff;
+      MapDepict?.pulse?.(u.lat, u.lng, color, (u.emoji || '⚡') + ' ' + u.name + ' · ' + tag, 16000);
     });
     const p = window._lastPos || { lat: 36.44, lng: 28.22 };
     MapDepict?.action?.('play', { lat: p.lat, lng: p.lng, detail: 'κρυφτό · housekeeping demo' });
     MapDepict?.pulse?.(p.lat, p.lng, 0x1a6fd4, 'ΚΡΥΦΤΟ DEMO', 18000);
     GlobeDeck?.expand?.(SuperCli?.title || 'Astranov Command Line');
     GlobeDeck?.setTitle?.('ΚΡΥΦΤΟ · DEMO');
-    GlobeDeck?.setPreview?.('◎ 12 Olympians · hide · seek · housekeeping');
+    GlobeDeck?.setPreview?.('◎ 12 Olympians 🔵 · 12 Cronians 🔴 · hide · seek');
     GlobeDeck.activeTask = 'game';
     ContextTruth?.sync?.();
-    AciCli?.print('◎ κρυφτό · 12 Olympian agents (Grok Heavy) on the map', 'ok');
-    ACIControl?.reply('Twelve gods — Zeus · Athena · Hermes… · hide to vanish · players to seek');
+    AciCli?.print('◎ κρυφτό · 12 Olympians 🔵 · 12 Cronians 🔴 (Kronos leads red)', 'ok');
+    ACIControl?.reply('Blue gods vs red titans — hide to vanish · players to list all 24');
     FieldBrain?.pulse?.('play', 'kryfto demo', { role: 'client', props: { players: others.length + 1, demo: true } });
   },
 
@@ -184,9 +241,10 @@ const WillaGames = {
     GlobeDeck?.setPreview?.('⚔ Willa · air · sea · ground · space · spies · drones');
     GlobeDeck.activeTask = 'game';
     ContextTruth?.sync?.();
-    const n = this._units.length;
-    AciCli?.print('◎ WILLA GAME · ' + n + ' Olympian agents · multi-domain warfare', 'ok');
-    ACIControl?.reply('Willa — twelve gods as commanders · air · sea · ground · space · spies · drones');
+    const nBlue = this._units.filter(u => u.team === 'blue').length;
+    const nRed = this._units.filter(u => u.team === 'red').length;
+    AciCli?.print('◎ WILLA GAME · ' + nBlue + ' Olympians 🔵 · ' + nRed + ' Cronians 🔴 · multi-domain warfare', 'ok');
+    ACIControl?.reply('Willa — gods vs titans · Kronos leads red · air · sea · ground · space · spies · drones');
     FieldBrain?.pulse?.('play', 'willa game', { role: 'client', props: { units: n } });
     TelemachosPilot?.refreshTeamStatus?.({ quiet: true });
   },
@@ -209,7 +267,8 @@ const WillaGames = {
         lng: u.lng,
         altitude: alt,
         title: (u.emoji || '⚔') + ' ' + u.name,
-        description: (u.domain || u.unit || '') + ' · ' + (dom.label || u.domain) + ' · Grok Heavy',
+        description: (u.domain || u.unit || '') + ' · ' + (dom.label || u.domain)
+          + ' · ' + (u.agent === 'cronian' ? 'Cronian titan' : 'Grok Heavy'),
         urgency: u.team === 'red' ? 3 : 2,
         color: teamColor,
         icon: u.emoji || dom.emoji || '⚔',
@@ -252,10 +311,18 @@ const WillaGames = {
       return this._pyramids.map((s, i) => (i + 1) + '. ' + s.name).join(' · ');
     }
     if (this.active === 'willa') {
-      return this._units.length + ' Olympian agents · ' + this._units.map(u => u.name).join(' · ');
+      const blue = this._units.filter(u => u.team === 'blue').map(u => u.emoji + ' ' + u.name);
+      const red = this._units.filter(u => u.team === 'red').map(u => u.emoji + ' ' + u.name);
+      return '🔵 ' + blue.join(' · ') + ' · 🔴 ' + red.join(' · ');
     }
     const gods = (window.others || []).filter(u => u.agent === 'grok-heavy');
-    if (gods.length) return gods.map(u => u.emoji + ' ' + u.name).join(' · ');
+    const titans = (window.others || []).filter(u => u.agent === 'cronian');
+    if (gods.length || titans.length) {
+      const parts = [];
+      if (gods.length) parts.push('🔵 ' + gods.map(u => u.emoji + ' ' + u.name).join(' · '));
+      if (titans.length) parts.push('🔴 ' + titans.map(u => u.emoji + ' ' + u.name).join(' · '));
+      return parts.join(' · ');
+    }
     return (window.others || []).length + ' demo/live players';
   },
 };
