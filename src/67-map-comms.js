@@ -360,6 +360,8 @@ const MapComms = {
       author: self.name,
       author_id: self.id,
       body: body.slice(0, 500),
+      lat: self.lat,
+      lng: self.lng,
       t: Date.now(),
     };
     this._onChat(msg);
@@ -370,12 +372,73 @@ const MapComms = {
     }
   },
 
+  _youtubeFromMsg(m) {
+    return GlobeVideo?.parseId?.(m.body) || GlobeVideo?.parseId?.(m.url) || null;
+  },
+
+  _lineHtml(m) {
+    const yt = this._youtubeFromMsg(m);
+    const vid = yt
+      ? ('<div class="mc-yt-card"><iframe title="YouTube preview" src="https://www.youtube-nocookie.com/embed/'
+        + yt + '?rel=0&modestbranding=1&playsinline=1" allow="encrypted-media; picture-in-picture" allowfullscreen></iframe></div>')
+      : '';
+    return '<div class="mc-line"><b>' + this.esc(m.author || m.name) + '</b> ' + this.esc(m.body) + vid + '</div>';
+  },
+
+  showCloudVideo(videoId, title) {
+    const box = document.getElementById('mc-media');
+    const cloud = document.getElementById('map-comms-cloud');
+    if (!box) return;
+    const id = GlobeVideo?.parseId?.(videoId) || videoId;
+    if (!id) return;
+    cloud?.classList.add('has-media');
+    if (!cloud?.classList.contains('open')) cloud?.classList.add('open');
+    box.classList.add('open');
+    box.innerHTML = '<div class="mc-yt-title">▶ ' + this.esc((title || 'YouTube').slice(0, 56)) + '</div>'
+      + '<div class="mc-yt-wrap"><button type="button" class="mc-yt-close">✖</button>'
+      + '<iframe title="' + this.esc(title || 'YouTube') + '" src="https://www.youtube-nocookie.com/embed/'
+      + id + '?rel=0&modestbranding=1&playsinline=1" allow="autoplay; encrypted-media; picture-in-picture" allowfullscreen></iframe></div>';
+    box.querySelector('.mc-yt-close')?.addEventListener('click', () => this.hideCloudVideo());
+  },
+
+  hideCloudVideo() {
+    const box = document.getElementById('mc-media');
+    if (box) { box.classList.remove('open'); box.innerHTML = ''; }
+    document.getElementById('map-comms-cloud')?.classList.remove('has-media');
+  },
+
   _renderMessages() {
     const log = document.getElementById('mc-log');
     if (!log) return;
-    log.innerHTML = this.messages.slice(-24).map((m) =>
-      '<div class="mc-line"><b>' + this.esc(m.author || m.name) + '</b> ' + this.esc(m.body) + '</div>'
-    ).join('');
+    const msgs = this.messages.slice(-40);
+    const global = GlobeEntity?.isGlobalView?.();
+
+    if (global && msgs.length >= 3) {
+      const groups = new Map();
+      msgs.forEach((m) => {
+        const lat = m.lat ?? this._center?.lat ?? 36.22;
+        const lng = m.lng ?? this._center?.lng ?? 28.12;
+        const key = GlobeEntity?.cellKey?.(lat, lng) || '0:0';
+        const g = groups.get(key) || { key, lat, lng, items: [] };
+        g.items.push(m);
+        groups.set(key, g);
+      });
+      log.innerHTML = [...groups.values()].map((g) => {
+        if (g.items.length < 2) return this._lineHtml(g.items[0]);
+        const yt = g.items.map((m) => this._youtubeFromMsg(m)).find(Boolean);
+        const vid = yt
+          ? ('<div class="mc-yt-card"><iframe title="YouTube" src="https://www.youtube-nocookie.com/embed/'
+            + yt + '?rel=0&modestbranding=1&playsinline=1" allow="encrypted-media; picture-in-picture" allowfullscreen></iframe></div>')
+          : '';
+        return '<details class="mc-cluster"><summary>☁ ' + g.items.length + ' · '
+          + g.lat.toFixed(1) + '°, ' + g.lng.toFixed(1) + '°</summary><div class="mc-cluster-body">'
+          + g.items.map((m) => this._lineHtml(m)).join('') + vid + '</div></details>';
+      }).join('');
+    } else {
+      log.innerHTML = msgs.slice(-24).map((m) => this._lineHtml(m)).join('');
+      const lastYt = [...msgs].reverse().map((m) => this._youtubeFromMsg(m)).find(Boolean);
+      if (lastYt) this.showCloudVideo(lastYt, 'Latest video');
+    }
     log.scrollTop = log.scrollHeight;
   },
 
@@ -393,6 +456,7 @@ const MapComms = {
   closeCloud() {
     document.getElementById('map-comms-cloud')?.classList.remove('open');
     document.getElementById('map-comms-contact')?.classList.remove('open');
+    this.hideCloudVideo();
     this.hideDriverPicker();
     if (this._beamSvg) this._beamSvg.innerHTML = '';
   },
@@ -634,6 +698,13 @@ const MapComms = {
   },
 
   tick() {
+    const global = GlobeEntity?.isGlobalView?.();
+    if (global !== this._wasGlobal) {
+      this._wasGlobal = global;
+      if (document.getElementById('map-comms-cloud')?.classList.contains('open') && this.messages.length) {
+        this._renderMessages();
+      }
+    }
     if (!this._viz || !this._lines.length) {
       if (this._beamSvg) this._beamSvg.innerHTML = '';
       return;

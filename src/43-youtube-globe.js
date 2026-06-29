@@ -110,6 +110,7 @@ const GlobeVideo = {
     this._currentId = id;
     const title = meta?.title || id;
     await SuperSpace?.locateForMedia?.(searchQuery || title, meta);
+    MapComms?.showCloudVideo?.(id, title);
     this.showPanel(title.slice(0, 48));
     const frame = document.getElementById('yt-frame');
     const titleEl = document.getElementById('yt-now-title');

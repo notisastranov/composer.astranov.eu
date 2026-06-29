@@ -337,6 +337,11 @@
   .ge-label.ge-urg-3 { border-color:var(--ax-red-border); box-shadow:0 0 10px var(--ax-red-glow); }
   .ge-label.ge-selected { border-color:var(--ax-yellow-border); background:rgba(0,0,0,0.88); box-shadow:0 0 10px var(--ax-yellow-glow); }
   .ge-label.ge-travel-label { display:flex !important; border-color:#ffdd44; box-shadow:0 0 14px rgba(255,221,68,0.45); z-index:12; }
+  .ge-label.ge-type-cluster { border-color:#6eb6ff; background:radial-gradient(ellipse at 50% 30%,rgba(61,158,255,0.35),rgba(4,14,32,0.88)); box-shadow:0 0 18px rgba(26,111,212,0.55),0 4px 16px rgba(0,0,0,0.45); max-width:min(200px,38vw); border-radius:16px 16px 18px 18px; }
+  .ge-label.ge-type-cluster .ge-pin { font-size:18px; }
+  .ge-label.ge-olympian { border-color:#0d47a1; background:linear-gradient(135deg,rgba(4,20,60,0.92),rgba(13,71,161,0.55)); box-shadow:0 0 16px rgba(21,101,192,0.65),0 0 28px rgba(13,71,161,0.35); }
+  .ge-label.ge-olympian .ge-text b { color:#64b5f6; text-shadow:0 0 10px rgba(21,101,192,0.8); }
+  .ge-label.ge-olympian .ge-olymp-flag { font-size:13px; filter:drop-shadow(0 0 6px #1565c0); }
   .ge-travel-arrow { font-size:18px; color:#ffdd44; text-shadow:0 0 8px rgba(255,221,68,0.8); flex-shrink:0; line-height:1; }
   #super-cli-bar[data-truth="travel"] { border-bottom-color:#ffdd44; }
   @keyframes ge-flash { 0%,100%{ opacity:1; } 50%{ opacity:0.55; } }
@@ -392,8 +397,9 @@
   #map-comms-beam { position:fixed; inset:0; pointer-events:none; z-index:118; overflow:visible; }
   #map-comms-beam line { stroke:var(--ax-blue-bright); stroke-width:2; opacity:0.85; filter:drop-shadow(0 0 6px var(--ax-blue-glow)); }
   #map-comms-beam .mc-beam-glow { stroke:var(--ax-blue-bright); stroke-width:6; opacity:0.28; }
-  #map-comms-cloud { display:none; position:fixed; top:6%; left:50%; transform:translateX(-50%); z-index:119; width:min(300px,88vw); max-height:min(22vh,180px); pointer-events:auto; border-radius:18px 18px 22px 22px; background:radial-gradient(ellipse at 50% 0%,rgba(61,158,255,0.22),rgba(4,14,32,0.82) 55%,rgba(2,8,18,0.9)); border:1px solid var(--ax-blue-border); box-shadow:0 8px 28px rgba(0,0,0,0.45),0 0 20px var(--ax-blue-glow),inset 0 -12px 24px rgba(26,111,212,0.12); backdrop-filter:blur(10px); font:10px/1.4 system-ui; color:var(--an-text); }
+  #map-comms-cloud { display:none; position:fixed; top:6%; left:50%; transform:translateX(-50%); z-index:119; width:min(320px,88vw); max-height:min(42vh,340px); pointer-events:auto; border-radius:18px 18px 22px 22px; background:radial-gradient(ellipse at 50% 0%,rgba(61,158,255,0.22),rgba(4,14,32,0.82) 55%,rgba(2,8,18,0.9)); border:1px solid var(--ax-blue-border); box-shadow:0 8px 28px rgba(0,0,0,0.45),0 0 20px var(--ax-blue-glow),inset 0 -12px 24px rgba(26,111,212,0.12); backdrop-filter:blur(10px); font:10px/1.4 system-ui; color:var(--an-text); }
   #map-comms-cloud.open { display:flex; flex-direction:column; }
+  #map-comms-cloud.has-media { max-height:min(52vh,420px); }
   #map-comms-cloud[data-truth="dm"] { border-color:var(--ax-green-border); box-shadow:0 8px 28px rgba(0,0,0,0.45),0 0 20px var(--ax-green-glow); }
   #map-comms-cloud[data-truth="team"] { border-color:var(--ax-blue-border); }
   #map-comms-cloud.compromised, #map-comms-cloud[data-truth="compromised"] { border-color:var(--ax-red-border); background:radial-gradient(ellipse at 50% 0%,rgba(255,60,60,0.35),rgba(32,4,8,0.9) 55%,rgba(18,2,6,0.95)); box-shadow:0 8px 28px rgba(0,0,0,0.5),0 0 24px var(--ax-red-glow); animation:cloud-alert 1.4s ease-in-out infinite; }
@@ -408,9 +414,21 @@
   #mc-badge .mc-intruder { background:transparent; border:none; color:#ff8888; text-decoration:underline; cursor:pointer; font:inherit; font-weight:700; padding:0; }
   #mc-title { flex:1; font-weight:700; font-size:11px; color:var(--ax-blue-bright); text-shadow:0 0 8px var(--ax-blue-glow); }
   #mc-close { background:transparent; border:1px solid #555; color:#aaa; border-radius:8px; padding:2px 8px; cursor:pointer; font-size:10px; }
-  #mc-log { flex:1; overflow-y:auto; padding:4px 10px 6px; min-height:48px; max-height:14vh; -webkit-overflow-scrolling:touch; }
+  #mc-media { display:none; padding:6px 8px 4px; border-bottom:1px solid rgba(26,111,212,0.2); flex-shrink:0; }
+  #mc-media.open { display:block; }
+  #mc-media .mc-yt-wrap { position:relative; border-radius:12px; overflow:hidden; border:1px solid var(--ax-blue-border); box-shadow:0 0 14px var(--ax-blue-glow); background:#000; }
+  #mc-media .mc-yt-wrap iframe { display:block; width:100%; height:min(28vw,140px); border:0; }
+  #mc-media .mc-yt-title { font-size:9px; font-weight:700; color:var(--ax-blue-bright); margin-bottom:4px; text-shadow:0 0 6px var(--ax-blue-glow); }
+  #mc-media .mc-yt-close { position:absolute; top:4px; right:4px; z-index:2; background:rgba(0,0,0,0.65); border:1px solid #555; color:#ccc; border-radius:6px; padding:2px 6px; font-size:9px; cursor:pointer; }
+  #mc-log { flex:1; overflow-y:auto; padding:4px 10px 6px; min-height:48px; max-height:18vh; -webkit-overflow-scrolling:touch; }
   #mc-log .mc-line { margin-bottom:5px; word-break:break-word; }
   #mc-log .mc-line b { color:var(--ax-blue-bright); margin-right:4px; }
+  #mc-log .mc-cluster { margin-bottom:8px; padding:6px 8px; border-radius:12px; background:rgba(13,71,161,0.18); border:1px solid rgba(61,158,255,0.35); }
+  #mc-log .mc-cluster summary { cursor:pointer; font-weight:700; color:var(--ax-blue-bright); list-style:none; }
+  #mc-log .mc-cluster summary::-webkit-details-marker { display:none; }
+  #mc-log .mc-cluster .mc-cluster-body { margin-top:5px; padding-top:4px; border-top:1px solid rgba(61,158,255,0.2); }
+  #mc-log .mc-yt-card { margin-top:4px; border-radius:10px; overflow:hidden; border:1px solid var(--ax-blue-border); }
+  #mc-log .mc-yt-card iframe { width:100%; height:min(24vw,100px); border:0; display:block; }
   #mc-foot { display:flex; gap:6px; padding:6px 8px 8px; border-top:1px solid rgba(26,111,212,0.25); }
   #mc-input { flex:1; padding:7px 9px; border-radius:10px; border:1px solid var(--ax-blue-border); background:rgba(0,0,0,0.45); color:#fff; font:inherit; font-size:10px; }
   #mc-send { padding:7px 10px; border-radius:10px; border:1px solid var(--ax-green-border); background:var(--ax-green-bg); color:#fff; font-weight:700; cursor:pointer; font-size:10px; }
@@ -490,6 +508,7 @@
   <svg id="map-comms-beam" aria-hidden="true"></svg>
   <div id="map-comms-cloud">
     <div id="mc-head"><span id="mc-title">Cloud chat</span><button id="mc-close" type="button">✖</button></div>
+    <div id="mc-media"></div>
     <div id="mc-log"></div>
     <div id="mc-drivers"></div>
     <div id="mc-foot"><input id="mc-input" type="text" placeholder="Message team…" autocomplete="off" /><button id="mc-send" type="button">Send</button></div>
@@ -9367,6 +9386,10 @@ const GlobeEntity = {
   _labelRoot: null,
   _selected: null,
   _hud: null,
+  _clustered: new Set(),
+  _clusterIds: new Set(),
+  OLYMPUS_BLUE: 0x0a2d6b,
+  OLYMPUS_GLOW: 0x1565c0,
 
   TYPES: {
     vendor: { color: 0x3d9eff, icon: '🏬', label: 'Shop' },
@@ -9383,7 +9406,11 @@ const GlobeEntity = {
     drone: { color: 0x44ccff, icon: '🛸', label: 'Drone' },
     spy: { color: 0xaa44ff, icon: '🕵', label: 'Spy' },
     pyramid: { color: 0xffdd44, icon: '🔺', label: 'Pyramid' },
+    cluster: { color: 0x3d9eff, icon: '☁', label: 'Cloud' },
   },
+
+  CLUSTER_TYPES: new Set(['post', 'place', 'media', 'news']),
+  CLUSTER_MIN: 2,
 
   init() {
     this._labelRoot = document.getElementById('globe-entity-labels');
@@ -9418,6 +9445,22 @@ const GlobeEntity = {
     return 'ge-urg-' + Math.min(3, Math.max(0, u | 0));
   },
 
+  isGlobalView() {
+    const z = camera?.position?.z ?? 2.55;
+    return z >= ((GlobeControl?.Z?.global || 2.55) - 0.12);
+  },
+
+  cellKey(lat, lng) {
+    const z = camera?.position?.z ?? 2.55;
+    const deg = z >= 3.5 ? 3.5 : z >= 2.55 ? 2.0 : z >= 1.82 ? 0.8 : 0.35;
+    return Math.round(lat / deg) + ':' + Math.round(lng / deg);
+  },
+
+  _isOlympian(opts, entity) {
+    const u = opts?.data?.user || entity?.data?.user;
+    return !!(opts?.olympian || u?.agent === 'grok-heavy' || (u?.team === 'blue' && u?.demo));
+  },
+
   register(opts) {
     const id = opts.id || ('ge-' + Date.now() + '-' + Math.random().toString(36).slice(2, 6));
     const type = opts.type || 'place';
@@ -9427,8 +9470,9 @@ const GlobeEntity = {
 
     this.unregister(id);
 
-    const urgency = opts.urgency != null ? opts.urgency : (type === 'driver' ? 2 : type === 'me' ? 2 : 1);
-    const color = opts.color || meta.color;
+    const olympian = this._isOlympian(opts);
+    const urgency = opts.urgency != null ? opts.urgency : (olympian ? 2 : type === 'driver' ? 2 : type === 'me' ? 2 : 1);
+    const color = opts.color || (olympian ? this.OLYMPUS_BLUE : meta.color);
     const r = opts.radius || (type === 'me' ? 0.028 : type === 'vendor' ? 0.016 : 0.014);
 
     const group = new THREE.Group();
@@ -9438,11 +9482,33 @@ const GlobeEntity = {
     );
     const ring = new THREE.Mesh(
       new THREE.RingGeometry(r * 1.1, r * 1.65, 24),
-      new THREE.MeshBasicMaterial({ color, transparent: true, opacity: urgency >= 2 ? 0.55 : 0.28, side: THREE.DoubleSide })
+      new THREE.MeshBasicMaterial({
+        color: olympian ? this.OLYMPUS_GLOW : color,
+        transparent: true,
+        opacity: urgency >= 2 ? 0.55 : 0.28,
+        side: THREE.DoubleSide,
+      })
     );
     ring.lookAt(0, 0, 0);
     group.add(ring);
     group.add(core);
+    if (olympian || opts.flag) {
+      const flag = new THREE.Mesh(
+        new THREE.PlaneGeometry(r * 1.8, r * 1.1, 1, 1),
+        new THREE.MeshBasicMaterial({
+          color: this.OLYMPUS_GLOW,
+          transparent: true,
+          opacity: 0.88,
+          side: THREE.DoubleSide,
+          blending: THREE.AdditiveBlending,
+          depthWrite: false,
+        })
+      );
+      flag.position.set(r * 1.4, r * 0.8, 0);
+      flag.lookAt(0, 0, 0);
+      group.add(flag);
+      group.userData.olympianFlag = true;
+    }
 
     const pos = latLngToPos(lat, lng, opts.altitude || 1.028);
     group.position.set(pos.x, pos.y, pos.z);
@@ -9468,9 +9534,13 @@ const GlobeEntity = {
     globePivot.add(group);
 
     const label = document.createElement('div');
-    label.className = 'ge-label ' + this._urgencyClass(urgency) + ' ge-type-' + type;
+    label.className = 'ge-label ' + this._urgencyClass(urgency) + ' ge-type-' + type + (olympian ? ' ge-olympian' : '');
     label.dataset.id = id;
-    const pin = entity.data?.travelTo ? ('<div class="ge-travel-arrow" style="transform:rotate(' + (entity.data.travelBearing || 0) + 'deg)">➤</div>') : ('<div class="ge-pin">' + this.esc(entity.icon) + '</div>');
+    const pin = entity.data?.travelTo
+      ? ('<div class="ge-travel-arrow" style="transform:rotate(' + (entity.data.travelBearing || 0) + 'deg)">➤</div>')
+      : olympian
+      ? ('<div class="ge-pin ge-olymp-flag">🏳️</div><div class="ge-pin">' + this.esc(entity.icon) + '</div>')
+      : ('<div class="ge-pin">' + this.esc(entity.icon) + '</div>');
     label.innerHTML = pin
       + '<div class="ge-text"><b>' + this.esc(entity.title) + '</b>'
       + '<span>' + this.esc(entity.description) + '</span></div>';
@@ -9631,8 +9701,13 @@ const GlobeEntity = {
           MapComms?.contactMenu?.(entity.data.user);
         } else ACIControl?.reply(entity.title + ' on the map — tap contact options');
         break;
+      case 'cluster':
+        this._openCluster(entity);
+        break;
       case 'post':
         if (entity.data?.url) {
+          const yt = GlobeVideo?.parseId?.(entity.data.url);
+          if (yt) MapComms?.showCloudVideo?.(yt, entity.title);
           GlobeVideo?.play?.(entity.data.url, { title: entity.title }, entity.title);
         } else {
           ACIControl?.reply(entity.description || entity.title);
@@ -9688,11 +9763,130 @@ const GlobeEntity = {
     return list;
   },
 
+  _applyGlobalClusters() {
+    const global = this.isGlobalView();
+    if (!global) {
+      if (this._clusterIds.size || this._clustered.size) {
+        this._clusterIds.forEach((id) => this.unregister(id));
+        this._clusterIds.clear();
+        this._clustered.forEach((id) => {
+          const e = this.entities.get(id);
+          if (e?.mesh) e.mesh.visible = true;
+          if (e?._labelEl) e._labelEl.style.visibility = '';
+        });
+        this._clustered.clear();
+      }
+      return;
+    }
+
+    const buckets = new Map();
+    this.entities.forEach((entity, id) => {
+      if (this._clusterIds.has(id) || entity.type === 'me' || entity.type === 'cluster') return;
+      if (!this.CLUSTER_TYPES.has(entity.type) && !(entity.type === 'friend' && entity.data?.user?.demo)) return;
+      const key = this.cellKey(entity.lat, entity.lng);
+      const b = buckets.get(key) || { key, members: [], lat: 0, lng: 0, videos: [] };
+      b.members.push(entity);
+      b.lat += entity.lat;
+      b.lng += entity.lng;
+      const url = entity.data?.url || entity.data?.post?.url;
+      const yt = GlobeVideo?.parseId?.(url);
+      if (yt) b.videos.push({ id: yt, title: entity.title });
+      buckets.set(key, b);
+    });
+
+    const nextClustered = new Set();
+    const nextClusterIds = new Set();
+
+    buckets.forEach((b) => {
+      if (b.members.length < this.CLUSTER_MIN) return;
+      const lat = b.lat / b.members.length;
+      const lng = b.lng / b.members.length;
+      const id = 'cluster-' + b.key;
+      nextClusterIds.add(id);
+      b.members.forEach((m) => {
+        nextClustered.add(m.id);
+        if (m.mesh) m.mesh.visible = false;
+        if (m._labelEl) m._labelEl.style.display = 'none';
+      });
+      const vid = b.videos[0];
+      const desc = b.members.length + ' signals'
+        + (b.videos.length ? ' · ' + b.videos.length + ' video' : '')
+        + ' · tap cloud';
+      const existing = this.entities.get(id);
+      if (existing) {
+        existing.lat = lat;
+        existing.lng = lng;
+        existing.title = '☁ ' + b.members.length;
+        existing.description = desc;
+        existing.data.members = b.members;
+        existing.data.youtubeId = vid?.id;
+        const cp = latLngToPos(lat, lng, 1.028);
+        if (existing.mesh) {
+          existing.mesh.position.set(cp.x, cp.y, cp.z);
+          existing.mesh.lookAt(0, 0, 0);
+        }
+        if (existing._labelEl) {
+          const tb = existing._labelEl.querySelector('.ge-text b');
+          const ts = existing._labelEl.querySelector('.ge-text span');
+          if (tb) tb.textContent = existing.title;
+          if (ts) ts.textContent = desc;
+        }
+      } else {
+        this.register({
+          id,
+          type: 'cluster',
+          lat,
+          lng,
+          title: '☁ ' + b.members.length,
+          description: desc,
+          urgency: b.videos.length ? 3 : 2,
+          icon: '☁',
+          persist: true,
+          data: { members: b.members, youtubeId: vid?.id, clusterKey: b.key },
+          onTap: (e) => this._openCluster(e),
+        });
+      }
+    });
+
+    this._clustered.forEach((id) => {
+      if (!nextClustered.has(id)) {
+        const e = this.entities.get(id);
+        if (e?.mesh) e.mesh.visible = true;
+        if (e?._labelEl) e._labelEl.style.visibility = '';
+      }
+    });
+    this._clusterIds.forEach((id) => {
+      if (!nextClusterIds.has(id)) this.unregister(id);
+    });
+    this._clustered = nextClustered;
+    this._clusterIds = nextClusterIds;
+  },
+
+  _openCluster(entity) {
+    const members = entity.data?.members || [];
+    const yt = entity.data?.youtubeId;
+    if (yt) MapComms?.showCloudVideo?.(yt, entity.title);
+    if (members.length === 1 && members[0].onTap) {
+      members[0].onTap(members[0]);
+      return;
+    }
+    this.select(entity);
+    const lines = members.slice(0, 8).map((m) => m.icon + ' ' + m.title).join(' · ');
+    ACIControl?.reply('Cloud · ' + members.length + ' — ' + lines);
+    if (GlobeControl?.Z?.national) {
+      const fp = latLngToPos(entity.lat, entity.lng, 1.04);
+      flyToPoint?.(new THREE.Vector3(fp.x, fp.y, fp.z), GlobeControl.Z.national);
+      GlobeControl?.noteAutoFly?.();
+    }
+  },
+
   tick() {
+    this._applyGlobalClusters();
     const now = Date.now();
     const toRemove = [];
 
     this.entities.forEach((entity, id) => {
+      if (this._clustered.has(id)) return;
       if (!entity.persist && entity.expires && now - entity.born > entity.expires) {
         toRemove.push(id);
         return;
@@ -9786,8 +9980,9 @@ const GlobeEntity = {
     this.unregisterType('friend');
     (others || []).forEach(u => {
       const isRed = u.team === 'red' || (opts.teamMode && u.team === 'red');
+      const isOlympian = u.agent === 'grok-heavy' || (u.team === 'blue' && u.demo);
       const fed = !!u.fed;
-      const agentTag = u.agent === 'cronian' ? 'Cronian titan' : u.agent === 'grok-heavy' ? 'Grok Heavy agent' : '';
+      const agentTag = u.agent === 'cronian' ? 'Cronian titan' : isOlympian ? 'Grok Heavy agent' : '';
       this.register({
         id: 'friend-' + u.id,
         type: 'friend',
@@ -9799,8 +9994,10 @@ const GlobeEntity = {
           : isRed
           ? (fed ? 'RED · fed ✓ · blue team won slice' : 'RED rival · deliver pitogyro/beer/burger/tsigareta')
           : 'Player on map · tap to fly here · collab or κρυφτό',
-        urgency: isRed && !fed ? 3 : 1,
-        color: isRed ? (fed ? 0x884444 : 0xff2244) : undefined,
+        urgency: isRed && !fed ? 3 : isOlympian ? 2 : 1,
+        color: isRed ? (fed ? 0x884444 : 0xff2244) : isOlympian ? this.OLYMPUS_BLUE : undefined,
+        olympian: isOlympian,
+        flag: isOlympian,
         data: { user: u },
         onTap: (e) => {
           if (isRed && !fed) {
@@ -9982,6 +10179,7 @@ const GlobeVideo = {
     this._currentId = id;
     const title = meta?.title || id;
     await SuperSpace?.locateForMedia?.(searchQuery || title, meta);
+    MapComms?.showCloudVideo?.(id, title);
     this.showPanel(title.slice(0, 48));
     const frame = document.getElementById('yt-frame');
     const titleEl = document.getElementById('yt-now-title');
@@ -13286,6 +13484,8 @@ const WillaGames = {
   },
 
   TEAM_COLOR: { blue: 0x1a6fd4, red: 0xff2244 },
+  OLYMPUS_BLUE: 0x0a2d6b,
+  OLYMPUS_GLOW: 0x1565c0,
 
   init() {
     if (this._timer) return;
@@ -13389,7 +13589,7 @@ const WillaGames = {
     others.forEach(u => {
       const tag = u.hidden ? 'hidden' : (u.role || 'agent');
       if (u.hidden) return;
-      const color = u.team === 'red' ? this.TEAM_COLOR.red : 0x3d9eff;
+      const color = u.team === 'red' ? this.TEAM_COLOR.red : u.agent === 'grok-heavy' ? this.OLYMPUS_GLOW : 0x3d9eff;
       MapDepict?.pulse?.(u.lat, u.lng, color, (u.emoji || '⚡') + ' ' + u.name + ' · ' + tag, 16000);
     });
     const p = window._lastPos || { lat: 36.44, lng: 28.22 };
@@ -13450,7 +13650,7 @@ const WillaGames = {
     const nRed = this._units.filter(u => u.team === 'red').length;
     AciCli?.print('◎ WILLA GAME · ' + nBlue + ' Olympians 🔵 · ' + nRed + ' Cronians 🔴 · multi-domain warfare', 'ok');
     ACIControl?.reply('Willa — gods vs titans · Kronos leads red · air · sea · ground · space · spies · drones');
-    FieldBrain?.pulse?.('play', 'willa game', { role: 'client', props: { units: n } });
+    FieldBrain?.pulse?.('play', 'willa game', { role: 'client', props: { units: this._units.length } });
     TelemachosPilot?.refreshTeamStatus?.({ quiet: true });
   },
 
@@ -13463,7 +13663,8 @@ const WillaGames = {
       const isSpy = u.unit === 'spy';
       const type = isDrone ? 'drone' : isSpy ? 'spy' : 'unit';
       const dom = TelemachosPilot?.DOMAINS?.[u.domain] || {};
-      const teamColor = this.TEAM_COLOR[u.team] || 0x3d9eff;
+      const isOlympian = u.agent === 'grok-heavy';
+      const teamColor = isOlympian ? this.OLYMPUS_BLUE : (this.TEAM_COLOR[u.team] || 0x3d9eff);
       const alt = u.alt || this.DOMAIN_ALT[u.domain] || 1.028;
       GlobeEntity?.register?.({
         id: 'willa-' + u.id,
@@ -13476,6 +13677,8 @@ const WillaGames = {
           + ' · ' + (u.agent === 'cronian' ? 'Cronian titan' : 'Grok Heavy'),
         urgency: u.team === 'red' ? 3 : 2,
         color: teamColor,
+        olympian: isOlympian,
+        flag: isOlympian,
         icon: u.emoji || dom.emoji || '⚔',
         data: { unit: u },
         onTap: (e) => {
@@ -13493,9 +13696,18 @@ const WillaGames = {
     if (this.active === 'kryfto' && this._demo.length) {
       this._demo.forEach(u => {
         if (u.hidden) return;
+        const prevLat = u._prevLat ?? u.lat;
+        const prevLng = u._prevLng ?? u.lng;
         u.lat += (Math.random() - 0.5) * 0.004;
         u.lng += (Math.random() - 0.5) * 0.004;
         u.t = Date.now();
+        if (u.agent === 'grok-heavy' && (u.role === 'seeker' || u.domain)) {
+          if (Math.abs(u.lat - prevLat) > 0.0003 || Math.abs(u.lng - prevLng) > 0.0003) {
+            MapDepict?.arc?.(prevLat, prevLng, u.lat, u.lng, this.OLYMPUS_GLOW, 18000);
+          }
+        }
+        u._prevLat = u.lat;
+        u._prevLng = u.lng;
       });
       if (!(window.others || []).some(o => !o.demo)) {
         AstranovPresence?._applyOthers?.(this._demo);
@@ -13504,8 +13716,24 @@ const WillaGames = {
     if (this.active === 'willa' && this._units.length) {
       this._units.forEach(u => {
         const drift = u.domain === 'sea' || u.domain === 'underwater' ? 0.006 : 0.003;
+        const prevLat = u._prevLat ?? u.lat;
+        const prevLng = u._prevLng ?? u.lng;
         u.lat += (Math.random() - 0.5) * drift;
         u.lng += (Math.random() - 0.5) * drift;
+        if (u.agent === 'grok-heavy') {
+          const moved = Math.abs(u.lat - prevLat) > 0.0004 || Math.abs(u.lng - prevLng) > 0.0004;
+          if (moved && (u.domain === 'air' || u.domain === 'fpv' || u.unit === 'spaceforce')) {
+            MapDepict?.arc?.(prevLat, prevLng, u.lat, u.lng, this.OLYMPUS_GLOW, 24000);
+          }
+          if (u.unit === 'spaceforce' && Math.random() < 0.07) {
+            const tipLat = u.lat + (Math.random() - 0.5) * 0.35;
+            const tipLng = u.lng + (Math.random() - 0.5) * 0.35;
+            MapDepict?.arc?.(u.lat, u.lng, tipLat, tipLng, this.OLYMPUS_GLOW, 20000);
+            MapDepict?.pulse?.(tipLat, tipLng, this.OLYMPUS_GLOW, u.name + ' · launch', 14000);
+          }
+        }
+        u._prevLat = u.lat;
+        u._prevLng = u.lng;
       });
       this._renderWillaUnits();
     }
@@ -13896,6 +14124,8 @@ const MapComms = {
       author: self.name,
       author_id: self.id,
       body: body.slice(0, 500),
+      lat: self.lat,
+      lng: self.lng,
       t: Date.now(),
     };
     this._onChat(msg);
@@ -13906,12 +14136,73 @@ const MapComms = {
     }
   },
 
+  _youtubeFromMsg(m) {
+    return GlobeVideo?.parseId?.(m.body) || GlobeVideo?.parseId?.(m.url) || null;
+  },
+
+  _lineHtml(m) {
+    const yt = this._youtubeFromMsg(m);
+    const vid = yt
+      ? ('<div class="mc-yt-card"><iframe title="YouTube preview" src="https://www.youtube-nocookie.com/embed/'
+        + yt + '?rel=0&modestbranding=1&playsinline=1" allow="encrypted-media; picture-in-picture" allowfullscreen></iframe></div>')
+      : '';
+    return '<div class="mc-line"><b>' + this.esc(m.author || m.name) + '</b> ' + this.esc(m.body) + vid + '</div>';
+  },
+
+  showCloudVideo(videoId, title) {
+    const box = document.getElementById('mc-media');
+    const cloud = document.getElementById('map-comms-cloud');
+    if (!box) return;
+    const id = GlobeVideo?.parseId?.(videoId) || videoId;
+    if (!id) return;
+    cloud?.classList.add('has-media');
+    if (!cloud?.classList.contains('open')) cloud?.classList.add('open');
+    box.classList.add('open');
+    box.innerHTML = '<div class="mc-yt-title">▶ ' + this.esc((title || 'YouTube').slice(0, 56)) + '</div>'
+      + '<div class="mc-yt-wrap"><button type="button" class="mc-yt-close">✖</button>'
+      + '<iframe title="' + this.esc(title || 'YouTube') + '" src="https://www.youtube-nocookie.com/embed/'
+      + id + '?rel=0&modestbranding=1&playsinline=1" allow="autoplay; encrypted-media; picture-in-picture" allowfullscreen></iframe></div>';
+    box.querySelector('.mc-yt-close')?.addEventListener('click', () => this.hideCloudVideo());
+  },
+
+  hideCloudVideo() {
+    const box = document.getElementById('mc-media');
+    if (box) { box.classList.remove('open'); box.innerHTML = ''; }
+    document.getElementById('map-comms-cloud')?.classList.remove('has-media');
+  },
+
   _renderMessages() {
     const log = document.getElementById('mc-log');
     if (!log) return;
-    log.innerHTML = this.messages.slice(-24).map((m) =>
-      '<div class="mc-line"><b>' + this.esc(m.author || m.name) + '</b> ' + this.esc(m.body) + '</div>'
-    ).join('');
+    const msgs = this.messages.slice(-40);
+    const global = GlobeEntity?.isGlobalView?.();
+
+    if (global && msgs.length >= 3) {
+      const groups = new Map();
+      msgs.forEach((m) => {
+        const lat = m.lat ?? this._center?.lat ?? 36.22;
+        const lng = m.lng ?? this._center?.lng ?? 28.12;
+        const key = GlobeEntity?.cellKey?.(lat, lng) || '0:0';
+        const g = groups.get(key) || { key, lat, lng, items: [] };
+        g.items.push(m);
+        groups.set(key, g);
+      });
+      log.innerHTML = [...groups.values()].map((g) => {
+        if (g.items.length < 2) return this._lineHtml(g.items[0]);
+        const yt = g.items.map((m) => this._youtubeFromMsg(m)).find(Boolean);
+        const vid = yt
+          ? ('<div class="mc-yt-card"><iframe title="YouTube" src="https://www.youtube-nocookie.com/embed/'
+            + yt + '?rel=0&modestbranding=1&playsinline=1" allow="encrypted-media; picture-in-picture" allowfullscreen></iframe></div>')
+          : '';
+        return '<details class="mc-cluster"><summary>☁ ' + g.items.length + ' · '
+          + g.lat.toFixed(1) + '°, ' + g.lng.toFixed(1) + '°</summary><div class="mc-cluster-body">'
+          + g.items.map((m) => this._lineHtml(m)).join('') + vid + '</div></details>';
+      }).join('');
+    } else {
+      log.innerHTML = msgs.slice(-24).map((m) => this._lineHtml(m)).join('');
+      const lastYt = [...msgs].reverse().map((m) => this._youtubeFromMsg(m)).find(Boolean);
+      if (lastYt) this.showCloudVideo(lastYt, 'Latest video');
+    }
     log.scrollTop = log.scrollHeight;
   },
 
@@ -13929,6 +14220,7 @@ const MapComms = {
   closeCloud() {
     document.getElementById('map-comms-cloud')?.classList.remove('open');
     document.getElementById('map-comms-contact')?.classList.remove('open');
+    this.hideCloudVideo();
     this.hideDriverPicker();
     if (this._beamSvg) this._beamSvg.innerHTML = '';
   },
@@ -14170,6 +14462,13 @@ const MapComms = {
   },
 
   tick() {
+    const global = GlobeEntity?.isGlobalView?.();
+    if (global !== this._wasGlobal) {
+      this._wasGlobal = global;
+      if (document.getElementById('map-comms-cloud')?.classList.contains('open') && this.messages.length) {
+        this._renderMessages();
+      }
+    }
     if (!this._viz || !this._lines.length) {
       if (this._beamSvg) this._beamSvg.innerHTML = '';
       return;

@@ -4,6 +4,10 @@ const GlobeEntity = {
   _labelRoot: null,
   _selected: null,
   _hud: null,
+  _clustered: new Set(),
+  _clusterIds: new Set(),
+  OLYMPUS_BLUE: 0x0a2d6b,
+  OLYMPUS_GLOW: 0x1565c0,
 
   TYPES: {
     vendor: { color: 0x3d9eff, icon: '🏬', label: 'Shop' },
@@ -20,7 +24,11 @@ const GlobeEntity = {
     drone: { color: 0x44ccff, icon: '🛸', label: 'Drone' },
     spy: { color: 0xaa44ff, icon: '🕵', label: 'Spy' },
     pyramid: { color: 0xffdd44, icon: '🔺', label: 'Pyramid' },
+    cluster: { color: 0x3d9eff, icon: '☁', label: 'Cloud' },
   },
+
+  CLUSTER_TYPES: new Set(['post', 'place', 'media', 'news']),
+  CLUSTER_MIN: 2,
 
   init() {
     this._labelRoot = document.getElementById('globe-entity-labels');
@@ -55,6 +63,22 @@ const GlobeEntity = {
     return 'ge-urg-' + Math.min(3, Math.max(0, u | 0));
   },
 
+  isGlobalView() {
+    const z = camera?.position?.z ?? 2.55;
+    return z >= ((GlobeControl?.Z?.global || 2.55) - 0.12);
+  },
+
+  cellKey(lat, lng) {
+    const z = camera?.position?.z ?? 2.55;
+    const deg = z >= 3.5 ? 3.5 : z >= 2.55 ? 2.0 : z >= 1.82 ? 0.8 : 0.35;
+    return Math.round(lat / deg) + ':' + Math.round(lng / deg);
+  },
+
+  _isOlympian(opts, entity) {
+    const u = opts?.data?.user || entity?.data?.user;
+    return !!(opts?.olympian || u?.agent === 'grok-heavy' || (u?.team === 'blue' && u?.demo));
+  },
+
   register(opts) {
     const id = opts.id || ('ge-' + Date.now() + '-' + Math.random().toString(36).slice(2, 6));
     const type = opts.type || 'place';
@@ -64,8 +88,9 @@ const GlobeEntity = {
 
     this.unregister(id);
 
-    const urgency = opts.urgency != null ? opts.urgency : (type === 'driver' ? 2 : type === 'me' ? 2 : 1);
-    const color = opts.color || meta.color;
+    const olympian = this._isOlympian(opts);
+    const urgency = opts.urgency != null ? opts.urgency : (olympian ? 2 : type === 'driver' ? 2 : type === 'me' ? 2 : 1);
+    const color = opts.color || (olympian ? this.OLYMPUS_BLUE : meta.color);
     const r = opts.radius || (type === 'me' ? 0.028 : type === 'vendor' ? 0.016 : 0.014);
 
     const group = new THREE.Group();
@@ -75,11 +100,33 @@ const GlobeEntity = {
     );
     const ring = new THREE.Mesh(
       new THREE.RingGeometry(r * 1.1, r * 1.65, 24),
-      new THREE.MeshBasicMaterial({ color, transparent: true, opacity: urgency >= 2 ? 0.55 : 0.28, side: THREE.DoubleSide })
+      new THREE.MeshBasicMaterial({
+        color: olympian ? this.OLYMPUS_GLOW : color,
+        transparent: true,
+        opacity: urgency >= 2 ? 0.55 : 0.28,
+        side: THREE.DoubleSide,
+      })
     );
     ring.lookAt(0, 0, 0);
     group.add(ring);
     group.add(core);
+    if (olympian || opts.flag) {
+      const flag = new THREE.Mesh(
+        new THREE.PlaneGeometry(r * 1.8, r * 1.1, 1, 1),
+        new THREE.MeshBasicMaterial({
+          color: this.OLYMPUS_GLOW,
+          transparent: true,
+          opacity: 0.88,
+          side: THREE.DoubleSide,
+          blending: THREE.AdditiveBlending,
+          depthWrite: false,
+        })
+      );
+      flag.position.set(r * 1.4, r * 0.8, 0);
+      flag.lookAt(0, 0, 0);
+      group.add(flag);
+      group.userData.olympianFlag = true;
+    }
 
     const pos = latLngToPos(lat, lng, opts.altitude || 1.028);
     group.position.set(pos.x, pos.y, pos.z);
@@ -105,9 +152,13 @@ const GlobeEntity = {
     globePivot.add(group);
 
     const label = document.createElement('div');
-    label.className = 'ge-label ' + this._urgencyClass(urgency) + ' ge-type-' + type;
+    label.className = 'ge-label ' + this._urgencyClass(urgency) + ' ge-type-' + type + (olympian ? ' ge-olympian' : '');
     label.dataset.id = id;
-    const pin = entity.data?.travelTo ? ('<div class="ge-travel-arrow" style="transform:rotate(' + (entity.data.travelBearing || 0) + 'deg)">➤</div>') : ('<div class="ge-pin">' + this.esc(entity.icon) + '</div>');
+    const pin = entity.data?.travelTo
+      ? ('<div class="ge-travel-arrow" style="transform:rotate(' + (entity.data.travelBearing || 0) + 'deg)">➤</div>')
+      : olympian
+      ? ('<div class="ge-pin ge-olymp-flag">🏳️</div><div class="ge-pin">' + this.esc(entity.icon) + '</div>')
+      : ('<div class="ge-pin">' + this.esc(entity.icon) + '</div>');
     label.innerHTML = pin
       + '<div class="ge-text"><b>' + this.esc(entity.title) + '</b>'
       + '<span>' + this.esc(entity.description) + '</span></div>';
@@ -268,8 +319,13 @@ const GlobeEntity = {
           MapComms?.contactMenu?.(entity.data.user);
         } else ACIControl?.reply(entity.title + ' on the map — tap contact options');
         break;
+      case 'cluster':
+        this._openCluster(entity);
+        break;
       case 'post':
         if (entity.data?.url) {
+          const yt = GlobeVideo?.parseId?.(entity.data.url);
+          if (yt) MapComms?.showCloudVideo?.(yt, entity.title);
           GlobeVideo?.play?.(entity.data.url, { title: entity.title }, entity.title);
         } else {
           ACIControl?.reply(entity.description || entity.title);
@@ -325,11 +381,130 @@ const GlobeEntity = {
     return list;
   },
 
+  _applyGlobalClusters() {
+    const global = this.isGlobalView();
+    if (!global) {
+      if (this._clusterIds.size || this._clustered.size) {
+        this._clusterIds.forEach((id) => this.unregister(id));
+        this._clusterIds.clear();
+        this._clustered.forEach((id) => {
+          const e = this.entities.get(id);
+          if (e?.mesh) e.mesh.visible = true;
+          if (e?._labelEl) e._labelEl.style.visibility = '';
+        });
+        this._clustered.clear();
+      }
+      return;
+    }
+
+    const buckets = new Map();
+    this.entities.forEach((entity, id) => {
+      if (this._clusterIds.has(id) || entity.type === 'me' || entity.type === 'cluster') return;
+      if (!this.CLUSTER_TYPES.has(entity.type) && !(entity.type === 'friend' && entity.data?.user?.demo)) return;
+      const key = this.cellKey(entity.lat, entity.lng);
+      const b = buckets.get(key) || { key, members: [], lat: 0, lng: 0, videos: [] };
+      b.members.push(entity);
+      b.lat += entity.lat;
+      b.lng += entity.lng;
+      const url = entity.data?.url || entity.data?.post?.url;
+      const yt = GlobeVideo?.parseId?.(url);
+      if (yt) b.videos.push({ id: yt, title: entity.title });
+      buckets.set(key, b);
+    });
+
+    const nextClustered = new Set();
+    const nextClusterIds = new Set();
+
+    buckets.forEach((b) => {
+      if (b.members.length < this.CLUSTER_MIN) return;
+      const lat = b.lat / b.members.length;
+      const lng = b.lng / b.members.length;
+      const id = 'cluster-' + b.key;
+      nextClusterIds.add(id);
+      b.members.forEach((m) => {
+        nextClustered.add(m.id);
+        if (m.mesh) m.mesh.visible = false;
+        if (m._labelEl) m._labelEl.style.display = 'none';
+      });
+      const vid = b.videos[0];
+      const desc = b.members.length + ' signals'
+        + (b.videos.length ? ' · ' + b.videos.length + ' video' : '')
+        + ' · tap cloud';
+      const existing = this.entities.get(id);
+      if (existing) {
+        existing.lat = lat;
+        existing.lng = lng;
+        existing.title = '☁ ' + b.members.length;
+        existing.description = desc;
+        existing.data.members = b.members;
+        existing.data.youtubeId = vid?.id;
+        const cp = latLngToPos(lat, lng, 1.028);
+        if (existing.mesh) {
+          existing.mesh.position.set(cp.x, cp.y, cp.z);
+          existing.mesh.lookAt(0, 0, 0);
+        }
+        if (existing._labelEl) {
+          const tb = existing._labelEl.querySelector('.ge-text b');
+          const ts = existing._labelEl.querySelector('.ge-text span');
+          if (tb) tb.textContent = existing.title;
+          if (ts) ts.textContent = desc;
+        }
+      } else {
+        this.register({
+          id,
+          type: 'cluster',
+          lat,
+          lng,
+          title: '☁ ' + b.members.length,
+          description: desc,
+          urgency: b.videos.length ? 3 : 2,
+          icon: '☁',
+          persist: true,
+          data: { members: b.members, youtubeId: vid?.id, clusterKey: b.key },
+          onTap: (e) => this._openCluster(e),
+        });
+      }
+    });
+
+    this._clustered.forEach((id) => {
+      if (!nextClustered.has(id)) {
+        const e = this.entities.get(id);
+        if (e?.mesh) e.mesh.visible = true;
+        if (e?._labelEl) e._labelEl.style.visibility = '';
+      }
+    });
+    this._clusterIds.forEach((id) => {
+      if (!nextClusterIds.has(id)) this.unregister(id);
+    });
+    this._clustered = nextClustered;
+    this._clusterIds = nextClusterIds;
+  },
+
+  _openCluster(entity) {
+    const members = entity.data?.members || [];
+    const yt = entity.data?.youtubeId;
+    if (yt) MapComms?.showCloudVideo?.(yt, entity.title);
+    if (members.length === 1 && members[0].onTap) {
+      members[0].onTap(members[0]);
+      return;
+    }
+    this.select(entity);
+    const lines = members.slice(0, 8).map((m) => m.icon + ' ' + m.title).join(' · ');
+    ACIControl?.reply('Cloud · ' + members.length + ' — ' + lines);
+    if (GlobeControl?.Z?.national) {
+      const fp = latLngToPos(entity.lat, entity.lng, 1.04);
+      flyToPoint?.(new THREE.Vector3(fp.x, fp.y, fp.z), GlobeControl.Z.national);
+      GlobeControl?.noteAutoFly?.();
+    }
+  },
+
   tick() {
+    this._applyGlobalClusters();
     const now = Date.now();
     const toRemove = [];
 
     this.entities.forEach((entity, id) => {
+      if (this._clustered.has(id)) return;
       if (!entity.persist && entity.expires && now - entity.born > entity.expires) {
         toRemove.push(id);
         return;
@@ -423,8 +598,9 @@ const GlobeEntity = {
     this.unregisterType('friend');
     (others || []).forEach(u => {
       const isRed = u.team === 'red' || (opts.teamMode && u.team === 'red');
+      const isOlympian = u.agent === 'grok-heavy' || (u.team === 'blue' && u.demo);
       const fed = !!u.fed;
-      const agentTag = u.agent === 'cronian' ? 'Cronian titan' : u.agent === 'grok-heavy' ? 'Grok Heavy agent' : '';
+      const agentTag = u.agent === 'cronian' ? 'Cronian titan' : isOlympian ? 'Grok Heavy agent' : '';
       this.register({
         id: 'friend-' + u.id,
         type: 'friend',
@@ -436,8 +612,10 @@ const GlobeEntity = {
           : isRed
           ? (fed ? 'RED · fed ✓ · blue team won slice' : 'RED rival · deliver pitogyro/beer/burger/tsigareta')
           : 'Player on map · tap to fly here · collab or κρυφτό',
-        urgency: isRed && !fed ? 3 : 1,
-        color: isRed ? (fed ? 0x884444 : 0xff2244) : undefined,
+        urgency: isRed && !fed ? 3 : isOlympian ? 2 : 1,
+        color: isRed ? (fed ? 0x884444 : 0xff2244) : isOlympian ? this.OLYMPUS_BLUE : undefined,
+        olympian: isOlympian,
+        flag: isOlympian,
         data: { user: u },
         onTap: (e) => {
           if (isRed && !fed) {

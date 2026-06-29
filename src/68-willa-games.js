@@ -81,6 +81,8 @@ const WillaGames = {
   },
 
   TEAM_COLOR: { blue: 0x1a6fd4, red: 0xff2244 },
+  OLYMPUS_BLUE: 0x0a2d6b,
+  OLYMPUS_GLOW: 0x1565c0,
 
   init() {
     if (this._timer) return;
@@ -184,7 +186,7 @@ const WillaGames = {
     others.forEach(u => {
       const tag = u.hidden ? 'hidden' : (u.role || 'agent');
       if (u.hidden) return;
-      const color = u.team === 'red' ? this.TEAM_COLOR.red : 0x3d9eff;
+      const color = u.team === 'red' ? this.TEAM_COLOR.red : u.agent === 'grok-heavy' ? this.OLYMPUS_GLOW : 0x3d9eff;
       MapDepict?.pulse?.(u.lat, u.lng, color, (u.emoji || '⚡') + ' ' + u.name + ' · ' + tag, 16000);
     });
     const p = window._lastPos || { lat: 36.44, lng: 28.22 };
@@ -245,7 +247,7 @@ const WillaGames = {
     const nRed = this._units.filter(u => u.team === 'red').length;
     AciCli?.print('◎ WILLA GAME · ' + nBlue + ' Olympians 🔵 · ' + nRed + ' Cronians 🔴 · multi-domain warfare', 'ok');
     ACIControl?.reply('Willa — gods vs titans · Kronos leads red · air · sea · ground · space · spies · drones');
-    FieldBrain?.pulse?.('play', 'willa game', { role: 'client', props: { units: n } });
+    FieldBrain?.pulse?.('play', 'willa game', { role: 'client', props: { units: this._units.length } });
     TelemachosPilot?.refreshTeamStatus?.({ quiet: true });
   },
 
@@ -258,7 +260,8 @@ const WillaGames = {
       const isSpy = u.unit === 'spy';
       const type = isDrone ? 'drone' : isSpy ? 'spy' : 'unit';
       const dom = TelemachosPilot?.DOMAINS?.[u.domain] || {};
-      const teamColor = this.TEAM_COLOR[u.team] || 0x3d9eff;
+      const isOlympian = u.agent === 'grok-heavy';
+      const teamColor = isOlympian ? this.OLYMPUS_BLUE : (this.TEAM_COLOR[u.team] || 0x3d9eff);
       const alt = u.alt || this.DOMAIN_ALT[u.domain] || 1.028;
       GlobeEntity?.register?.({
         id: 'willa-' + u.id,
@@ -271,6 +274,8 @@ const WillaGames = {
           + ' · ' + (u.agent === 'cronian' ? 'Cronian titan' : 'Grok Heavy'),
         urgency: u.team === 'red' ? 3 : 2,
         color: teamColor,
+        olympian: isOlympian,
+        flag: isOlympian,
         icon: u.emoji || dom.emoji || '⚔',
         data: { unit: u },
         onTap: (e) => {
@@ -288,9 +293,18 @@ const WillaGames = {
     if (this.active === 'kryfto' && this._demo.length) {
       this._demo.forEach(u => {
         if (u.hidden) return;
+        const prevLat = u._prevLat ?? u.lat;
+        const prevLng = u._prevLng ?? u.lng;
         u.lat += (Math.random() - 0.5) * 0.004;
         u.lng += (Math.random() - 0.5) * 0.004;
         u.t = Date.now();
+        if (u.agent === 'grok-heavy' && (u.role === 'seeker' || u.domain)) {
+          if (Math.abs(u.lat - prevLat) > 0.0003 || Math.abs(u.lng - prevLng) > 0.0003) {
+            MapDepict?.arc?.(prevLat, prevLng, u.lat, u.lng, this.OLYMPUS_GLOW, 18000);
+          }
+        }
+        u._prevLat = u.lat;
+        u._prevLng = u.lng;
       });
       if (!(window.others || []).some(o => !o.demo)) {
         AstranovPresence?._applyOthers?.(this._demo);
@@ -299,8 +313,24 @@ const WillaGames = {
     if (this.active === 'willa' && this._units.length) {
       this._units.forEach(u => {
         const drift = u.domain === 'sea' || u.domain === 'underwater' ? 0.006 : 0.003;
+        const prevLat = u._prevLat ?? u.lat;
+        const prevLng = u._prevLng ?? u.lng;
         u.lat += (Math.random() - 0.5) * drift;
         u.lng += (Math.random() - 0.5) * drift;
+        if (u.agent === 'grok-heavy') {
+          const moved = Math.abs(u.lat - prevLat) > 0.0004 || Math.abs(u.lng - prevLng) > 0.0004;
+          if (moved && (u.domain === 'air' || u.domain === 'fpv' || u.unit === 'spaceforce')) {
+            MapDepict?.arc?.(prevLat, prevLng, u.lat, u.lng, this.OLYMPUS_GLOW, 24000);
+          }
+          if (u.unit === 'spaceforce' && Math.random() < 0.07) {
+            const tipLat = u.lat + (Math.random() - 0.5) * 0.35;
+            const tipLng = u.lng + (Math.random() - 0.5) * 0.35;
+            MapDepict?.arc?.(u.lat, u.lng, tipLat, tipLng, this.OLYMPUS_GLOW, 20000);
+            MapDepict?.pulse?.(tipLat, tipLng, this.OLYMPUS_GLOW, u.name + ' · launch', 14000);
+          }
+        }
+        u._prevLat = u.lat;
+        u._prevLng = u.lng;
       });
       this._renderWillaUnits();
     }
