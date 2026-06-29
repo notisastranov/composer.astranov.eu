@@ -1,10 +1,13 @@
 // ── COMMERCE: real vendors, real menus only, smart order on globe ──
 const ORDER_ITEM_ALIASES = [
-  { id: 'pita', label: 'Πιτογύρα', keys: ['πιτογυρ', 'πιτογύρα', 'pitogyra', 'pita', 'πιτο', 'gyro', 'γύρο', 'gyros'], match: /πιτο|pita|gyro|γύρο|pitogyra/i },
-  { id: 'beer', label: 'Μπύρα', keys: ['μπυρ', 'μπίρ', 'mpira', 'mpironia', 'beer', 'beers', 'μπύρες'], match: /μπύρ|μπυρ|beer|lager|αμστελ|heineken/i },
+  { id: 'pita', label: 'Πιτογύρα', keys: ['πιτογυρ', 'πιτογύρα', 'pitogyra', 'pita', 'πιτο', 'gyro', 'γύρο', 'gyros', 'pitogyro'], match: /πιτο|pita|gyro|γύρο|pitogyra|pitogyro/i },
+  { id: 'beer', label: 'Μπύρα', keys: ['μπυρ', 'μπίρ', 'mpira', 'mpironia', 'mpironi', 'beer', 'beers', 'μπύρες'], match: /μπύρ|μπυρ|beer|lager|αμστελ|heineken|mpironi/i },
   { id: 'cigarettes', label: 'Τσιγάρα', keys: ['τσιγαρ', 'tsigar', 'tsigareta', 'cigarette', 'cigarettes', 'μαλαμ'], match: /τσιγαρ|cigar|μαλαμ|marlboro|winston/i },
+  { id: 'burger', label: 'Burger', keys: ['burger', 'burgers', 'μπεργκερ', 'χάμπουργκερ', 'hamburger'], match: /burger|μπεργκ|hamburger|χάμπουρ/i },
   { id: 'water', label: 'Νερό', keys: ['νερ', 'nero', 'water'], match: /νερό|νερο|water/i },
 ];
+
+const TEAM_WIN_ITEM_IDS = new Set(['pita', 'beer', 'cigarettes', 'burger']);
 
 const Commerce = {
   vendors: [],
@@ -555,11 +558,12 @@ const Commerce = {
     await this.placeOrder(vendor, items);
   },
 
-  async placeOrder(vendor, items, notes, payWithBalance) {
+  async placeOrder(vendor, items, notes, payWithBalance, opts) {
+    opts = opts || {};
     requestLocationIfNeeded(async () => {
-      let dLat = this.userLatLng().lat;
-      let dLng = this.userLatLng().lng;
-      if (userLocated && window._lastPos) {
+      let dLat = opts.deliveryLat ?? this.userLatLng().lat;
+      let dLng = opts.deliveryLng ?? this.userLatLng().lng;
+      if (!opts.deliveryLat && userLocated && window._lastPos) {
         dLat = window._lastPos.lat;
         dLng = window._lastPos.lng;
       }
@@ -579,6 +583,7 @@ const Commerce = {
             calc: { total_avc: total },
             pay_with_balance: !!payWithBalance,
             preferred_driver_id: this._preferredDriverId || null,
+            target_user_id: opts.targetUserId || null,
           }),
         });
         const j = await r.json().catch(() => ({}));
@@ -618,6 +623,7 @@ const Commerce = {
           seeking_driver: orderResult.seeking_driver,
           wants: items.map(i => i.name).join(', '),
         });
+        const wants = items.map(i => i.name).join(', ');
         TelemachosPilot?.coordinateMarketplaceDelivery?.({
           vendor,
           order: orderResult.order,
@@ -626,8 +632,18 @@ const Commerce = {
           deliveryLat: dLat,
           deliveryLng: dLng,
           seekingDriver: orderResult.seeking_driver,
-          wants: items.map(i => i.name).join(', '),
+          wants,
+          targetUser: opts.targetUser,
         });
+        if (opts.targetUser) {
+          await TelemachosPilot?.onTeamOrder?.({
+            target: opts.targetUser,
+            items,
+            order: orderResult.order,
+            deliveryLat: dLat,
+            deliveryLng: dLng,
+          });
+        }
       } else {
         msg = 'Παραγγελία απέτυχε: ' + (errMsg || 'server error') + '. Δοκίμασε ξανά.';
       }

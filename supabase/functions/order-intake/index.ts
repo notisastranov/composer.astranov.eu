@@ -167,7 +167,7 @@ serve(async (req) => {
       }), { headers: cors })
     }
 
-    const { vendor_id, items, calc, delivery_lat, delivery_lng, delivery_address, notes, pay_with_balance, preferred_driver_id } = body
+    const { vendor_id, items, calc, delivery_lat, delivery_lng, delivery_address, notes, pay_with_balance, preferred_driver_id, target_user_id } = body
 
     if (!vendor_id || !Array.isArray(items) || items.length === 0) {
       return new Response(JSON.stringify({ error: 'vendor_id and items required' }), { status: 400, headers: cors })
@@ -266,6 +266,9 @@ serve(async (req) => {
       delivery_lng: dLng,
       delivery_address: delivery_address ?? null,
       notes: notes ?? null,
+    }
+    if (target_user_id && typeof target_user_id === 'string') {
+      row.target_user_id = target_user_id
     }
     if (driver) {
       row.driver_id = driver.id

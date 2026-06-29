@@ -10,6 +10,8 @@ const cors = {
   'Content-Type': 'application/json',
 }
 
+const WIN_ITEM_TYPES = new Set(['pita', 'beer', 'cigarettes', 'burger'])
+
 const DOMAIN_RANGE_M: Record<string, number> = {
   fpv: 3500,
   air: 9000,
@@ -368,6 +370,149 @@ serve(async (req) => {
       })
 
       return new Response(JSON.stringify({ ok: true, drone_id: droneId }), { headers: cors })
+    }
+
+    if (action === 'team_status') {
+      const since = new Date(Date.now() - 6 * 60 * 60 * 1000).toISOString()
+      const dayStart = new Date()
+      dayStart.setUTCHours(0, 0, 0, 0)
+
+      const { data: redRows } = await sb.from('profiles')
+        .select('id, display_name, avatar_emoji, field_lat, field_lng, field_seen_at')
+        .gte('field_seen_at', since)
+        .not('field_lat', 'is', null)
+        .not('field_lng', 'is', null)
+        .eq('map_hidden', false)
+        .neq('id', userId!)
+        .limit(80)
+
+      const blueIds = new Set<string>([userId!])
+      const allyIds = Array.isArray(body.blue_allies) ? body.blue_allies.map(String) : []
+      allyIds.forEach((id: string) => blueIds.add(id))
+
+      const red = (redRows || [])
+        .filter((r) => !blueIds.has(r.id))
+        .map((r) => ({
+          id: r.id,
+          name: r.display_name || String(r.id).slice(0, 8),
+          lat: r.field_lat,
+          lng: r.field_lng,
+          team: 'red',
+        }))
+
+      const { data: hits } = await sb.from('pilot_team_hits')
+        .select('id, blue_actor_id, red_target_id, item_type, order_id, created_at')
+        .gte('created_at', dayStart.toISOString())
+        .in('red_target_id', red.length ? red.map((r) => r.id) : ['00000000-0000-0000-0000-000000000000'])
+
+      const fed = new Set((hits || []).map((h) => h.red_target_id))
+      const pending = red.filter((r) => !fed.has(r.id))
+      const won = red.length > 0 && pending.length === 0
+
+      return new Response(JSON.stringify({
+        ok: true,
+        blue: { count: blueIds.size, you: userId, allies: [...blueIds].filter((id) => id !== userId) },
+        red,
+        hits: hits || [],
+        fed_count: fed.size,
+        red_count: red.length,
+        pending,
+        won,
+        win_items: [...WIN_ITEM_TYPES],
+      }), { headers: cors })
+    }
+
+    if (action === 'team_hit') {
+      const targetId = String(body.red_target_id || body.target_user_id || '')
+      const itemType = String(body.item_type || '').toLowerCase()
+      const orderId = body.order_id ? String(body.order_id) : null
+      if (!targetId) return new Response(JSON.stringify({ error: 'red_target_id_required' }), { status: 400, headers: cors })
+      if (!WIN_ITEM_TYPES.has(itemType)) {
+        return new Response(JSON.stringify({ error: 'invalid_win_item', allowed: [...WIN_ITEM_TYPES] }), { status: 400, headers: cors })
+      }
+      if (targetId === userId) {
+        return new Response(JSON.stringify({ error: 'cannot_hit_self' }), { status: 400, headers: cors })
+      }
+
+      const { data: target } = await sb.from('profiles')
+        .select('id, display_name, field_lat, field_lng, field_seen_at, map_hidden')
+        .eq('id', targetId)
+        .maybeSingle()
+      if (!target?.field_lat || target.map_hidden) {
+        return new Response(JSON.stringify({ error: 'red_not_on_field' }), { status: 400, headers: cors })
+      }
+
+      const lat = Number(body.lat ?? target.field_lat)
+      const lng = Number(body.lng ?? target.field_lng)
+
+      const { data: hit, error: hitErr } = await sb.from('pilot_team_hits').insert({
+        blue_actor_id: userId!,
+        red_target_id: targetId,
+        item_type: itemType,
+        order_id: orderId,
+        lat,
+        lng,
+        props: { target_name: target.display_name, order_id: orderId },
+      }).select().single()
+
+      if (hitErr) {
+        if (hitErr.code === '23505') {
+          return new Response(JSON.stringify({
+            ok: true,
+            already_fed: true,
+            target: target.display_name,
+            item_type: itemType,
+          }), { headers: cors })
+        }
+        return new Response(JSON.stringify({ error: hitErr.message }), { status: 400, headers: cors })
+      }
+
+      await logEvent(sb, {
+        actor_id: userId!,
+        owner_id: targetId,
+        action: 'deploy',
+        detail: 'team_hit ' + itemType,
+        lat, lng,
+        props: { team: 'blue', target: target.display_name, item_type: itemType },
+      })
+
+      const since = new Date(Date.now() - 6 * 60 * 60 * 1000).toISOString()
+      const { data: allRed } = await sb.from('profiles')
+        .select('id')
+        .gte('field_seen_at', since)
+        .not('field_lat', 'is', null)
+        .eq('map_hidden', false)
+        .neq('id', userId!)
+        .limit(80)
+
+      const dayStart = new Date()
+      dayStart.setUTCHours(0, 0, 0, 0)
+      const redIds = (allRed || []).map((r) => r.id)
+      const { data: dayHits } = redIds.length
+        ? await sb.from('pilot_team_hits').select('red_target_id').gte('created_at', dayStart.toISOString()).in('red_target_id', redIds)
+        : { data: [] }
+
+      const fed = new Set((dayHits || []).map((h) => h.red_target_id))
+      const won = redIds.length > 0 && redIds.every((id) => fed.has(id))
+
+      if (won) {
+        await sb.from('webrtc_signals').insert({
+          room: 'pilot-c2-' + userId!,
+          from_peer: userId!,
+          to_peer: targetId,
+          type: 'blue_victory',
+          payload: { red_count: redIds.length, fed_count: fed.size, last_hit: itemType },
+        })
+      }
+
+      return new Response(JSON.stringify({
+        ok: true,
+        hit,
+        target: target.display_name,
+        fed_count: fed.size,
+        red_count: redIds.length,
+        won,
+      }), { headers: cors })
     }
 
     return new Response(JSON.stringify({ error: 'unknown_action' }), { status: 400, headers: cors })

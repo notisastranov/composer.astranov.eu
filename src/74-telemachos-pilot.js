@@ -51,6 +51,12 @@ const TelemachosPilot = {
     { id: 'pilot_rtb', label: 'Pilot RTB flyback', desc: 'After capture, fly drone home to its pilot on globe — handoff at feet' },
   ],
 
+  TEAM_BLUE: 0x1a6fd4,
+  TEAM_RED: 0xff2244,
+  WIN_ITEM_IDS: ['pita', 'beer', 'cigarettes', 'burger'],
+
+  _team: { red: [], pending: [], hits: [], won: false, fed: 0, redCount: 0 },
+
   DOMAINS: {
     fpv: { emoji: '🥽', label: 'FPV', color: 0xff66cc, alt: 1.07 },
     air: { emoji: '🛸', label: 'Air', color: 0x44ccff, alt: 1.06 },
@@ -94,8 +100,10 @@ const TelemachosPilot = {
   init() {
     this._loadEvolutionLocal();
     this._initRealtime();
+    this._initTeamRealtime();
     this._loadEvolutionFromServer();
     this._subscribeC2Signals();
+    if (Auth?.user) this.refreshTeamStatus({ quiet: true });
   },
 
   async api(body) {
@@ -157,8 +165,204 @@ const TelemachosPilot = {
       if (sig.type === 'drone_rtb') {
         ACIControl?.reply('C2 — drone returning to you on OSRM route');
       }
+      if (sig.type === 'blue_victory') {
+        this._declareVictory(sig.payload);
+      }
     });
     this._c2Channel.subscribe();
+  },
+
+  _initTeamRealtime() {
+    if (!Auth?.client || this._teamChannel) return;
+    this._teamChannel = Auth.client.channel('pilot-team-hits');
+    this._teamChannel.on('postgres_changes', {
+      event: 'INSERT', schema: 'public', table: 'pilot_team_hits',
+    }, () => { this.refreshTeamStatus({ quiet: true }); });
+    this._teamChannel.subscribe();
+  },
+
+  _blueAllyIds() {
+    const ids = [];
+    if (Auth?.user?.id) ids.push(Auth.user.id);
+    (MapComms?.members ? [...MapComms.members.keys()] : []).forEach((id) => {
+      if (id && id !== Auth?.user?.id) ids.push(id);
+    });
+    return ids;
+  },
+
+  async refreshTeamStatus(opts) {
+    opts = opts || {};
+    if (!Auth?.user) {
+      this._team = { red: [], pending: [], hits: [], won: false, fed: 0, redCount: 0 };
+      return this._team;
+    }
+    const r = await this.api({ action: 'team_status', blue_allies: this._blueAllyIds() });
+    if (!r.ok) return this._team;
+    this._team = {
+      red: r.red || [],
+      pending: r.pending || [],
+      hits: r.hits || [],
+      won: !!r.won,
+      fed: r.fed_count || 0,
+      redCount: r.red_count || 0,
+    };
+    this._visualizeTeams();
+    if (r.won && !opts.quiet) this._declareVictory({ fed_count: r.fed_count, red_count: r.red_count });
+    return this._team;
+  },
+
+  _findRedPlayer(q) {
+    const list = this._team.red || [];
+    const s = String(q || '').toLowerCase().trim();
+    if (!s || s === 'all' || s === 'any') return list[0] || null;
+    return list.find((p) => p.id === q || String(p.id).includes(s))
+      || list.find((p) => (p.name || '').toLowerCase().includes(s))
+      || null;
+  },
+
+  _resolveWinItemFromOrder(items) {
+    const names = (items || []).map((i) => String(i.name || '')).join(' ');
+    const wants = Commerce?.parseWantedItems?.(names) || [];
+    return wants.find((w) => this.WIN_ITEM_IDS.includes(w.id)) || null;
+  },
+
+  _visualizeTeams() {
+    const red = this._team.red || [];
+    const pending = this._team.pending || [];
+    const pendingIds = new Set(pending.map((p) => p.id));
+    red.forEach((p) => {
+      const fed = !pendingIds.has(p.id);
+      MapDepict?.pulse?.(p.lat, p.lng, fed ? 0x884444 : this.TEAM_RED, (fed ? '✓ ' : '🔴 ') + p.name, 14000);
+    });
+    const enriched = red.map((p) => ({
+      ...p,
+      team: 'red',
+      emoji: pendingIds.has(p.id) ? '🔴' : '✓',
+      fed: !pendingIds.has(p.id),
+    }));
+    GlobeEntity?.syncFriends?.(enriched, { teamMode: true });
+    const u = Commerce?.userLatLng?.() || window._lastPos || this.HOME;
+    MapDepict?.pulse?.(u.lat, u.lng, this.TEAM_BLUE, '🔵 BLUE TEAM', 10000);
+  },
+
+  _declareVictory(payload) {
+    if (this._team._victoryShown) return;
+    this._team._victoryShown = true;
+    this._team.won = true;
+    const n = payload?.red_count || this._team.redCount || 0;
+    const msg = '🏆 BLUE TEAM WINS — delivered burger/beer/pitogyro/mpironi/tsigareta to all ' + n + ' red players!';
+    MapDepict?.action?.('play', { lat: this.HOME.lat, lng: this.HOME.lng, detail: msg });
+    window.MapComms?.postSystem?.(msg);
+    ACI?.feed?.('blue-victory', String(n) + ' red fed');
+    this._gainXp(500, 'delivery');
+    this._logField('pilot', 'blue_team_victory', { visual_truth: true, red_count: n });
+    this.say(msg);
+    setTimeout(() => { this._team._victoryShown = false; }, 60000);
+  },
+
+  teamsText() {
+    const t = this._team;
+    if (!t.redCount) {
+      return [
+        '── Blue vs Red · ΤΗΛΕΜΑΧΟΣ ──',
+        '🔵 You are always BLUE TEAM',
+        '🔴 Opponents = live players on map (not in your MapComms team)',
+        'Win: deliver πιτογύρο · burger · μπύρα/mpironi · τσιγάρα to EVERY red player',
+        'No rivals on field — invite gamers to sign in',
+        'deliver red <name> pitogyra · teams · attack',
+      ].join('\n');
+    }
+    const lines = [
+      '── Blue vs Red · field warfare ──',
+      '🔵 BLUE (us): you' + (this._blueAllyIds().length > 1 ? ' + ' + (this._blueAllyIds().length - 1) + ' allies' : ''),
+      '🔴 RED: ' + t.redCount + ' · fed: ' + t.fed + '/' + t.redCount + (t.won ? ' · 🏆 WON' : ''),
+    ];
+    t.red.forEach((p, i) => {
+      const fed = !(t.pending || []).find((x) => x.id === p.id);
+      lines.push((i + 1) + '. ' + (fed ? '✓' : '🔴') + ' ' + p.name + ' · ' + p.lat.toFixed(3) + ',' + p.lng.toFixed(3));
+    });
+    if (t.pending?.length) {
+      lines.push('Still need: ' + t.pending.map((p) => p.name).join(', '));
+      lines.push('deliver red <name> pitogyra|beer|burger|tsigareta');
+    } else if (!t.won) {
+      lines.push('All fed — checking victory…');
+    }
+    return lines.join('\n');
+  },
+
+  async deliverToRed(targetQ, itemQuery) {
+    if (!Auth?.user) {
+      this.say('Sign in — blue team delivers to red rivals on real GPS');
+      Auth?.signInGoogle?.();
+      return { error: 'login_required' };
+    }
+    this._setEdition('telemachos');
+    await this.refreshTeamStatus({ quiet: true });
+    const red = this._findRedPlayer(targetQ);
+    if (!red) {
+      this.say('No red player — teams to list rivals on map');
+      return { error: 'no_red_target' };
+    }
+
+    let wants = Commerce?.parseWantedItems?.(itemQuery || 'pitogyra') || [];
+    wants = wants.filter((w) => this.WIN_ITEM_IDS.includes(w.id));
+    if (!wants.length) wants = Commerce?.parseWantedItems?.('pitogyra beer')?.filter((w) => this.WIN_ITEM_IDS.includes(w.id)) || [];
+
+    if (!wants.length) {
+      this.say('Win items only: pitogyro · burger · mpironi/beer · tsigareta');
+      return { error: 'no_win_items' };
+    }
+
+    await Commerce.loadVendors();
+    const u = { lat: red.lat, lng: red.lng };
+    const matches = [];
+    Commerce.vendors.forEach((v) => {
+      const m = Commerce.scoreVendorForWants(v, wants, u);
+      if (m) matches.push(m);
+    });
+    matches.sort((a, b) => b.score - a.score);
+    const pick = matches[0];
+    if (!pick) {
+      this.say('No vendor menu matches — try another item or vendor with menu');
+      return { error: 'no_vendor_match' };
+    }
+
+    const orderItems = pick.picks.map((p) => ({ name: p.item.name, qty: 1, price: p.item.price || 0 }));
+    const notes = 'BLUE→RED · ' + red.name + ' · ' + wants.map((w) => w.label).join('+');
+    await Commerce.placeOrder(pick.vendor, orderItems, notes, false, {
+      deliveryLat: red.lat,
+      deliveryLng: red.lng,
+      targetUserId: red.id,
+      targetUser: red,
+    });
+    this.showPilot(red.lat, red.lng, 'telemachos');
+    const msg = '🔵→🔴 OSRM delivery to ' + red.name + ' · ' + wants.map((w) => w.label).join(' · ');
+    this.out(msg, 'ok');
+    return { ok: true, target: red, wants };
+  },
+
+  async onTeamOrder(opts) {
+    opts = opts || {};
+    const target = opts.target;
+    if (!target?.id) return;
+    const winItem = this._resolveWinItemFromOrder(opts.items);
+    if (!winItem) return;
+    const r = await this.api({
+      action: 'team_hit',
+      red_target_id: target.id,
+      item_type: winItem.id,
+      order_id: opts.order?.id,
+      lat: opts.deliveryLat ?? target.lat,
+      lng: opts.deliveryLng ?? target.lng,
+    });
+    await this.refreshTeamStatus({ quiet: true });
+    if (r.won) this._declareVictory(r);
+    else if (r.ok) {
+      const tag = r.already_fed ? 'already fed today' : 'hit logged';
+      window.MapComms?.postSystem?.('🔵 ' + tag + ' · ' + (target.name || 'red') + ' · ' + winItem.label);
+      this._gainXp(80, 'delivery');
+    }
+    return r;
   },
 
   _logField(action, detail, props) {
@@ -269,6 +473,7 @@ const TelemachosPilot = {
     if (cmds.includes(cmd)) return true;
     if (this.mentionsTelemachos(raw) || this.mentionsTeledromos(raw) || this.mentionsTilemaxos(raw)) return true;
     if (/takeover|take over|ανάληψη|αναληψη|hostile|αντιπαλ|opponent|fpv|flyback|fly back|rtb|return to pilot/.test(this.foldedGreek(raw))) return true;
+    if (/blue team|red team|deliver red|attack red|team war|μπλε|κοκκιν/.test(this.foldedGreek(raw))) return true;
     if (this.wantsIntro(raw) && /pilot|drone|delivery|παραδοση|διανομε|gaming|commercial/.test(this.foldedGreek(raw))) return true;
     return false;
   },
@@ -512,7 +717,8 @@ const TelemachosPilot = {
     ];
     if (e.tier === 'gaming' || e.id === 'tilemaxos') {
       lines.push('Εξέλιξη με real gamers: level ' + this._evolution.level + ' · power ' + this._evolution.power + ' · takeovers ' + this._evolution.takeovers);
-      lines.push('tilemaxos: scan · takeover fpv · takeover any · flyback — capture ANY drone, RTB to pilot.');
+      lines.push('🔵 BLUE TEAM (always us) — win by delivering pitogyro/burger/mpironi/tsigareta to ALL 🔴 red players.');
+      lines.push('tilemaxos: scan · takeover fpv · deliver red <name> · teams');
     }
     if (e.tier === 'commercial') {
       lines.push('Marketplace: deliver · drivers · vendors — χωρίς hostile takeover.');
@@ -540,6 +746,7 @@ const TelemachosPilot = {
       '• Unlimited fleet — FPV 🥽 / air / ground / sea / underwater',
       '• Marketplace delivery (ΤΗΛΕΔΡΟΜΟΣ) — vendor → you · MapComms · drivers',
       '• Gaming evolution (ΤΗΛΕΜΑΧΟΣ) — XP from real users on globe · level ' + this._evolution.level,
+      '• Blue vs Red — you are always 🔵 BLUE · rivals are 🔴 RED · feed all reds to win',
     ];
     if (e.takeover || e.id === 'tilemaxos') {
       lines.push('• Real C2 — pilot_drones DB · pilot-command edge · OSRM RTB · webrtc_signals handoff');
@@ -1012,6 +1219,10 @@ const TelemachosPilot = {
       if (this.mentionsTelemachos(line)) return { cmd: 'telemachos', sub: p[1], p };
       if (/takeover|ανάληψη|αναληψη/.test(this.foldedGreek(line))) return { cmd: 'telemachos', sub: 'takeover', p, raw: line };
       if (/flyback|fly back|rtb|return to pilot|επιστροφη|γυρισμα/.test(this.foldedGreek(line))) return { cmd: 'telemachos', sub: 'flyback', p };
+      if (/deliver red|attack red|blue team|red team|teams|μπλε|κοκκιν/.test(this.foldedGreek(line))) {
+        if (/deliver red/.test(this.foldedGreek(line))) return { cmd: 'telemachos', sub: 'deliver', p: ['telemachos', 'deliver', 'red', ...p.slice(1)], raw: line };
+        return { cmd: 'telemachos', sub: 'teams', p };
+      }
       if (/scan|hostile|αντιπαλ|fpv/.test(this.foldedGreek(line))) return { cmd: 'telemachos', sub: 'scan', p };
     }
     return { cmd, sub: (p[1] || '').toLowerCase(), p };
@@ -1088,6 +1299,12 @@ const TelemachosPilot = {
       GlobeDeck?.finishCliIfOneShot('telemachos');
       return { ok: true };
     }
+    if (sub === 'teams' || sub === 'team' || sub === 'red' || sub === 'blue' || sub === 'attack' || sub === 'war') {
+      await this.refreshTeamStatus();
+      this.out(this.teamsText(), 'ok');
+      GlobeDeck?.finishCliIfOneShot('telemachos');
+      return { ok: true };
+    }
     if (sub === 'scan' || sub === 'hostiles' || sub === 'opponents' || sub === 'drones') {
       this._setEdition('tilemaxos');
       await this.scanAllDrones();
@@ -1135,6 +1352,17 @@ const TelemachosPilot = {
       GlobeDeck?.finishCliIfOneShot('telemachos');
       return { ok: true };
     }
+    if (sub === 'deliver' && arg2 === 'red') {
+      const nameParts = [];
+      const itemParts = [];
+      pp.slice(3).forEach((x) => {
+        if (/pitogy|burger|beer|mpir|μπυρ|τσιγαρ|pita|gyro|mpironi/i.test(x)) itemParts.push(x);
+        else nameParts.push(x);
+      });
+      await this.deliverToRed(nameParts.join(' ') || 'all', itemParts.join(' ') || 'pitogyra');
+      GlobeDeck?.finishCliIfOneShot('telemachos');
+      return { ok: true };
+    }
     if (sub === 'deliver' || sub === 'coordinate') {
       if (arg2 === 'commercial') await this.coordinateMarketplaceDelivery({});
       else {
@@ -1160,7 +1388,7 @@ const TelemachosPilot = {
       return { ok: true };
     }
 
-    this.out('usage: tilemaxos · scan · takeover fpv · takeover any · flyback · rtb · deliver', 'dim');
+    this.out('usage: teams · deliver red <name> pitogyra · scan · takeover fpv · flyback', 'dim');
     GlobeDeck?.finishCliIfOneShot('telemachos');
     return { ok: true };
   },

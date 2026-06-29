@@ -411,24 +411,34 @@ const GlobeEntity = {
     });
   },
 
-  syncFriends(others) {
+  syncFriends(others, opts) {
+    opts = opts || {};
     this.unregisterType('friend');
     (others || []).forEach(u => {
+      const isRed = opts.teamMode && u.team === 'red';
+      const fed = !!u.fed;
       this.register({
         id: 'friend-' + u.id,
         type: 'friend',
         lat: u.lat,
         lng: u.lng,
-        title: (u.emoji || '') + ' ' + u.name,
-        description: 'Player on map · tap to fly here · collab or κρυφτό',
-        urgency: 1,
+        title: (u.emoji || (isRed ? '🔴' : '👤')) + ' ' + u.name,
+        description: isRed
+          ? (fed ? 'RED · fed ✓ · blue team won slice' : 'RED rival · deliver pitogyro/beer/burger/tsigareta')
+          : 'Player on map · tap to fly here · collab or κρυφτό',
+        urgency: isRed && !fed ? 3 : 1,
+        color: isRed ? (fed ? 0x884444 : 0xff2244) : undefined,
         data: { user: u },
         onTap: (e) => {
+          if (isRed && !fed) {
+            TelemachosPilot?.deliverToRed?.(u.id, 'pitogyra');
+            return;
+          }
           MapComms?.contactMenu?.(u);
           const p = latLngToPos(e.lat, e.lng, 1.04);
           flyToPoint?.(new THREE.Vector3(p.x, p.y, p.z), GlobeControl?.Z?.national || 1.82);
         },
-        _actionLabel: 'Contact',
+        _actionLabel: isRed && !fed ? 'Deliver pitogyra' : 'Contact',
       });
     });
   },
