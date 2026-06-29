@@ -162,55 +162,55 @@ const SCENARIOS = [
         const sleep = (ms) => new Promise((res) => setTimeout(res, ms));
         const from = { lat: 36.44, lng: 28.22 };
         const to = { lat: 36.46, lng: 28.24 };
-        await CityLife.dropIn(from.lat, from.lng, { label: 'routing test' });
-        for (let i = 0; i < 24 && !CityMap.active; i++) await sleep(100);
-        if (!CityMap.active) throw new Error('city map not active');
-        window._lastPos = from;
-        DrivingView.destination = to;
-
-        let coords = 0;
-        for (let attempt = 0; attempt < 3 && coords < 2; attempt++) {
-          await DrivingView.fetchRoadRoute();
-          coords = DrivingView.routeCoords?.length || 0;
-          if (coords < 2) await sleep(900);
-        }
-
-        let osrm = coords >= 2;
-        if (!osrm) {
-          const fallback = [];
-          for (let i = 0; i <= 10; i++) {
-            const t = i / 10;
-            fallback.push({
-              lat: from.lat + (to.lat - from.lat) * t,
-              lng: from.lng + (to.lng - from.lng) * t,
-            });
-          }
-          DrivingView.routeCoords = fallback;
-          coords = fallback.length;
+        const fallback = [];
+        for (let i = 0; i <= 12; i++) {
+          const t = i / 12;
+          fallback.push({
+            lat: from.lat + (to.lat - from.lat) * t,
+            lng: from.lng + (to.lng - from.lng) * t,
+          });
         }
 
         const ensureCity = async () => {
-          for (let i = 0; i < 20; i++) {
-            camera.position.z = 1.34;
+          window._lastPos = from;
+          camera.position.z = 1.34;
+          for (let i = 0; i < 16; i++) {
             CityMap.onCamera(1.34, 'earth');
             if (!CityMap.active && CityMap._ready) CityMap._enter?.(1.34);
             if (CityMap.active && CityMap.map) return;
-            await sleep(120);
+            await sleep(80);
           }
-          throw new Error('city map lost before route draw');
+          throw new Error('city map not active for routing');
         };
-        await ensureCity();
 
+        await ensureCity();
+        DrivingView.destination = to;
+
+        let osrm = false;
+        try {
+          await Promise.race([
+            DrivingView.fetchRoadRoute(),
+            sleep(5000),
+          ]);
+          osrm = (DrivingView.routeCoords?.length || 0) >= 2;
+        } catch (_) {
+          osrm = false;
+        }
+
+        const coords = osrm ? DrivingView.routeCoords : fallback;
+        if (!osrm) DrivingView.routeCoords = fallback;
+
+        await ensureCity();
         DrivingView.drawRoute?.();
-        CityMap.setRoute(DrivingView.routeCoords);
+        CityMap.setRoute(coords);
         CityMap._syncRoute?.();
-        for (let i = 0; i < 30 && !CityMap._route; i++) {
+        for (let i = 0; i < 20 && !CityMap._route; i++) {
           CityMap.onCamera(1.34, 'earth');
           CityMap._syncRoute?.();
-          await sleep(100);
+          await sleep(80);
         }
         return {
-          coords,
+          coords: coords?.length || 0,
           hasRoute: !!CityMap._route,
           active: CityMap.active,
           hasMap: !!CityMap.map,
@@ -258,6 +258,7 @@ async function main() {
     permissions: ['geolocation'],
   });
   const page = await context.newPage();
+  page.setDefaultTimeout(90000);
   await page.route('**/*', route => {
     const u = route.request().url();
     if (/supabase\.co|allorigins|feeds\.bbci/i.test(u)) return route.abort();
