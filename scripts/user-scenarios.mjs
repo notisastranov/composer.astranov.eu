@@ -189,10 +189,17 @@ const SCENARIOS = [
           coords = fallback.length;
         }
 
-        camera.position.z = 1.34;
-        CityMap.onCamera(1.34, 'earth');
-        await sleep(350);
-        if (!CityMap.active) throw new Error('city map lost before route draw');
+        const ensureCity = async () => {
+          for (let i = 0; i < 20; i++) {
+            camera.position.z = 1.34;
+            CityMap.onCamera(1.34, 'earth');
+            if (!CityMap.active && CityMap._ready) CityMap._enter?.(1.34);
+            if (CityMap.active && CityMap.map) return;
+            await sleep(120);
+          }
+          throw new Error('city map lost before route draw');
+        };
+        await ensureCity();
 
         DrivingView.drawRoute?.();
         CityMap.setRoute(DrivingView.routeCoords);
