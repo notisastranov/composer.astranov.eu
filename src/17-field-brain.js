@@ -4,7 +4,8 @@
 const FIELD_SCOPE = new Set([
   'heartbeat', 'login', 'roles_sync', 'location', 'drive', 'route', 'order',
   'vendor', 'commerce', 'think', 'teach', 'connect', 'explore', 'claim_delivery',
-  'evolve', 'vhf', 'news', 'batch', 'post'
+  'evolve', 'vhf', 'news', 'batch', 'post',
+  'pilot', 'drone_seize', 'drone_rtb', 'drone_scan', 'drone_register',
 ]);
 
 const FieldBrain = {

@@ -4934,7 +4934,8 @@ window.SessionHold = SessionHold;
 const FIELD_SCOPE = new Set([
   'heartbeat', 'login', 'roles_sync', 'location', 'drive', 'route', 'order',
   'vendor', 'commerce', 'think', 'teach', 'connect', 'explore', 'claim_delivery',
-  'evolve', 'vhf', 'news', 'batch', 'post'
+  'evolve', 'vhf', 'news', 'batch', 'post',
+  'pilot', 'drone_seize', 'drone_rtb', 'drone_scan', 'drone_register',
 ]);
 
 const FieldBrain = {
@@ -13691,22 +13692,96 @@ const TelemachosPilot = {
   get NAME_LATIN() { return this.edition.name_latin; },
 
   init() {
-    this._loadEvolution();
-    this._syncGamerTelemetry();
+    this._loadEvolutionLocal();
+    this._initRealtime();
+    this._loadEvolutionFromServer();
+    this._subscribeC2Signals();
   },
 
-  _loadEvolution() {
+  async api(body) {
+    const headers = Auth?.authHeaders ? await Auth.authHeaders() : sbHeaders();
+    const r = await fetch(SB_URL + '/functions/v1/pilot-command', {
+      method: 'POST', headers,
+      body: JSON.stringify(body),
+    });
+    return r.json().catch(() => ({ error: 'network' }));
+  },
+
+  _loadEvolutionLocal() {
     try {
       const raw = localStorage.getItem(this.EVO_KEY);
       if (raw) Object.assign(this._evolution, JSON.parse(raw));
     } catch (_) {}
   },
 
-  _saveEvolution() {
+  _saveEvolutionLocal() {
     try { localStorage.setItem(this.EVO_KEY, JSON.stringify(this._evolution)); } catch (_) {}
-    if (Auth?.user?.id) {
-      AstranovSession?.push?.(false);
+  },
+
+  async _loadEvolutionFromServer() {
+    if (!Auth?.user) return;
+    const r = await this.api({ action: 'evolution_get' });
+    if (r.ok && r.evolution) {
+      Object.assign(this._evolution, r.evolution);
+      this._saveEvolutionLocal();
     }
+  },
+
+  _applyEvolution(evo) {
+    if (!evo) return;
+    Object.assign(this._evolution, evo);
+    this._saveEvolutionLocal();
+  },
+
+  _initRealtime() {
+    if (!Auth?.client || this._rtChannel) return;
+    this._rtChannel = Auth.client.channel('pilot-fleet-live');
+    this._rtChannel.on('postgres_changes', {
+      event: '*', schema: 'public', table: 'pilot_drones',
+    }, () => { this.scanAllDrones({ quiet: true }); });
+    this._rtChannel.subscribe();
+  },
+
+  _subscribeC2Signals() {
+    if (!Auth?.user?.id || !Auth?.client || this._c2Channel) return;
+    const room = 'pilot-c2-' + Auth.user.id;
+    this._c2Channel = Auth.client.channel('pilot-c2-' + Auth.user.id);
+    this._c2Channel.on('postgres_changes', {
+      event: 'INSERT', schema: 'public', table: 'webrtc_signals',
+      filter: 'room=eq.' + room,
+    }, ({ new: sig }) => {
+      if (!sig) return;
+      if (sig.type === 'drone_seized') {
+        ACIControl?.reply('C2 alert — your ' + (sig.payload?.domain || 'drone') + ' link seized · tilemaxos RTB incoming');
+      }
+      if (sig.type === 'drone_rtb') {
+        ACIControl?.reply('C2 — drone returning to you on OSRM route');
+      }
+    });
+    this._c2Channel.subscribe();
+  },
+
+  _logField(action, detail, props) {
+    FieldBrain?.pulse?.(action, detail, { role: 'pilot', props });
+  },
+
+  async _fetchOsrmRoute(fromLat, fromLng, toLat, toLng) {
+    const url = 'https://router.project-osrm.org/route/v1/driving/'
+      + fromLng + ',' + fromLat + ';' + toLng + ',' + toLat
+      + '?overview=full&geometries=geojson';
+    const r = await fetch(url);
+    const j = await r.json();
+    if (j.code !== 'Ok' || !j.routes?.[0]?.geometry?.coordinates) return null;
+    return j.routes[0].geometry.coordinates.map((c) => ({ lng: c[0], lat: c[1] }));
+  },
+
+  _globePointsFromCoords(coords, alt) {
+    const spec = this.DOMAINS.fpv;
+    const a = alt ?? spec?.alt ?? 1.06;
+    return (coords || []).map((c) => {
+      const p = latLngToPos(c.lat, c.lng, a);
+      return new THREE.Vector3(p.x, p.y, p.z);
+    });
   },
 
   _syncGamerTelemetry() {
@@ -13714,7 +13789,7 @@ const TelemachosPilot = {
     if (n > this._evolution.gamers_seen) {
       this._gainXp((n - this._evolution.gamers_seen) * 12, 'live_gamers');
       this._evolution.gamers_seen = n;
-      this._saveEvolution();
+      this._saveEvolutionLocal();
     }
   },
 
@@ -13725,13 +13800,11 @@ const TelemachosPilot = {
     if (lvl > this._evolution.level) {
       this._evolution.level = lvl;
       this._evolution.power = 100 + (lvl - 1) * 35;
-      ACI?.teach?.('[telemachos:level_' + lvl + '] Gaming pilot evolved with real users · power ' + this._evolution.power);
       MapDepict?.pulse?.(this.HOME.lat, this.HOME.lng, 0xff00aa, 'LEVEL ' + lvl, 6000);
     }
-    if (reason === 'takeover') this._evolution.takeovers++;
     if (reason === 'delivery') this._evolution.deliveries++;
-    this._saveEvolution();
-    FieldBrain?.pulse?.('telemachos', reason + ' +' + amount + 'xp', { level: this._evolution.level });
+    this._saveEvolutionLocal();
+    this._logField('pilot', reason + ' +' + amount + 'xp', {});
   },
 
   norm(s) {
@@ -13812,111 +13885,34 @@ const TelemachosPilot = {
     return ids;
   },
 
-  _allPilotsOnField() {
-    const friendly = this._friendlyIds();
-    const seen = new Set();
-    const out = [];
-    const ingest = (p) => {
-      if (!p?.id && !p?.user_id) return;
-      const id = p.id || p.user_id;
-      if (seen.has(id)) return;
-      const lat = p.lat ?? p.field_lat;
-      const lng = p.lng ?? p.field_lng;
-      if (lat == null || lng == null) return;
-      seen.add(id);
-      out.push({
-        userId: id,
-        name: p.display_name || p.name || String(id).slice(0, 8),
-        lat, lng,
-        pilotLat: lat,
-        pilotLng: lng,
-        team: friendly.has(id) ? 'friendly' : (p.game || AstranovPresence?.game || 'opponent'),
-        role: p.role || 'gamer',
-      });
-    };
-    if (AstranovPresence?._live) AstranovPresence._live.forEach(ingest);
-    (others || []).forEach(ingest);
-    return out;
-  },
-
-  scanAllDrones() {
+  async scanAllDrones(opts) {
+    opts = opts || {};
     this._syncGamerTelemetry();
-    const pilots = this._allPilotsOnField();
-    const domains = ['air', 'ground', 'sea', 'underwater'];
-    this._fieldDrones = [];
-    this._hostile = [];
-
-    pilots.forEach((pilot, pi) => {
-      this._fieldDrones.push({
-        id: 'fpv-' + pilot.userId.slice(0, 6),
-        owner: pilot.name,
-        ownerId: pilot.userId,
-        pilotLat: pilot.pilotLat,
-        pilotLng: pilot.pilotLng,
-        team: pilot.team,
-        domain: 'fpv',
-        kind: 'fpv',
-        fpv: true,
-        lat: pilot.lat + 0.018 + (pi % 3) * 0.004,
-        lng: pilot.lng + 0.012,
-        signal: pilot.team === 'opponent' ? 0.38 : 0.52,
-        mesh: null,
-      });
-      const extra = 1 + (pi % 2);
-      for (let i = 0; i < extra; i++) {
-        const dom = domains[(pi + i) % domains.length];
-        this._fieldDrones.push({
-          id: 'uav-' + pilot.userId.slice(0, 6) + '-' + dom,
-          owner: pilot.name,
-          ownerId: pilot.userId,
-          pilotLat: pilot.pilotLat,
-          pilotLng: pilot.pilotLng,
-          team: pilot.team,
-          domain: dom,
-          kind: dom,
-          fpv: false,
-          lat: pilot.lat + (i - 0.5) * 0.01,
-          lng: pilot.lng + (i - 0.5) * 0.008,
-          signal: 0.42 + Math.random() * 0.35,
-          mesh: null,
-        });
-      }
-    });
-
-    const drivers = MarketplaceComms?.state?.drivers || [];
-    drivers.forEach((d, di) => {
-      const lat = d.field_lat ?? d.lat;
-      const lng = d.field_lng ?? d.lng;
-      if (lat == null) return;
-      this._fieldDrones.push({
-        id: 'drv-' + String(d.id || di).slice(0, 8),
-        owner: d.display_name || 'Driver',
-        ownerId: d.id,
-        pilotLat: lat,
-        pilotLng: lng,
-        team: 'field',
-        domain: 'ground',
-        kind: 'delivery',
-        fpv: false,
-        lat: lat + 0.006,
-        lng: lng + 0.004,
-        signal: 0.55,
-        mesh: null,
-      });
-    });
-
-    if (!this._fieldDrones.length) {
-      const seeds = [
-        { id: 'fpv-demo-1', owner: 'Red team FPV', domain: 'fpv', fpv: true, lat: 36.45, lng: 28.18, pilotLat: 36.44, pilotLng: 28.17, team: 'opponent', signal: 0.4 },
-        { id: 'fpv-demo-2', owner: 'Blue team FPV', domain: 'fpv', fpv: true, lat: 36.41, lng: 28.25, pilotLat: 36.40, pilotLng: 28.24, team: 'opponent', signal: 0.42 },
-        { id: 'uav-demo-air', owner: 'Field scout', domain: 'air', fpv: false, lat: 36.38, lng: 28.30, pilotLat: 36.37, pilotLng: 28.29, team: 'opponent', signal: 0.5 },
-      ];
-      seeds.forEach((s) => {
-        this._fieldDrones.push({ ...s, ownerId: s.id, kind: s.domain, mesh: null });
-      });
+    const r = await this.api({ action: 'scan' });
+    if (!r.ok) {
+      if (!opts.quiet) this.out('Scan failed — sign in · ' + (r.error || 'server'), 'err');
+      this._fieldDrones = [];
+      return [];
     }
-
-    this._hostile = this._fieldDrones.filter((d) => d.team !== 'friendly');
+    this._fieldDrones = (r.drones || []).map((d) => ({
+      id: d.id,
+      owner: d.owner,
+      ownerId: d.owner_id,
+      operatorId: d.operator_id,
+      pilotLat: d.pilot_lat,
+      pilotLng: d.pilot_lng,
+      team: d.team,
+      domain: d.domain,
+      fpv: d.fpv || d.domain === 'fpv',
+      status: d.status,
+      lat: d.lat,
+      lng: d.lng,
+      signal: d.link_strength,
+      link_mhz: d.link_mhz,
+      mesh: this._fieldDrones.find((x) => x.id === d.id)?.mesh || null,
+    }));
+    this._hostile = this._fieldDrones.filter((d) => d.team !== 'friendly' && d.ownerId !== Auth?.user?.id);
+    if (!opts.quiet) this._logField('drone_scan', r.count + ' registered drones', { visual_truth: true });
     return this._fieldDrones;
   },
 
@@ -13925,14 +13921,12 @@ const TelemachosPilot = {
   },
 
   _findDrone(targetId) {
-    const list = this._fieldDrones.length ? this._fieldDrones : this.scanAllDrones();
+    const list = this._fieldDrones;
     const q = String(targetId || '').toLowerCase();
-    if (!q) return list[0] || null;
-    if (q === 'fpv' || q === 'goggles' || q === 'any' || q === 'all') {
-      if (q === 'fpv' || q === 'goggles') return list.find((d) => d.fpv || d.domain === 'fpv') || null;
-      return list[0] || null;
-    }
-    return list.find((d) => d.id === targetId || d.id.includes(q))
+    if (!q) return list.find((d) => d.fpv) || list[0] || null;
+    if (q === 'fpv' || q === 'goggles') return list.find((d) => d.fpv || d.domain === 'fpv') || null;
+    if (q === 'any' || q === 'all') return list.find((d) => d.team !== 'friendly') || list[0] || null;
+    return list.find((d) => d.id === targetId || String(d.id).includes(q))
       || list.find((d) => (d.owner || '').toLowerCase().includes(q))
       || list.find((d) => d.domain === q)
       || null;
@@ -13955,41 +13949,61 @@ const TelemachosPilot = {
     return this._visualizeDrone(h);
   },
 
-  flyBackToPilot(droneRec, targetMeta, opts) {
+  async flyBackToPilot(droneRec, targetMeta, opts) {
     opts = opts || {};
-    if (!droneRec?.mesh || !targetMeta) return { error: 'no_drone' };
+    const droneId = targetMeta?.id || droneRec?.meta?.fieldId;
+    if (!droneId) return { error: 'no_drone_id' };
 
-    const pilotLat = targetMeta.pilotLat ?? targetMeta.lat;
-    const pilotLng = targetMeta.pilotLng ?? targetMeta.lng;
-    const startLat = targetMeta.lat;
-    const startLng = targetMeta.lng;
-    const spec = this.DOMAINS[droneRec.domain] || this.DOMAINS.fpv;
+    const rtb = await this.api({ action: 'rtb', drone_id: droneId });
+    if (!rtb.ok) {
+      this.say('RTB failed — ' + (rtb.error || 'server'));
+      return rtb;
+    }
+    this._applyEvolution(rtb.evolution);
 
-    const routeData = RoutingEngine?.computeRoute?.(
-      startLat, startLng, pilotLat, pilotLng, this._userObstacles()
-    );
-    if (routeData?.points?.length) {
-      const routeGeo = new THREE.BufferGeometry().setFromPoints(routeData.points);
-      const line = new THREE.Line(
-        routeGeo,
-        new THREE.LineBasicMaterial({ color: 0xff66cc, transparent: true, opacity: 0.45 })
-      );
-      globePivot.add(line);
-      setTimeout(() => { if (line.parent) line.parent.remove(line); }, 90000);
+    const from = rtb.from || { lat: targetMeta.lat, lng: targetMeta.lng };
+    const to = rtb.to || { lat: targetMeta.pilotLat, lng: targetMeta.pilotLng };
+    const spec = this.DOMAINS[targetMeta.domain] || this.DOMAINS.fpv;
+
+    if (!droneRec?.mesh) {
+      this._visualizeDrone({ ...targetMeta, lat: from.lat, lng: from.lng });
+      droneRec = droneRec || {};
+      droneRec.mesh = targetMeta.mesh;
+      droneRec.domain = targetMeta.domain;
     }
 
-    droneRec.meta = { ...droneRec.meta, rtb: true, pilot: targetMeta.owner };
-    this._animateAlongRoute(droneRec, routeData || { points: [droneRec.mesh.position] }, {
-      maxSteps: 58,
+    const osrm = await this._fetchOsrmRoute(from.lat, from.lng, to.lat, to.lng);
+    let points;
+    if (osrm?.length >= 2) {
+      points = this._globePointsFromCoords(osrm, spec.alt);
+      CityMap?.setRoute?.(osrm);
+    } else {
+      const routeData = RoutingEngine?.computeRoute?.(from.lat, from.lng, to.lat, to.lng, this._userObstacles());
+      points = routeData?.points || this._globePointsFromCoords([from, to], spec.alt);
+    }
+
+    if (points?.length >= 2) {
+      const routeGeo = new THREE.BufferGeometry().setFromPoints(points);
+      const line = new THREE.Line(
+        routeGeo,
+        new THREE.LineBasicMaterial({ color: 0xff66cc, transparent: true, opacity: 0.55 })
+      );
+      globePivot.add(line);
+      setTimeout(() => { if (line.parent) line.parent.remove(line); }, 120000);
+    }
+
+    droneRec.meta = { ...droneRec.meta, rtb: true, fieldId: droneId, pilot: rtb.owner };
+    this._animateAlongRoute(droneRec, { points: points || [droneRec.mesh.position] }, {
+      maxSteps: osrm ? 80 : 58,
       speed: 0.02,
-      onComplete: () => {
-        this._evolution.flybacks = (this._evolution.flybacks || 0) + 1;
-        this._saveEvolution();
-        MapDepict?.pulse?.(pilotLat, pilotLng, 0xff66cc, '🥽 RTB · ' + (targetMeta.owner || 'pilot'), 9000);
+      onComplete: async () => {
+        await this.api({ action: 'handoff', drone_id: droneId, lat: to.lat, lng: to.lng });
+        MapDepict?.pulse?.(to.lat, to.lng, 0xff66cc, '🥽 RTB · ' + (rtb.owner || 'pilot'), 9000);
         AIGraphics?.spawnEffect?.(droneRec.mesh?.position, 0xff66cc, 20, 45);
-        const handoff = '🥽 tilemaxos RTB — ' + (droneRec.domain || 'fpv') + ' drone returned to pilot ' + (targetMeta.owner || '');
+        const handoff = '🥽 OSRM RTB — ' + (targetMeta.domain || 'fpv') + ' returned to pilot ' + (rtb.owner || '');
         window.MapComms?.postSystem?.(handoff);
-        ACI?.feed?.('tilemaxos-rtb', targetMeta.owner + ' · ' + droneRec.domain);
+        ACI?.feed?.('tilemaxos-rtb', rtb.owner + ' · ' + targetMeta.domain);
+        this._logField('drone_rtb', handoff, { visual_truth: true });
         this.out(handoff, 'ok');
         setTimeout(() => {
           if (droneRec.mesh?.parent) droneRec.mesh.parent.remove(droneRec.mesh);
@@ -13998,88 +14012,83 @@ const TelemachosPilot = {
       },
     });
 
-    const msg = 'RTB — flying ' + (droneRec.domain || 'drone') + ' back to pilot ' + (targetMeta.owner || '') + ' (' + pilotLat.toFixed(2) + ', ' + pilotLng.toFixed(2) + ')';
+    const msg = 'RTB OSRM — ' + (targetMeta.domain || 'drone') + ' → pilot ' + (rtb.owner || '') + ' · ' + to.lat.toFixed(4) + ', ' + to.lng.toFixed(4);
     console.log('%c[tilemaxos] ' + msg, 'color:#ff66cc');
     if (!opts.quiet) this.say(msg);
-    return { ok: true, pilotLat, pilotLng };
+    return { ok: true, rtb };
   },
 
-  takeover(targetId, opts) {
+  async takeover(targetId, opts) {
     opts = opts || {};
-    if (!this.edition.takeover && this._edition !== 'tilemaxos') {
-      this._setEdition('tilemaxos');
+    if (!Auth?.user) {
+      this.say('Sign in — real drone registry requires Supabase auth');
+      Auth?.signInGoogle?.();
+      return { error: 'login_required' };
     }
+    this._setEdition('tilemaxos');
     if (this._edition === 'teledromos') {
-      this.say('ΤΗΛΕΔΡΟΜΟΣ είναι εμπορική έκδοση — takeover μόνο σε gaming (telemachos / tilemaxos).');
+      this.say('ΤΗΛΕΔΡΟΜΟΣ commercial — use telemachos/tilemaxos for C2 seize');
       return { error: 'commercial_locked' };
     }
 
-    const q = String(targetId || '').toLowerCase();
-    if (!this._fieldDrones.length) this.scanAllDrones();
-    let target = this._findDrone(q);
-    if (!target && this._fieldDrones.length) target = this._fieldDrones.find((d) => d.fpv) || this._fieldDrones[0];
+    await this.scanAllDrones({ quiet: true });
+    const q = String(targetId || 'fpv').toLowerCase();
+    const target = this._findDrone(q);
     if (!target) {
-      this.say('Δεν βρέθηκαν drones — scan ή players · kryfto για rival pilots στο χάρτη.');
+      this.say('No registered drones on field — rivals must deploy: telemachos deploy fpv 1');
       return { error: 'no_drones' };
+    }
+    if (target.ownerId === Auth.user.id) {
+      this.say('Cannot seize your own drone — scan for rival units');
+      return { error: 'own_drone' };
     }
 
     this._visualizeDrone(target);
-    const power = this._evolution.power + (this._edition === 'tilemaxos' ? 80 : 0);
-    const techBonus = this.EXTREME_TECH.length * 5;
-    const fpvBonus = target.fpv ? 0.28 : 0;
-    const chance = Math.min(0.99, 0.4 + (power + techBonus) / 380 - target.signal * 0.18 + fpvBonus);
-    const success = Math.random() < chance || opts.force;
+    const r = await this.api({
+      action: 'seize',
+      drone_id: target.id,
+      edition: this._edition,
+    });
 
-    if (!success) {
+    if (!r.seized) {
       AIGraphics?.spawnEffect?.(target.mesh?.position, 0xff4400, 14, 30);
-      this.say('Ανάληψη απέτυχε — ' + target.owner + ' · ' + target.domain + (target.fpv ? ' FPV' : '') + '. evolve ή tilemaxos takeover fpv');
-      this._gainXp(15, 'attempt');
-      return { ok: false, target, chance };
+      this.say('Seize failed — link ' + (r.link_strength?.toFixed(2) || '?') + ' · score ' + (r.seize_score ?? '?') + '/' + (r.min_score ?? '?') + ' · evolve');
+      this._applyEvolution(r.evolution);
+      this._logField('drone_seize', 'failed ' + target.domain, { link: r.link_strength });
+      return { ok: false, target, ...r };
     }
 
+    this._applyEvolution(r.evolution);
     if (target.mesh) {
       target.mesh.traverse((c) => {
         if (c.material?.color) c.material.color.setHex(target.fpv ? 0xff66cc : 0x00ff88);
       });
-      target.mesh.userData.hostile = false;
-      target.mesh.userData.captured = true;
       target.captured = true;
       AIGraphics?.spawnEffect?.(target.mesh.position, target.fpv ? 0xff66cc : 0x00ff88, 28, 50);
     }
 
-    const fleetDomain = target.domain === 'fpv' ? 'fpv' : target.domain;
-    const rec = this._registerDrone(fleetDomain, {
+    const rec = this._registerDrone(target.domain, {
       captured: true,
-      from: target.owner,
       fieldId: target.id,
-      fpv: !!target.fpv,
-      edition: this._edition,
-      pilotLat: target.pilotLat,
-      pilotLng: target.pilotLng,
+      from: target.owner,
+      fpv: target.fpv,
     });
     rec.mesh = target.mesh;
-    rec.busy = false;
-    this._captured.push({ ...target, capturedAt: Date.now(), fleetId: rec.id });
-    this._fieldDrones = this._fieldDrones.filter((d) => d.id !== target.id);
-    this._hostile = this._hostile.filter((h) => h.id !== target.id);
-    this._gainXp(target.fpv ? 160 : 120, 'takeover');
-    if (target.fpv) {
-      this._evolution.fpv_captures = (this._evolution.fpv_captures || 0) + 1;
-      this._saveEvolution();
-    }
-    ACI?.feed?.('tilemaxos-takeover', (target.fpv ? 'FPV ' : '') + target.domain + ' from ' + target.owner);
+    this._captured.push({ ...target, capturedAt: Date.now(), fleetId: rec.id, dbId: target.id });
+    this._logField('drone_seize', (target.fpv ? 'FPV ' : '') + target.domain + ' · ' + target.owner, { visual_truth: true });
 
-    const msg = '✓ tilemaxos — captured ' + (target.fpv ? 'FPV ' : '') + target.domain + ' of ' + target.owner + ' · RTB to pilot…';
-    console.log('%c[tilemaxos] ' + msg, 'color:#44ff88');
+    const msg = '✓ seized ' + (target.fpv ? 'FPV ' : '') + target.domain + ' · link ' + r.link_strength + ' · score ' + r.seize_score + ' · RTB…';
     window.MapComms?.postSystem?.('⚔️ ' + msg);
+    ACI?.feed?.('tilemaxos-takeover', target.domain + ' from ' + target.owner);
 
     if (opts.flyBack !== false) {
-      setTimeout(() => this.flyBackToPilot(rec, target, { quiet: true }), 400);
-      this.say(msg + ' Flying home to ' + target.owner + '.');
+      await this.flyBackToPilot(rec, target, { quiet: true });
+      this.say(msg + ' OSRM flyback to ' + target.owner);
     } else {
       this.say(msg);
     }
-    return { ok: true, target, fleetId: rec.id, chance, rtb: opts.flyBack !== false };
+    await this.scanAllDrones({ quiet: true });
+    return { ok: true, target, drone: r.drone, ...r };
   },
 
   out(text, cls) {
@@ -14133,7 +14142,8 @@ const TelemachosPilot = {
       '• Gaming evolution (ΤΗΛΕΜΑΧΟΣ) — XP from real users on globe · level ' + this._evolution.level,
     ];
     if (e.takeover || e.id === 'tilemaxos') {
-      lines.push('• Universal takeover — ANY drone on field · FPV link seizure + pilot RTB flyback');
+      lines.push('• Real C2 — pilot_drones DB · pilot-command edge · OSRM RTB · webrtc_signals handoff');
+      lines.push('• Seize score = power − link_strength (haversine RF range) — no random rolls');
       this.EXTREME_TECH.forEach((t) => lines.push('  ⚡ ' + t.label + ' — ' + t.desc));
     }
     lines.push('• CLI: scan · takeover fpv · takeover any · flyback · rtb · evolve');
@@ -14153,9 +14163,9 @@ const TelemachosPilot = {
   },
 
   scanText() {
-    const list = this.scanAllDrones();
+    const list = this._fieldDrones;
     if (!list.length) {
-      return 'No drones on field — players · kryfto · drivers on map first.';
+      return 'No registered drones in Supabase — deploy yours: telemachos deploy fpv 1 · rivals too.';
     }
     const fpv = list.filter((d) => d.fpv);
     return [
@@ -14408,55 +14418,87 @@ const TelemachosPilot = {
     requestAnimationFrame(tick);
   },
 
-  deploy(domain, count, opts) {
+  async deploy(domain, count, opts) {
     opts = opts || {};
+    if (!Auth?.user) {
+      this.say('Sign in to register real drones in pilot_drones table');
+      Auth?.signInGoogle?.();
+      return { error: 'login_required' };
+    }
     const d = String(domain || 'air').toLowerCase();
     if (!this.DOMAINS[d]) {
       this.say('Domain: fpv · air · ground · sea · underwater');
       return { error: 'bad_domain' };
     }
-    const n = Math.max(1, Math.min(99, parseInt(count, 10) || 1));
-    const startLat = opts.startLat ?? Commerce?.userLatLng?.()?.lat ?? this.HOME.lat;
-    const startLng = opts.startLng ?? Commerce?.userLatLng?.()?.lng ?? this.HOME.lng;
+    const n = Math.max(1, Math.min(20, parseInt(count, 10) || 1));
+    const u = Commerce?.userLatLng?.() || window._lastPos || this.HOME;
+    const pilotLat = u.lat;
+    const pilotLng = u.lng;
+    const startLat = opts.startLat ?? pilotLat;
+    const startLng = opts.startLng ?? pilotLng;
     const endLat = opts.endLat ?? startLat;
     const endLng = opts.endLng ?? startLng;
     const spec = this.DOMAINS[d];
-    const routeData = RoutingEngine?.computeRoute?.(
-      startLat, startLng, endLat, endLng, this._userObstacles()
-    ) || { points: [latLngToPos(startLat, startLng, spec.alt)] };
 
     const deployed = [];
     for (let i = 0; i < n; i++) {
-      const rec = this._registerDrone(d, opts.meta);
+      const lat = startLat + (i - (n - 1) / 2) * 0.0008;
+      const lng = startLng + (i - (n - 1) / 2) * 0.0006;
+      const reg = await this.api({
+        action: 'register',
+        domain: d,
+        lat, lng,
+        pilot_lat: pilotLat,
+        pilot_lng: pilotLng,
+        link_mhz: d === 'fpv' ? 5800 : null,
+        metadata: opts.meta || {},
+      });
+      if (!reg.ok) {
+        this.out('Register failed: ' + (reg.error || 'server'), 'err');
+        break;
+      }
+      const rec = this._registerDrone(d, { dbId: reg.drone?.id, registered: true });
       const mesh = this._meshForDomain(d);
-      const offset = (i - (n - 1) / 2) * 0.012;
-      mesh.position.copy(routeData.points[0]);
-      mesh.position.x += offset;
+      const pos = latLngToPos(lat, lng, spec.alt);
+      mesh.position.set(pos.x, pos.y, pos.z);
       globePivot.add(mesh);
       rec.mesh = mesh;
       deployed.push(rec);
-      this._animateAlongRoute(rec, routeData, { pilotFollow: i === 0, speed: i * 0.01 });
+      this._logField('drone_register', d + ' · ' + reg.drone.id.slice(0, 8), { visual_truth: true });
     }
 
-    this._gainXp(n * 8, 'deploy');
-    const msg = spec.emoji + ' ' + n + ' ' + spec.label + ' drone(s) · ' + this.NAME_GR;
-    console.log('%c[' + this.NAME_GR + '] ' + msg, 'color:#44ccff');
+    const osrm = await this._fetchOsrmRoute(startLat, startLng, endLat, endLng);
+    const points = osrm?.length >= 2
+      ? this._globePointsFromCoords(osrm, spec.alt)
+      : (RoutingEngine?.computeRoute?.(startLat, startLng, endLat, endLng, this._userObstacles())?.points || []);
+    if (deployed[0] && points.length) {
+      this._animateAlongRoute(deployed[0], { points }, { pilotFollow: true });
+    }
+
+    await this.scanAllDrones({ quiet: true });
+    const msg = spec.emoji + ' ' + deployed.length + ' ' + spec.label + ' registered in pilot_drones · GPS ' + pilotLat.toFixed(4);
     this.out(msg, 'ok');
-    return { ok: true, domain: d, count: n, deployed };
+    return { ok: true, domain: d, count: deployed.length, deployed };
   },
 
-  coordinateMarketplaceDelivery(opts) {
+  async coordinateMarketplaceDelivery(opts) {
     this._setEdition('teledromos');
     opts = opts || {};
-    const vendor = opts.vendor;
+    if (!Auth?.user) {
+      this.say('Sign in — ΤΗΛΕΔΡΟΜΟΣ registers real drones in pilot_drones');
+      Auth?.signInGoogle?.();
+      return { error: 'login_required' };
+    }
+    const vendor = opts.vendor || Commerce?.selected || Commerce?.vendors?.[0];
     const u = {
-      lat: opts.deliveryLat ?? Commerce?.userLatLng?.()?.lat ?? this.HOME.lat,
-      lng: opts.deliveryLng ?? Commerce?.userLatLng?.()?.lng ?? this.HOME.lng,
+      lat: opts.deliveryLat ?? Commerce?.userLatLng?.()?.lat ?? window._lastPos?.lat ?? this.HOME.lat,
+      lng: opts.deliveryLng ?? Commerce?.userLatLng?.()?.lng ?? window._lastPos?.lng ?? this.HOME.lng,
     };
-    const vLat = vendor?.lat ?? u.lat + 0.3;
-    const vLng = vendor?.lng ?? u.lng - 0.4;
+    const vLat = vendor?.lat ?? u.lat;
+    const vLng = vendor?.lng ?? u.lng;
     const wants = opts.wants || opts.items?.map((i) => i.name).join(', ') || 'delivery';
     const driver = opts.driver || Commerce?._preferredDriver;
+    const orderId = opts.order?.id || opts.orderId || MarketplaceComms?.state?.orderId || null;
 
     this.showPilot(u.lat, u.lng, 'teledromos');
     if (typeof flyToPoint === 'function') {
@@ -14466,38 +14508,59 @@ const TelemachosPilot = {
     }
 
     const mission = {
-      id: 'msn-' + Date.now(),
+      id: orderId || ('msn-' + Date.now()),
       edition: 'teledromos',
       vendor: vendor?.name,
       wants,
       driver: driver?.display_name || driver?.name || null,
       seekingDriver: !!opts.seekingDriver,
+      orderId,
     };
     this._activeMissions.push(mission);
 
-    const routeData = RoutingEngine?.computeRoute?.(vLat, vLng, u.lat, u.lng, this._userObstacles());
-    if (routeData?.points?.length) {
-      const routeGeo = new THREE.BufferGeometry().setFromPoints(routeData.points);
+    const osrm = await this._fetchOsrmRoute(vLat, vLng, u.lat, u.lng);
+    const routeCoords = osrm?.length >= 2 ? osrm : null;
+    if (routeCoords) {
+      CityMap?.setRoute?.(routeCoords);
+      const points = this._globePointsFromCoords(routeCoords, this.DOMAINS.air.alt);
+      const routeGeo = new THREE.BufferGeometry().setFromPoints(points);
       const routeLine = new THREE.Line(
         routeGeo,
         new THREE.LineBasicMaterial({ color: 0x3d9eff, transparent: true, opacity: 0.35 })
       );
       globePivot.add(routeLine);
       setTimeout(() => { if (routeLine.parent) routeLine.parent.remove(routeLine); }, 120000);
+    } else {
+      const routeData = RoutingEngine?.computeRoute?.(vLat, vLng, u.lat, u.lng, this._userObstacles());
+      if (routeData?.points?.length) {
+        const routeGeo = new THREE.BufferGeometry().setFromPoints(routeData.points);
+        const routeLine = new THREE.Line(
+          routeGeo,
+          new THREE.LineBasicMaterial({ color: 0x3d9eff, transparent: true, opacity: 0.35 })
+        );
+        globePivot.add(routeLine);
+        setTimeout(() => { if (routeLine.parent) routeLine.parent.remove(routeLine); }, 120000);
+      }
     }
 
-    const plan = opts.seekingDriver ? ['air', 'ground'] : ['air', 'sea', 'ground'];
-    plan.forEach((dom, i) => {
-      setTimeout(() => {
-        this.deploy(dom, 1, {
-          startLat: vLat,
-          startLng: vLng,
-          endLat: u.lat,
-          endLng: u.lng,
-          meta: { mission: mission.id, escort: !!driver, commercial: true },
-        });
-      }, i * 400);
-    });
+    const plan = opts.seekingDriver ? ['air', 'ground'] : ['air', 'ground'];
+    const meta = {
+      mission: mission.id,
+      escort: !!driver,
+      commercial: true,
+      order_id: orderId,
+      vendor: vendor?.name,
+    };
+    for (let i = 0; i < plan.length; i++) {
+      await this.deploy(plan[i], 1, {
+        startLat: vLat,
+        startLng: vLng,
+        endLat: u.lat,
+        endLng: u.lng,
+        meta,
+      });
+      if (i < plan.length - 1) await new Promise((r) => setTimeout(r, 350));
+    }
 
     const driverTxt = driver
       ? 'Escorting ' + (driver.display_name || driver.name)
@@ -14505,42 +14568,36 @@ const TelemachosPilot = {
     const sys = '🏢 ΤΗΛΕΔΡΟΜΟΣ · ' + driverTxt + ' · ' + wants.slice(0, 80);
     window.MapComms?.postSystem?.(sys);
     ACI?.feed?.('teledromos-delivery', wants);
+    this._logField('pilot', 'teledromos delivery · ' + wants.slice(0, 60), { order_id: orderId });
     this._gainXp(40, 'delivery');
 
-    const msg = 'ΤΗΛΕΔΡΟΜΟΣ coordinates: ' + wants + '. ' + driverTxt + '.';
+    const msg = 'ΤΗΛΕΔΡΟΜΟΣ · OSRM route · ' + wants + '. ' + driverTxt + '.';
     console.log('%c[ΤΗΛΕΔΡΟΜΟΣ] ' + msg, 'color:#3d9eff');
     ACIControl?.reply(msg.slice(0, 200));
     return { ok: true, mission };
   },
 
-  runDemoDelivery() {
+  async runDemoDelivery() {
+    const vendor = Commerce?.selected || Commerce?.vendors?.[0];
+    const u = Commerce?.userLatLng?.() || window._lastPos || this.HOME;
+    if (!vendor?.lat) {
+      this.say('Open marketplace & pick a vendor — real GPS delivery, no demo coords');
+      return { error: 'no_vendor' };
+    }
     this._setEdition('telemachos');
-    ACI?.feed?.('group-order', 'pitogyra-beers-cigarettes-drone');
-    this.showPilot(this.HOME.lat, this.HOME.lng, 'telemachos');
-    const focus = latLngToPos(36.5, 28.0, 1.04);
-    if (typeof flyToPoint === 'function') {
-      flyToPoint(new THREE.Vector3(focus.x, focus.y, focus.z), GlobeControl?.Z?.national || 1.82);
-      GlobeControl?.noteAutoFly?.();
-    }
-    const vendor = { name: 'Pitogyra vendor', lat: 36.8, lng: 27.5 };
-    const routeData = RoutingEngine?.computeRoute?.(36.8, 27.5, 36.2, 28.1, this._userObstacles());
-    if (routeData?.points?.length) {
-      const routeGeo = new THREE.BufferGeometry().setFromPoints(routeData.points);
-      const routeLine = new THREE.Line(
-        routeGeo,
-        new THREE.LineBasicMaterial({ color: 0x00ffaa, transparent: true, opacity: 0.35 })
-      );
-      globePivot.add(routeLine);
-      setTimeout(() => { if (routeLine.parent) routeLine.parent.remove(routeLine); }, 120000);
-    }
-    ['air', 'ground'].forEach((dom, i) => {
-      setTimeout(() => this.deploy(dom, 1, {
-        startLat: 36.8, startLng: 27.5, endLat: 36.2, endLng: 28.1,
-        meta: { demo: true },
-      }), i * 400);
+    this.showPilot(u.lat, u.lng, 'telemachos');
+    const wants = Commerce?._lastWants?.map((w) => w.label).join(' + ') || 'group order';
+    ACI?.feed?.('group-order', wants);
+    await this.coordinateMarketplaceDelivery({
+      vendor,
+      deliveryLat: u.lat,
+      deliveryLng: u.lng,
+      wants,
+      driver: Commerce?._preferredDriver,
     });
     this._gainXp(25, 'delivery');
-    this.say('ΤΗΛΕΜΑΧΟΣ gaming delivery — pitogyra + μπίρες + τσιγάρα · evolve με κάθε gamer στο χάρτη.');
+    this.say('ΤΗΛΕΜΑΧΟΣ gaming relay — real vendor GPS · evolve με gamers στο χάρτη.');
+    return { ok: true };
   },
 
   _resolveCmd(line, p) {
@@ -14573,7 +14630,7 @@ const TelemachosPilot = {
       else if (sub === 'deliver') {
         const vendor = Commerce?.selected || Commerce?.vendors?.[0];
         const u = Commerce?.userLatLng?.() || {};
-        this.coordinateMarketplaceDelivery({ vendor, deliveryLat: u.lat, deliveryLng: u.lng, wants: Commerce?._lastWants?.map((w) => w.label).join(' + ') || 'order' });
+        await this.coordinateMarketplaceDelivery({ vendor, deliveryLat: u.lat, deliveryLng: u.lng, wants: Commerce?._lastWants?.map((w) => w.label).join(' + ') || 'order' });
       } else if (sub === 'abilities') this.out(this.abilitiesText(), 'ok');
       else this.introduce('teledromos');
       GlobeDeck?.finishCliIfOneShot('teledromos');
@@ -14621,6 +14678,7 @@ const TelemachosPilot = {
       return { ok: true };
     }
     if (sub === 'evolve' || sub === 'power' || sub === 'level') {
+      await this._loadEvolutionFromServer();
       this.out(this.evolveText(), 'ok');
       GlobeDeck?.finishCliIfOneShot('telemachos');
       return { ok: true };
@@ -14632,15 +14690,16 @@ const TelemachosPilot = {
     }
     if (sub === 'scan' || sub === 'hostiles' || sub === 'opponents' || sub === 'drones') {
       this._setEdition('tilemaxos');
+      await this.scanAllDrones();
       this.out(this.scanText(), 'ok');
-      this.scanAllDrones().forEach((h) => this._visualizeDrone(h));
+      this._fieldDrones.forEach((h) => this._visualizeDrone(h));
       GlobeDeck?.finishCliIfOneShot('telemachos');
       return { ok: true };
     }
     if (sub === 'takeover' || sub === 'capture' || sub === 'hijack' || sub === 'seize') {
       this._setEdition('tilemaxos');
       const target = pp.slice(2).join(' ') || arg2 || 'fpv';
-      this.takeover(target);
+      await this.takeover(target);
       GlobeDeck?.finishCliIfOneShot('telemachos');
       return { ok: true };
     }
@@ -14652,10 +14711,11 @@ const TelemachosPilot = {
         ? Object.values(this._fleet).flat().find((r) => r.id === cap.fleetId)
         : null;
       if (rec && cap) {
-        this.flyBackToPilot(rec, cap);
+        await this.flyBackToPilot(rec, cap);
       } else if (q) {
+        await this.scanAllDrones({ quiet: true });
         const t = this._findDrone(q);
-        if (t) this.takeover(t.id, { flyBack: true });
+        if (t) await this.takeover(t.id, { flyBack: true });
         else this.say('No match — scan then takeover fpv first.');
       } else {
         this.say('No captured drone — takeover fpv first, or flyback <id>.');
@@ -14671,18 +14731,18 @@ const TelemachosPilot = {
       return { ok: true };
     }
     if (sub === 'deploy' || sub === 'launch') {
-      this.deploy(arg2 || 'air', parseInt(pp[3], 10) || 1);
+      await this.deploy(arg2 || 'fpv', parseInt(pp[3], 10) || 1);
       GlobeDeck?.finishCliIfOneShot('telemachos');
       return { ok: true };
     }
     if (sub === 'deliver' || sub === 'coordinate') {
-      if (arg2 === 'commercial') this.coordinateMarketplaceDelivery({});
+      if (arg2 === 'commercial') await this.coordinateMarketplaceDelivery({});
       else {
         this._setEdition('telemachos');
         const vendor = Commerce?.selected || Commerce?.vendors?.[0];
         const u = Commerce?.userLatLng?.() || {};
         this.showPilot(u.lat, u.lng, 'telemachos');
-        this.deploy('air', 2, { startLat: vendor?.lat, startLng: vendor?.lng, endLat: u.lat, endLng: u.lng });
+        await this.deploy('air', 2, { startLat: vendor?.lat, startLng: vendor?.lng, endLat: u.lat, endLng: u.lng });
         this._gainXp(30, 'delivery');
         this.say('ΤΗΛΕΜΑΧΟΣ gaming relay active.');
       }
@@ -14690,7 +14750,7 @@ const TelemachosPilot = {
       return { ok: true };
     }
     if (sub === 'demo' || sub === 'grouporder') {
-      this.runDemoDelivery();
+      await this.runDemoDelivery();
       GlobeDeck?.finishCliIfOneShot('telemachos');
       return { ok: true };
     }
